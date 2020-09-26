@@ -209,3 +209,68 @@ exports.forgottenPassword = (req, res) => {
       return res.status(400).json({ err: err })
     })
 }
+
+
+
+// 
+
+
+exports.userDocumentUpload = (req, res) => {
+  // HTML form data parser for Nodejs
+  const BusBoy = require('busboy')
+  const path = require('path')
+  const os = require('os')
+  const fs = require('fs')
+  const busboy = new BusBoy({ headers: req.headers })
+
+  let documentFileName
+  let documentToBeUploaded = {}
+
+  busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
+
+    // Grabbing the file extension
+    const fileSplit = filename.split('.')
+    const documentExtension = fileSplit[fileSplit.length - 1]
+
+    // Generating new file name with random numbers 
+    documentFileName = `${Math.round(Math.random() * 10000000000)}.${documentExtension}`
+    // Creating a filepath for the image and storing it in a temporary directory
+    const filePath = path.join(os.tmpdir(), documentFileName)
+    documentToBeUploaded = { filePath, mimetype }
+
+    // Using file system library to create the file
+    file.pipe(fs.createWriteStream(filePath))
+  })
+
+  // Function to upload image file on finish 
+  busboy.on('finish', () => {
+
+    admin
+      .storage()
+      .bucket()
+      .upload(documentToBeUploaded.filePath, {
+        resumable: false,
+        metadata: {
+          metadata: {
+            contentType: documentToBeUploaded.mimetype
+          }
+        }
+      })
+      .then(() => {
+        // Once image is uploaded, we add it to the user within the promise
+        const documentURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${documentFileName}?alt=media`
+
+        return db
+          .doc(`/users/${req.user}`)
+          .update({ documentURL })
+      })
+      .then(() => {
+        res.status(201).json({ message: 'Document successfully uploaded' })
+      })
+      .catch(err => {
+        console.error(err)
+        return res.status(500).json({ error: 'Error uploading document' })
+      })
+  })
+  busboy.end(req.rawBody)
+}
