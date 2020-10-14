@@ -25,11 +25,11 @@ const isValidPassword = string => {
 
 exports.validateSignupFields = data => {
 
-  const { fullName, email, password, confirmPassword } = data
+  const { name, email, password, confirmPassword } = data
   console.log(data)
   const fieldErrors = {}
 
-  if (isEmpty(fullName) || !isValidName(fullName)) fieldErrors.fullName = 'Please give us your full name'
+  if (isEmpty(name) || !isValidName(name)) fieldErrors.name = 'Please give us your full name'
   if (isEmpty(email) || !isValidEmail(email)) fieldErrors.email = 'Must be a valid email address'
   if (!isValidPassword(password)) fieldErrors.password = 'Must be a valid password'
   if (password !== confirmPassword) fieldErrors.confirmPassword = 'Passwords must match'

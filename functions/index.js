@@ -7,25 +7,52 @@ app.use(cors())
 
 // Middleware for authentication
 const authMiddleware = require('./utils/authMiddleware')
-const { getAllCompanies, postNewCompany } = require('./utils/controllers/companyController')
-const { newEnquiry, getEnquiry, updateOneEnquiry } = require('./utils/controllers/enquiryController')
-const { loginUser, registerUser, userImageUpload, getOneUser, forgottenPassword, userDocumentUpload } = require('./utils/controllers/userController')
+const { getAllCompanies,
+  postNewCompany,
+  addNewDetail,
+  editCompanyDetail } = require('./utils/controllers/companyController')
+
+const { newEnquiry,
+  getCustomerEnquiry,
+  getCompanyEnquiry,
+  updateOneEnquiry } = require('./utils/controllers/enquiryController')
+
+const { loginUser,
+  registerUser,
+  customerImageUpload,
+  imageDeletion,
+  getOneUser,
+  updateUserInformation,
+  forgottenPassword,
+  userDocumentUpload,
+  initialRegistrationUserInformation } = require('./utils/controllers/userController')
 
 // Cloud functios and routes for companies collection
 app.get('/companies', getAllCompanies)
 app.post('/companies', postNewCompany)
-
+app.post('/companies/:detail', addNewDetail)
+app.patch('/companies/:detail', authMiddleware, editCompanyDetail)
 
 app.post('/enquiries', newEnquiry)
-app.get('/enquiries', authMiddleware, getEnquiry)
+app.get('/enquiries/:company', authMiddleware, getCompanyEnquiry)
+app.get('/enquiries', authMiddleware, getCustomerEnquiry)
+
 app.patch('/enquiries/:id', updateOneEnquiry)
 
 // Cloud functions and routes for user collection
+app.delete('/user/image/:id', authMiddleware, imageDeletion)
+app.post('/user/:id/image', authMiddleware, customerImageUpload)
+app.post('/user/:id/signup', initialRegistrationUserInformation)
+
+app.post('/user/document', authMiddleware, userDocumentUpload)
 app.get('/users/:id', getOneUser)
+app.post('/user/:id', authMiddleware, updateUserInformation)
 app.post('/signup', registerUser)
 app.post('/login', loginUser)
-app.post('/user/image', authMiddleware, userImageUpload)
-app.post('/user/document', authMiddleware, userDocumentUpload)
+
+
+
+
 // app.get('/users', getAllUsers)
 app.post('/resetpassword', forgottenPassword)
 // app.get('/users/:id', getOneUser)

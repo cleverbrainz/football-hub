@@ -4,13 +4,14 @@ const firebase = require('firebase')
 // firebase.initializeApp(config)
 
 exports.newEnquiry = (req, res) => {
-  const { name, email, company, message, subject, userId } = req.body
+  const { name, email, companyId, message, subject, userId, company } = req.body
   const newEnquiry = {
     subject,
     email,
-    company,
+    companyId,
     name,
     userId,
+    company,
     messages: []
   }
 
@@ -42,17 +43,39 @@ exports.newEnquiry = (req, res) => {
     })
 }
 
-exports.getEnquiry = (req, res) => {
-
+exports.getCustomerEnquiry = (req, res) => {
+  console.log(req.user)
   db
-    .collectionGroup('enquiries')
+    .collection('enquiries')
     .where('userId', '==', req.user)
     .get()
-    .then(data => {
+    .then(async data => {
 
       const enquiries = []
 
-      data.forEach(el => {
+      await data.forEach(el => {
+        enquiries.push({
+          enquiryId: el.id,
+          enquiryInfo: { ...el.data() }
+        })
+      })
+      return res.status(200).json(enquiries)
+    })
+    .catch(err => console.error(err))
+}
+
+exports.getCompanyEnquiry = (req, res) => {
+  console.log(req.user)
+  db
+    .collection('enquiries')
+    .where('companyId', '==', req.user)
+    .get()
+    .then(async data => {
+
+      const enquiries = []
+
+      await data.forEach(el => {
+        console.log(el)
         enquiries.push({
           enquiryId: el.id,
           enquiryInfo: { ...el.data() }

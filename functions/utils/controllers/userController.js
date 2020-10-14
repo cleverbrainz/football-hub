@@ -9,21 +9,29 @@ firebase.initializeApp(config)
 
 exports.registerUser = (req, res) => {
 
-  // future consideration of category input when signing up new user
-  const { fullName, email, password } = req.body
-  const newUser = { fullName, email }
+  const { name, email, password } = req.body
+  const newUser = { name, email }
   const { valid, error } = validateSignupFields(req.body)
 
   if (!valid) return res.status(400).json(error)
 
-  const noImg = 'no-img.jpeg'
-  newUser.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`
+  if (req.body.category === 'player') {
+    const noImg = 'no-img.jpeg'
+    newUser.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`
+  } else {
+    newUser.images = []
+    newUser.reasons_to_join = ['']
+    newUser.bio = ''
+  }
+  
 
   firebase
     .auth()
     .createUserWithEmailAndPassword(email, password)
     .then(data => {
       newUser.userId = data.user.uid
+      newUser.joined = admin.firestore.Timestamp.fromDate(new Date())
+      newUser.account_validation_check = false
       data.user.getIdToken()
     })
     .then(() => {
@@ -33,59 +41,20 @@ exports.registerUser = (req, res) => {
         .set(newUser)
     })
     .then(() => {
-
       const user = firebase.auth().currentUser
-
       user
         .sendEmailVerification()
         .then(() => {
           res
             .status(201)
-            .json({ message: 'We\'ve sent you an email with instructions to verfiy your email address. Please make sure it didn\'t wind up in your Junk Mail.' })
+            .json({
+              message: 'We\'ve sent you an email with instructions to verfiy your email address. Please make sure it didn\'t wind up in your Junk Mail.',
+              userId: user.uid
+            })
         })
         .catch(error => {
           console.err(error)
         })
-
-      // const output = `
-      // <h2 style='text-align:center'> The Ballers Hub </h2>
-      // <h4> Please verify your email </h4>
-      // <p> Hello! </p>
-      // <p> Thank you for registering to The Ballers Hub. </p>
-      // <p> It looks like you need to verify your email address to activate your account.
-      // Please click the link below to complete the verification process. </p>
-      // <a href='google.com'> Click here to verify email address now </a> 
-      // <p> Thanks, <span style='display:block;'> The Ballers Hub </span> </p>
-      // `
-      // const transporter = nodemailer.createTransport({
-      //   host: 'secure.emailsrvr.com',
-      //   port: 465,
-      //   secure: true,
-      //   auth: {
-      //     user: 'kenn@indulgefootball.com',
-      //     pass: 'liverpool1a*'
-      //   },
-      //   tls: {
-      //     rejectUnauthorized: false
-      //   }
-      // })
-
-      // const mailOptions = {
-      //   from: ' "Kenn" <kenn@indulgefootball.com>',
-      //   to: email,
-      //   subject: 'Please verify your email',
-      //   text: 'Hello world?',
-      //   html: output
-      // }
-
-      // transporter.sendMail(mailOptions, (err, info) => {
-      //   if (err) {
-      //     return console.log(err)
-      //   }
-
-      //   console.log('Message sent: %s', info.messageId)
-      //   console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info))
-      // })
     })
     .catch(err => {
       if (err.code === 'auth/email-already-in-use') {
@@ -94,6 +63,24 @@ exports.registerUser = (req, res) => {
     })
 }
 
+exports.initialRegistrationUserInformation = (req, res) => {
+  const user = firebase.auth().currentUser
+
+  return db
+    .doc(`/users/${user.uid}`)
+    .update(req.body)
+    .then(() => res.status(201).json({ message: 'Information successfully updated' }))
+}
+
+exports.updateUserInformation = (req, res) => {
+
+  const { bio, reasons_to_join } = req.body
+
+  db
+    .doc(`/users/${req.user}`)
+    .update({ bio, reasons_to_join })
+    .then(() => res.status(201).json({ message: 'Information successfully updated' }))
+}
 
 
 exports.loginUser = (req, res) => {
@@ -106,15 +93,53 @@ exports.loginUser = (req, res) => {
     .auth()
     .signInWithEmailAndPassword(email, password)
     .then(data => data.user.getIdToken())
-    .then(token => res.json({ token }))
+    .then(token => {
+      db
+        .collection('users')
+        .where('email', '==', email)
+        .get()
+        .then(async data => {
+          const user = []
+          await data.forEach(doc => user.push(doc.data()))
+          return { 
+            token,
+            accountCategory: user[0].category
+          }
+        })
+        .then(data => res.json(data))
+    })
     .catch(err => {
       return res.status(403).json({ message: 'Invalid credentials' })
     })
 }
 
+exports.imageDeletion = (req, res) => {
+  db
+    .collection('users')
+    .where('userId', '==', req.user)
+    .get()
+    .then(data => {
+      const user = []
+      data.forEach(doc => user.push(doc.data()))
 
+      if (user[0].category === 'company') {
+        const newImageArr = user[0].images.filter((el, i) => i !== parseInt(req.params.id))
 
-exports.userImageUpload = (req, res) => {
+        return db
+          .doc(`/users/${req.user}`)
+          .update({ images: newImageArr })
+      }
+    })
+    .then(() => {
+      res.status(201).json({ message: 'Image successfully deleted' })
+    })
+    .catch(err => res.status(400).json({ err: err }))
+}
+
+exports.customerImageUpload = (req, res) => {
+
+  console.log(req.body)
+
   // HTML form data parser for Nodejs
   const BusBoy = require('busboy')
   const path = require('path')
@@ -140,10 +165,8 @@ exports.userImageUpload = (req, res) => {
     // Using file system library to create the file
     file.pipe(fs.createWriteStream(filePath))
   })
-
   // Function to upload image file on finish 
   busboy.on('finish', () => {
-
     admin
       .storage()
       .bucket()
@@ -156,15 +179,30 @@ exports.userImageUpload = (req, res) => {
         }
       })
       .then(() => {
-        // Once image is uploaded, we add it to the user within the promise
-        const imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imageFileName}?alt=media`
+        db
+          .collection('users')
+          .where('userId', '==', req.user)
+          .get()
+          .then(data => {
+            // Once image is uploaded, we add it to the user within the promise
+            const imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imageFileName}?alt=media`
+            const user = []
+            data.forEach(doc => user.push(doc.data()))
 
-        return db
-          .doc(`/users/${req.user}`)
-          .update({ imageURL })
-      })
-      .then(() => {
-        res.status(201).json({ message: 'Image successfully uploaded' })
+            if (user[0].category === 'company') {
+              const newImageArr = [...user[0].images, imageURL]
+              return db
+                .doc(`/users/${req.user}`)
+                .update({ images: newImageArr })
+            } else {
+              return db
+                .doc(`/users/${req.user}`)
+                .update({ imageURL })
+            }
+          })
+          .then(() => {
+            res.status(201).json({ message: 'Image successfully uploaded' })
+          })
       })
       .catch(err => {
         console.error(err)
@@ -176,6 +214,7 @@ exports.userImageUpload = (req, res) => {
 
 
 exports.getOneUser = (req, res) => {
+  console.log(req.params.id)
   db
     .collection('users')
     .where('userId', '==', req.params.id)
@@ -269,3 +308,45 @@ exports.userDocumentUpload = (req, res) => {
   })
   busboy.end(req.rawBody)
 }
+
+
+
+  // const output = `
+        // <h2 style='text-align:center'> The Ballers Hub </h2>
+        // <h4> Please verify your email </h4>
+        // <p> Hello! </p>
+        // <p> Thank you for registering to The Ballers Hub. </p>
+        // <p> It looks like you need to verify your email address to activate your account.
+        // Please click the link below to complete the verification process. </p>
+        // <a href='google.com'> Click here to verify email address now </a> 
+        // <p> Thanks, <span style='display:block;'> The Ballers Hub </span> </p>
+        // `
+        // const transporter = nodemailer.createTransport({
+        //   host: 'secure.emailsrvr.com',
+        //   port: 465,
+        //   secure: true,
+        //   auth: {
+        //     user: 'kenn@indulgefootball.com',
+        //     pass: 'liverpool1a*'
+        //   },
+        //   tls: {
+        //     rejectUnauthorized: false
+        //   }
+        // })
+
+        // const mailOptions = {
+        //   from: ' "Kenn" <kenn@indulgefootball.com>',
+        //   to: email,
+        //   subject: 'Please verify your email',
+        //   text: 'Hello world?',
+        //   html: output
+        // }
+
+        // transporter.sendMail(mailOptions, (err, info) => {
+        //   if (err) {
+        //     return console.log(err)
+        //   }
+
+        //   console.log('Message sent: %s', info.messageId)
+        //   console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info))
+        // })
