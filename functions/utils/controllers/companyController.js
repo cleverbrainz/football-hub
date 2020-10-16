@@ -190,10 +190,11 @@ exports.uploadCoachDocument = (req, res) => {
               } else changingObj = el
             })
 
-            const updatedObj = { ...changingObj, documentURL }
+            const updatedObj = { ...changingObj, documents: changingObj.documents ? [...changingObj.documents, documentURL]
+              : [documentURL]  }
 
             db.doc(`coaches/${req.params.id}`)
-              .update({ documentURL })
+              .update(updatedObj)
               .then(() => {
                 db.doc(`users/${req.user}`)
                   .update({
