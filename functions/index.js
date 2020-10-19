@@ -14,12 +14,13 @@ const {
   editCompanyDetail,
   uploadCoachDocument,
   dataDeletion,
+  uploadCompanyDocument,
+  updateUserInformation,
 } = require("./utils/controllers/companyController");
 
 const {
   newEnquiry,
-  getCustomerEnquiry,
-  getCompanyEnquiry,
+  getEnquiries,
   updateOneEnquiry,
 } = require("./utils/controllers/enquiryController");
 
@@ -29,7 +30,7 @@ const {
   customerImageUpload,
   imageDeletion,
   getOneUser,
-  updateUserInformation,
+  updateCompanyListingInformation,
   forgottenPassword,
   userDocumentUpload,
   initialRegistrationUserInformation,
@@ -39,14 +40,16 @@ const {
 app.get("/companies", getAllCompanies);
 app.post("/companies", postNewCompany);
 app.post("/companies/:detail", addNewDetail);
+app.patch("/companies/:id", authMiddleware, updateUserInformation);
 app.patch("/companies/:detail", authMiddleware, editCompanyDetail);
 app.patch("/coaches/:id/document", authMiddleware, uploadCoachDocument);
-app.delete("/companies/:detail", authMiddleware, dataDeletion);
+app.patch("/company/:id/document", authMiddleware, uploadCompanyDocument);
+app.delete("/companies/:detail/:id", authMiddleware, dataDeletion);
 
+// enquiries
 app.post("/enquiries", newEnquiry);
-app.get("/enquiries/:company", authMiddleware, getCompanyEnquiry);
-app.get("/enquiries", authMiddleware, getCustomerEnquiry);
-
+// app.get('/enquiries/:company', authMiddleware, getCompanyEnquiry)
+app.get("/enquiries/:category", authMiddleware, getEnquiries);
 app.patch("/enquiries/:id", updateOneEnquiry);
 
 // Cloud functions and routes for user collection
@@ -56,7 +59,8 @@ app.post("/user/:id/signup", initialRegistrationUserInformation);
 
 app.post("/user/document", authMiddleware, userDocumentUpload);
 app.get("/users/:id", getOneUser);
-app.post("/user/:id", authMiddleware, updateUserInformation);
+app.post("/user/:id", authMiddleware, updateCompanyListingInformation);
+
 app.post("/signup", registerUser);
 app.post("/login", loginUser);
 

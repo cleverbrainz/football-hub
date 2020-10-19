@@ -13,15 +13,6 @@ exports.registerUser = (req, res) => {
 
   if (!valid) return res.status(400).json(error);
 
-  if (req.body.category === "player") {
-    const noImg = "no-img.jpeg";
-    newUser.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`;
-  } else {
-    newUser.images = [];
-    newUser.reasons_to_join = [""];
-    newUser.bio = "";
-  }
-
   firebase
     .auth()
     .createUserWithEmailAndPassword(email, password)
@@ -59,17 +50,33 @@ exports.registerUser = (req, res) => {
 exports.initialRegistrationUserInformation = (req, res) => {
   const user = firebase.auth().currentUser;
 
+  const newUser = { ...req.body };
+
+  if (req.body.category === "player") {
+    const noImg = "no-img.jpeg";
+    newUser.bio = "";
+    newUser.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`;
+  } else {
+    newUser.images = [];
+    newUser.reasons_to_join = [""];
+    newUser.bio = "";
+  }
+
+  console.log(newUser);
+
   return db
     .doc(`/users/${user.uid}`)
-    .update(req.body)
+    .update(newUser)
     .then(() =>
       res.status(201).json({ message: "Information successfully updated" })
     );
 };
 
-exports.updateUserInformation = (req, res) => {
+exports.updateCompanyListingInformation = (req, res) => {
+  const { bio, reasons_to_join } = req.body;
+
   db.doc(`/users/${req.user}`)
-    .update({ ...req.body })
+    .update({ bio, reasons_to_join })
     .then(() =>
       res.status(201).json({ message: "Information successfully updated" })
     );
@@ -227,12 +234,10 @@ exports.forgottenPassword = (req, res) => {
     .auth()
     .sendPasswordResetEmail(email)
     .then(() => {
-      return res
-        .status(200)
-        .json({
-          message:
-            "We've sent you an email with instructions to reset your password. Please make sure it didn't wind up in your Junk Mail.",
-        });
+      return res.status(200).json({
+        message:
+          "We've sent you an email with instructions to reset your password. Please make sure it didn't wind up in your Junk Mail.",
+      });
     })
     .catch((err) => {
       return res.status(400).json({ err: err });

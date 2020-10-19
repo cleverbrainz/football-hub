@@ -21,6 +21,13 @@ exports.getAllCompanies = (req, res) => {
     })
     .catch((err) => console.error(err));
 };
+exports.updateUserInformation = (req, res) => {
+  db.doc(`/users/${req.user}`)
+    .update({ ...req.body })
+    .then(() =>
+      res.status(201).json({ message: "Information successfully updated" })
+    );
+};
 
 exports.postNewCompany = (req, res) => {
   const { name, started, players } = req.body;
@@ -139,49 +146,34 @@ exports.editCompanyDetail = (req, res) => {
 };
 
 exports.dataDeletion = (req, res) => {
-  db.collection("services")
-
-    //console
-    //.log(...req.body)
-    // db.doc(`/users/${req.user}`)
-    .delete({ ...req.body })
-    //.where("serviceId", "==", "ffETes2qA5r633ZQxzV2")
-    .then(() =>
-      res.status(201).json({ message: "Information successfully deleted" })
-    )
-    .catch((err) => res.status(400).json({ err: err }));
-
-  // console.log(req.body, req.params.detail);
-
-  // const { detail } = req.params;
-  // const detailId = req.body.coachId ? req.body.coachId : req.body.serviceId;
-
-  // db.doc(`${detail}/${detailId}`)
-  //   .delete(req.body)
-  //   .then(() => {
-  //     db.doc(`users/${req.user}`)
-  //       .get()
-  //       .then((data) => {
-  //         const nonChangingArr = data.data()[detail].filter((el) => {
-  //           return (
-  //             el[detail === "coaches" ? "coachId" : "serviceId"] !== detailId
-  //           );
-  //         });
-
-  //         db.doc(`users/${req.user}`).delete({
-  //           [detail]: [...nonChangingArr, req.body],
-  //         });
-  //       });
-  //   })
-  //   .then(() => {
-  //     res.status(201).json({ message: "information deleted successfully" });
-  //   })
-  //   .catch((err) => {
-  //     console.log(err);
-  //     res.status(500).json({
-  //       error: "Something went wrong, information could not be updated",
-  //     });
-  //   });
+  //console.log(req.params.id);
+  const { id, detail } = req.params;
+  db.collection(detail)
+    .doc(id)
+    .delete()
+    .then(() => {
+      db.doc(`users/${req.user}`)
+        .get()
+        .then((data) => {
+          const nonChangingArr = data.data()[detail].filter((el) => {
+            return el[detail === "coaches" ? "coachId" : "serviceId"] !== id;
+          });
+          return db
+            .doc(`/users/${req.user}`)
+            .update({ [detail]: nonChangingArr })
+            .then(() => {
+              res
+                .status(201)
+                .json({ message: "information deleted successfully" });
+            })
+            .catch((err) => {
+              console.log(err);
+              res.status(500).json({
+                error: "Something went wrong, information could not be deleted",
+              });
+            });
+        });
+    });
 };
 
 exports.uploadCoachDocument = (req, res) => {
@@ -265,3 +257,5 @@ exports.uploadCoachDocument = (req, res) => {
 
   busboy.end(req.rawBody);
 };
+
+exports.uploadCompanyDocument = (req, res) => {};
