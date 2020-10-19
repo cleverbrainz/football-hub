@@ -12,14 +12,13 @@ const {
   postNewCompany,
   addNewDetail,
   editCompanyDetail,
-  uploadCoachDocument,
+  uploadCoachDocument
 } = require('./utils/controllers/companyController')
 
 const {
   newEnquiry,
-  getCustomerEnquiry,
-  getCompanyEnquiry,
-  updateOneEnquiry,
+  getEnquiries,
+  updateOneEnquiry
 } = require('./utils/controllers/enquiryController')
 
 const {
@@ -28,10 +27,10 @@ const {
   customerImageUpload,
   imageDeletion,
   getOneUser,
-  updateUserInformation,
+  updateCompanyListingInformation,
   forgottenPassword,
   userDocumentUpload,
-  initialRegistrationUserInformation,
+  initialRegistrationUserInformation
 } = require('./utils/controllers/userController')
 
 // Cloud functios and routes for companies collection
@@ -41,10 +40,10 @@ app.post('/companies/:detail', addNewDetail)
 app.patch('/companies/:detail', authMiddleware, editCompanyDetail)
 app.patch('/coaches/:id/document', authMiddleware, uploadCoachDocument)
 
+// enquiries
 app.post('/enquiries', newEnquiry)
-app.get('/enquiries/:company', authMiddleware, getCompanyEnquiry)
-app.get('/enquiries', authMiddleware, getCustomerEnquiry)
-
+// app.get('/enquiries/:company', authMiddleware, getCompanyEnquiry)
+app.get('/enquiries/:category', authMiddleware, getEnquiries)
 app.patch('/enquiries/:id', updateOneEnquiry)
 
 // Cloud functions and routes for user collection
@@ -54,7 +53,7 @@ app.post('/user/:id/signup', initialRegistrationUserInformation)
 
 app.post('/user/document', authMiddleware, userDocumentUpload)
 app.get('/users/:id', getOneUser)
-app.post('/user/:id', authMiddleware, updateUserInformation)
+app.post('/user/:id', authMiddleware, updateCompanyListingInformation)
 app.post('/signup', registerUser)
 app.post('/login', loginUser)
 

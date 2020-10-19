@@ -43,11 +43,12 @@ exports.newEnquiry = (req, res) => {
     })
 }
 
-exports.getCustomerEnquiry = (req, res) => {
-  console.log(req.user)
+exports.getEnquiries = (req, res) => {
+  console.log(req.params.category)
+  const fieldName = req.params.category === 'player' ? 'userId' : 'companyId'
   db
     .collection('enquiries')
-    .where('userId', '==', req.user)
+    .where(fieldName, '==', req.user)
     .get()
     .then(async data => {
 
@@ -64,27 +65,6 @@ exports.getCustomerEnquiry = (req, res) => {
     .catch(err => console.error(err))
 }
 
-exports.getCompanyEnquiry = (req, res) => {
-  console.log(req.user)
-  db
-    .collection('enquiries')
-    .where('companyId', '==', req.user)
-    .get()
-    .then(async data => {
-
-      const enquiries = []
-
-      await data.forEach(el => {
-        console.log(el)
-        enquiries.push({
-          enquiryId: el.id,
-          enquiryInfo: { ...el.data() }
-        })
-      })
-      return res.status(200).json(enquiries)
-    })
-    .catch(err => console.error(err))
-}
 
 exports.updateOneEnquiry = (req, res) => {
 

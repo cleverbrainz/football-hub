@@ -15,15 +15,8 @@ exports.registerUser = (req, res) => {
 
   if (!valid) return res.status(400).json(error)
 
-  if (req.body.category === 'player') {
-    const noImg = 'no-img.jpeg'
-    newUser.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`
-  } else {
-    newUser.images = []
-    newUser.reasons_to_join = ['']
-    newUser.bio = ''
-  }
-  
+
+
 
   firebase
     .auth()
@@ -66,13 +59,27 @@ exports.registerUser = (req, res) => {
 exports.initialRegistrationUserInformation = (req, res) => {
   const user = firebase.auth().currentUser
 
+  const newUser = { ...req.body }
+
+  if (req.body.category === 'player') {
+    const noImg = 'no-img.jpeg'
+    newUser.bio = ''
+    newUser.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`
+  } else {
+    newUser.images = []
+    newUser.reasons_to_join = ['']
+    newUser.bio = ''
+  }
+
+  console.log(newUser)
+
   return db
     .doc(`/users/${user.uid}`)
-    .update(req.body)
+    .update(newUser)
     .then(() => res.status(201).json({ message: 'Information successfully updated' }))
 }
 
-exports.updateUserInformation = (req, res) => {
+exports.updateCompanyListingInformation = (req, res) => {
 
   const { bio, reasons_to_join } = req.body
 
@@ -101,7 +108,7 @@ exports.loginUser = (req, res) => {
         .then(async data => {
           const user = []
           await data.forEach(doc => user.push(doc.data()))
-          return { 
+          return {
             token,
             accountCategory: user[0].category
           }
