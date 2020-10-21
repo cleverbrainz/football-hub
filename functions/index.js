@@ -23,6 +23,7 @@ const {
   newEnquiry,
   getEnquiries,
   updateOneEnquiry,
+  preRegistrationEnquiry
 } = require('./utils/controllers/enquiryController')
 
 const {
@@ -54,6 +55,7 @@ app.post('/enquiries', newEnquiry)
 // app.get('/enquiries/:company', authMiddleware, getCompanyEnquiry)
 app.get('/enquiries/:category', authMiddleware, getEnquiries)
 app.patch('/enquiries/:id', updateOneEnquiry)
+app.post('/preSignUpEnquiry', preRegistrationEnquiry)
 
 // Cloud functions and routes for user collection
 app.delete('/user/image/:id', authMiddleware, imageDeletion)
