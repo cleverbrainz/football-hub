@@ -298,42 +298,4 @@ exports.userDocumentUpload = (req, res) => {
   busboy.end(req.rawBody);
 };
 
-// const output = `
-// <h2 style='text-align:center'> The Ballers Hub </h2>
-// <h4> Please verify your email </h4>
-// <p> Hello! </p>
-// <p> Thank you for registering to The Ballers Hub. </p>
-// <p> It looks like you need to verify your email address to activate your account.
-// Please click the link below to complete the verification process. </p>
-// <a href='google.com'> Click here to verify email address now </a>
-// <p> Thanks, <span style='display:block;'> The Ballers Hub </span> </p>
-// `
-// const transporter = nodemailer.createTransport({
-//   host: 'secure.emailsrvr.com',
-//   port: 465,
-//   secure: true,
-//   auth: {
-//     user: 'kenn@indulgefootball.com',
-//     pass: 'liverpool1a*'
-//   },
-//   tls: {
-//     rejectUnauthorized: false
-//   }
-// })
 
-// const mailOptions = {
-//   from: ' "Kenn" <kenn@indulgefootball.com>',
-//   to: email,
-//   subject: 'Please verify your email',
-//   text: 'Hello world?',
-//   html: output
-// }
-
-// transporter.sendMail(mailOptions, (err, info) => {
-//   if (err) {
-//     return console.log(err)
-//   }
-
-//   console.log('Message sent: %s', info.messageId)
-//   console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info))
-// })

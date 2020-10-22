@@ -1,7 +1,8 @@
 const { db, admin } = require('../admin')
 // const config = require('../configuration')
 const firebase = require('firebase')
-// firebase.initializeApp(config)
+const nodemailer = require("nodemailer");
+const nodeoutlook = require('nodejs-nodemailer-outlook')
 
 exports.newEnquiry = (req, res) => {
   const { name, email, companyId, message, subject, userId, company } = req.body
@@ -85,5 +86,53 @@ exports.updateOneEnquiry = (req, res) => {
     })
     .then(() => res.status(201).json({ message: 'Message successfully sent' }))
     .catch(err => console.error(err))
+
+}
+
+
+exports.preRegistrationEnquiry = (req, res) => {
+
+  const { name, email, message } = req.body
+  console.log(req.body)
+
+  const output = `
+    <h2 style='text-align:center'> The Ballers Hub General Enquiry </h2>
+    <p> Hello, </p>
+    <p> ${name} has sent a new general enquiry. Please see below. </p>
+    <p> Email: ${email} </p>
+    <p> Message: <span style='display:block;'> ${message} </span> </p>
+  `
+
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.office365.com',
+    port: 587,     
+    auth: {
+      user: 'kenn@indulgefootball.com',
+      pass: 'Welcome342!'
+    },
+    secureConnection: false,
+    tls: {
+      ciphers: 'SSLv3'
+    }
+  })
+
+
+  const mailOptions = {
+    from: email,
+    to: ' "Kenn" <kennkenns@hotmail.com>',
+    subject: 'New Ballers Hub General Enquiry',
+    text: 'Hello world?',
+    html: output
+  }
+
+  transporter.sendMail(mailOptions, (err, info) => {
+    if (err) {
+      return console.log(err)
+    }
+
+    console.log('Message sent: %s', info.messageId)
+    console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info))
+  })
+
 
 }
