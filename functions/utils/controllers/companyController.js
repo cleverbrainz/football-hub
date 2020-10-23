@@ -157,6 +157,36 @@ exports.editCompanyDetail = (req, res) => {
     });
 };
 
+// exports.dataDeletion = (req, res) => {
+//   const { id, detail } = req.params;
+//   db.collection(detail)
+//     .doc(id)
+//     .delete()
+//     .then(() => {
+//       db.doc(`users/${req.user}`)
+//         .get()
+//         .then((data) => {
+//           const nonChangingArr = data.data()[detail].filter((el) => {
+//             return el[detail === "coaches" ? "coachId" : "serviceId"] !== id;
+//           });
+//           return db
+//             .doc(`/users/${req.user}`)
+//             .update({ [detail]: nonChangingArr })
+//             .then(() => {
+//               res
+//                 .status(201)
+//                 .json({ message: "information deleted successfully" });
+//             })
+//             .catch((err) => {
+//               console.log(err);
+//               res.status(500).json({
+//                 error: "Something went wrong, information could not be deleted",
+//               });
+//             });
+//         });
+//     });
+// };
+
 exports.dataDeletion = (req, res) => {
   const { id, detail } = req.params;
   db.collection(detail)
@@ -167,7 +197,14 @@ exports.dataDeletion = (req, res) => {
         .get()
         .then((data) => {
           const nonChangingArr = data.data()[detail].filter((el) => {
-            return el[detail === "coaches" ? "coachId" : "serviceId"] !== id;
+            //return el[detail === "coaches" ? "coachId" : "serviceId"] !== id;
+            if (detail === "coaches") {
+              return el.coachId !== id;
+            } else if (detail === "services") {
+              return el.serviceId !== id;
+            } else {
+              return el.courseId !== id;
+            }
           });
           return db
             .doc(`/users/${req.user}`)
