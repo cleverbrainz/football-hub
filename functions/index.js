@@ -18,7 +18,8 @@ const {
   updateUserInformation,
   editCompanyLocation,
   addAgeDetail,
-  coachImageUpload
+  coachImageUpload,
+  filterListingCompanies
 } = require('./utils/controllers/companyController')
 
 const {
@@ -28,6 +29,8 @@ const {
   preRegistrationEnquiry
 } = require('./utils/controllers/enquiryController')
 
+const { adminPageEdits,
+  getAdminPageDetails } = require('./utils/controllers/adminController')
 
 const {
   loginUser,
@@ -49,12 +52,12 @@ app.post('/companies/age', authMiddleware, addAgeDetail)
 app.patch('/companies/array/:detail', authMiddleware, editCompanyDetail)
 app.post('/companies/:detail', addNewDetail)
 app.patch('/companies/:id', authMiddleware, updateUserInformation)
-
 app.post('/coaches/image/:id', authMiddleware, coachImageUpload)
 app.patch('/coaches/document/:id', authMiddleware, uploadCoachDocument)
 // app.patch('/company/:id/document', authMiddleware, uploadCompanyDocument)
 app.delete('/companies/:detail/:id', authMiddleware, dataDeletion)
 
+app.post('/filteredCompanies', filterListingCompanies )
 
 // enquiries
 app.post('/enquiries', newEnquiry)
@@ -79,6 +82,9 @@ app.post('/login', loginUser)
 // app.get('/users', getAllUsers)
 app.post('/resetpassword', forgottenPassword)
 // app.get('/users/:id', getOneUser)
+
+app.post('/admin/:id', adminPageEdits)
+app.get('/admin/:id', getAdminPageDetails)
 
 // Configures firebase and lets it know that the app container is serving the functionalities
 exports.api = functions.region('europe-west2').https.onRequest(app)

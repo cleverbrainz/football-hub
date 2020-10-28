@@ -400,4 +400,175 @@ exports.coachImageUpload = (req, res) => {
   busboy.end(req.rawBody)
 }
 
+
+
+exports.filterListingCompanies = (req, res) => {
+
+  const deg2rad = (deg) => {
+    return deg * (Math.PI / 180)
+  }
+
+  const getDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371 // Radius of the earth in km
+    const dLat = deg2rad(lat2 - lat1)  // deg2rad below
+    const dLon = deg2rad(lon2 - lon1)
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    const d = R * c // Distance in km
+    return d.toFixed()
+  }
+
+  function cleanObject(obj) {
+    for (var propName in obj) {
+      if (!obj[propName]) delete obj[propName]
+      else if (typeof obj[propName] === 'object') cleanObject(obj[propName])
+    }
+    return obj
+  }
+
+  const filteredObject = cleanObject(req.body)
+
+  db
+    .collection('users')
+    .where('category', '==', 'company')
+    .get()
+    .then((data) => {
+      const companies = []
+      data.forEach((doc) => {
+        companies.push({
+          companyId: doc.id,
+          companyInfo: { ...doc.data() }
+        })
+      })
+
+      const filteredListingsByLocation = []
+      const { timing, location, age } = filteredObject
+      const days = Object.keys(timing.days).length === 0
+      const times = Object.keys(timing.times).length === 0
+      const ages = Object.keys(age).length === 0
+
+      companies.map(company => {
+
+        const obj = {}
+        if (location.longitude) {
+          const { latitude, longitude } = company.companyInfo.location
+          const dis = getDistance(
+            location.latitude,
+            location.longitude,
+            latitude, longitude)
+          console.log(dis)
+          if (parseInt(dis) < 3) obj.location = true
+          else obj.location = false
+        }
+
+        if (!days) {
+          const { courses } = company.companyInfo
+          courses.map(course => {
+            const { sessions, courseType } = course.courseDetails
+            if (courseType.toLowerCase() === 'weekly') {
+              sessions.map(el => {
+                if (timing.days[el.day.toLowerCase()]) {
+                  obj.days = true
+                  return
+                } else {
+                  obj.days = false
+                  return
+                }
+              })
+            }
+          })
+        }
+
+        if (!times) {
+
+          const { courses } = company.companyInfo
+          courses.map(el => {
+            const { sessions, courseType } = el.courseDetails
+            if (courseType.toLowerCase() === 'weekly') {
+              sessions.map(el => {
+                const { startTime } = el
+                const time = parseInt(startTime.charAt(0))
+
+                // morning filteration
+                if (timing.times['morning']) {
+                  if (startTime.includes('am')) {
+                    obj.times = true
+                    return
+                  } else obj.times = false
+                }
+                // afternoon filteration
+                if (timing.times['afternoon']) {
+                  if (startTime.includes('pm') && (time === 12 || (time >= 1 && time < 6))) {
+                    obj.times = true
+                    return
+                  } else obj.times = false
+                }
+                // evening filteration
+                if (timing.times['evening']) {
+                  if (startTime.includes('pm') && (time >= 6 && time < 10)) {
+                    obj.times = true
+                    return
+                  } else obj.times = false
+                }
+              })
+            }
+          })
+        }
+
+
+        // age filteration
+        if (!ages) {
+          const { ageDetails } = company.companyInfo
+          const ageRange = []
+          ageDetails.map(el => {
+
+            if (el.startAge !== 'Adults' && el.endAge !== 'Adults') {
+              for (var i = parseInt(el.startAge); i <= parseInt(el.endAge); i++) {
+                ageRange.push(i.toString())
+              }
+            } else if (el.startAge === 'Adults' && el.endAge === 'Adults') {
+              ageRange.push('adults')
+            } else {
+              if (el.startAge === 'Adults') {
+                ageRange.push('adults')
+                ageRange.push(el.endAge)
+              } else {
+                ageRange.push('adults')
+                ageRange.push(el.startAge)
+              }
+            }
+
+          })
+
+          console.log(ageRange)
+          console.log(age)
+          for (let i = 0; i < ageRange.length; i++) {
+            if (age[ageRange[i]]) {
+              obj.age = true
+              break
+            } else obj.age = false
+          }
+        }
+
+        let result = true
+        for (const i in obj) {
+          if (obj[i] === false) {
+            result = false
+            break
+          }
+        }
+        console.log(obj)
+        if (result) filteredListingsByLocation.push(company)
+      })
+
+      return res.status(200).json(filteredListingsByLocation)
+    })
+    .catch((err) => {
+      console.log(err)
+    })
+}
+
 // exports.uploadCompanyDocument = (req, res) => { }

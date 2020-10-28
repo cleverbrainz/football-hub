@@ -7,7 +7,6 @@ const nodeoutlook = require('nodejs-nodemailer-outlook')
 exports.newEnquiry = (req, res) => {
   const { name, email, companyId, message, subject, userId, company } = req.body
   const newEnquiry = {
-    subject,
     email,
     companyId,
     name,
@@ -16,10 +15,25 @@ exports.newEnquiry = (req, res) => {
     messages: []
   }
 
-  const messageBody = {
-    from: userId,
-    message,
-    createdAt: admin.firestore.Timestamp.fromDate(new Date())
+  let messageBody = {}
+
+  if (req.body.enquiryType === 'booking') {
+    messageBody = {
+      subject,
+      enquiryType: req.body.enquiryType,
+      dob: req.body.dob,
+      gender: req.body.gender,
+      number: req.body.number,
+      from: userId,
+      message,
+      createdAt: admin.firestore.Timestamp.fromDate(new Date())
+    }
+  } else {
+    messageBody = {
+      from: userId,
+      message,
+      createdAt: admin.firestore.Timestamp.fromDate(new Date())
+    }
   }
 
   db
@@ -105,7 +119,7 @@ exports.preRegistrationEnquiry = (req, res) => {
 
   const transporter = nodemailer.createTransport({
     host: 'smtp.office365.com',
-    port: 587,     
+    port: 587,
     auth: {
       user: 'kenn@indulgefootball.com',
       pass: 'Welcome342!'
