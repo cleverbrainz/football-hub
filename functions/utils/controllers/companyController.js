@@ -80,6 +80,9 @@ exports.addNewDetail = (req, res) => {
         case 'courses':
           detailId = 'courseId'
           break
+        case 'locations':
+          detailId = 'locationId'
+          break
         default:
           break
       }
@@ -108,7 +111,7 @@ exports.addNewDetail = (req, res) => {
           } else newArr = [requestObject]
 
           db.doc(`users/${req.body.companyId}`).update({
-            [req.params.detail]: newArr,
+            [req.params.detail]: newArr
           })
         })
         .then(() => {
@@ -157,35 +160,6 @@ exports.editCompanyDetail = (req, res) => {
     })
 }
 
-// exports.dataDeletion = (req, res) => {
-//   const { id, detail } = req.params;
-//   db.collection(detail)
-//     .doc(id)
-//     .delete()
-//     .then(() => {
-//       db.doc(`users/${req.user}`)
-//         .get()
-//         .then((data) => {
-//           const nonChangingArr = data.data()[detail].filter((el) => {
-//             return el[detail === "coaches" ? "coachId" : "serviceId"] !== id;
-//           });
-//           return db
-//             .doc(`/users/${req.user}`)
-//             .update({ [detail]: nonChangingArr })
-//             .then(() => {
-//               res
-//                 .status(201)
-//                 .json({ message: "information deleted successfully" });
-//             })
-//             .catch((err) => {
-//               console.log(err);
-//               res.status(500).json({
-//                 error: "Something went wrong, information could not be deleted",
-//               });
-//             });
-//         });
-//     });
-// };
 
 exports.dataDeletion = (req, res) => {
   const { id, detail } = req.params
@@ -318,9 +292,6 @@ exports.editCompanyLocation = (req, res) => {
 }
 
 exports.coachImageUpload = (req, res) => {
-  console.log('hellooooo')
-  console.log('hellooooo')
-  console.log('hellooooo')
 
   // HTML form data parser for Nodejs
   const BusBoy = require('busboy')
@@ -460,7 +431,7 @@ exports.filterListingCompanies = (req, res) => {
             location.longitude,
             latitude, longitude)
           console.log(dis)
-          if (parseInt(dis) < 3) obj.location = true
+          if (parseInt(dis) < 20) obj.location = true
           else obj.location = false
         }
 
