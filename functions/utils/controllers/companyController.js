@@ -63,6 +63,7 @@ exports.addAgeDetail = (req, res) => {
 
 exports.addNewDetail = (req, res) => {
   const requestObject = { ...req.body }
+  console.log('start', req.body)
   console.log(req.params.detail)
 
   db.collection(req.params.detail)
@@ -198,6 +199,8 @@ exports.dataDeletion = (req, res) => {
     })
 }
 
+
+
 exports.uploadCoachDocument = (req, res) => {
   const BusBoy = require('busboy')
   const path = require('path')
@@ -206,6 +209,7 @@ exports.uploadCoachDocument = (req, res) => {
   const busboy = new BusBoy({ headers: req.headers })
 
   let documentFileName
+  const { documentType } = req.params
   let documentToBeUploaded = {}
 
   busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
@@ -250,23 +254,21 @@ exports.uploadCoachDocument = (req, res) => {
               } else changingObj = el
             })
 
-            const updatedObj = {
-              ...changingObj, documents:
-                changingObj.documents ? [...changingObj.documents, documentURL]
-                  : [documentURL]
-            }
+            console.log('changing obj', changingObj)
+
+            changingObj.documents[documentType] = documentURL
 
             db.doc(`coaches/${req.params.id}`)
-              .update(updatedObj)
+              .update(changingObj)
               .then(() => {
                 db.doc(`users/${req.user}`)
                   .update({
-                    coaches: [...nonChangingArr, updatedObj],
+                    coaches: [...nonChangingArr, changingObj]
                   })
                   .then(() => {
                     res
                       .status(201)
-                      .json({ message: 'information updated successfully' })
+                      .json({ message: 'information updated successfully', documents: changingObj.documents })
                   })
                   .catch((err) => {
                     console.log(err)

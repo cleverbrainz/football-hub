@@ -53,7 +53,7 @@ app.patch('/companies/array/:detail', authMiddleware, editCompanyDetail)
 app.post('/companies/:detail', addNewDetail)
 app.patch('/companies/:id', authMiddleware, updateUserInformation)
 app.post('/coaches/image/:id', authMiddleware, coachImageUpload)
-app.patch('/coaches/document/:id', authMiddleware, uploadCoachDocument)
+app.patch('/coaches/document/:documentType/:id', authMiddleware, uploadCoachDocument)
 // app.patch('/company/:id/document', authMiddleware, uploadCompanyDocument)
 app.delete('/companies/:detail/:id', authMiddleware, dataDeletion)
 

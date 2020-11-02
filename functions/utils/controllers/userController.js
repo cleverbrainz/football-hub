@@ -60,6 +60,11 @@ exports.initialRegistrationUserInformation = (req, res) => {
     newUser.images = [];
     newUser.reasons_to_join = [""];
     newUser.bio = "";
+    newUser.verification = {
+      coachDocumentationCheck: false,
+      companyDetailsCheck: false,
+      paymentCheck: false
+    }
   }
 
   console.log(newUser);
