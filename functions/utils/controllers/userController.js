@@ -48,29 +48,46 @@ exports.registerUser = (req, res) => {
 };
 
 exports.initialRegistrationUserInformation = (req, res) => {
-  const user = firebase.auth().currentUser;
+  const user = firebase.auth().currentUser
 
-  const newUser = { ...req.body };
+  const newUser = { ...req.body }
 
-  if (req.body.category === "player") {
-    const noImg = "no-img.jpeg";
-    newUser.bio = "";
-    newUser.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`;
+  if (req.body.category === 'player' || req.body.category === 'parent') {
+    const noImg = 'no-img.jpeg'
+    newUser.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`
   } else {
-    newUser.images = [];
-    newUser.reasons_to_join = [""];
-    newUser.bio = "";
+    // newUser.images = []
+    newUser.reasons_to_join = ['']
+    if (req.body.category === 'coach') {
+      newUser.verification = {
+        coachDocumentationCheck: false,
+        paymentCheck: false
+      }
+      newUser.companies = []
+      newUser.coachInfo = {}
+    } else {
+      newUser.verification = {
+        coachDocumentationCheck: false,
+        companyDetailsCheck: false,
+        paymentCheck: false
+      }
+      newUser.coaches = []
+    }
   }
 
-  console.log(newUser);
+  console.log('newuser', newUser)
+
+  newUser.bio = ''
+  newUser.requests = []
+  newUser.sentRequests = []
 
   return db
     .doc(`/users/${user.uid}`)
     .update(newUser)
     .then(() =>
-      res.status(201).json({ message: "Information successfully updated" })
-    );
-};
+      res.status(201).json({ message: 'Information successfully updated' })
+    )
+}
 
 exports.updateCompanyListingInformation = (req, res) => {
   const { bio, reasons_to_join } = req.body;

@@ -1,6 +1,8 @@
 const { report } = require('process')
 const { db, admin } = require('../admin')
 const config = require('../configuration')
+// const firebase = require('firebase/app')
+// require('firebase/firestore')
 
 exports.getAllCompanies = (req, res) => {
   db.collection('users')
@@ -63,6 +65,7 @@ exports.addAgeDetail = (req, res) => {
 
 exports.addNewDetail = (req, res) => {
   const requestObject = { ...req.body }
+  console.log('start', req.body)
   console.log(req.params.detail)
 
   db.collection(req.params.detail)
@@ -104,8 +107,7 @@ exports.addNewDetail = (req, res) => {
       )
     })
     .then(() => {
-      console.log('stepppp2')
-      db.doc(`users/${req.body.companyId}`)
+      db.doc(`/users/${req.body.companyId}`)
         .get()
         .then((data) => {
           let newArr = []
@@ -126,6 +128,54 @@ exports.addNewDetail = (req, res) => {
           })
           console.error(err)
         })
+    })
+}
+
+exports.sendCoachRequest = (req, res) => {
+  console.log(req.body)
+  const coachRef = db.doc(`/users/${req.body.coachId}`)
+  const userRef = db.doc(`/users/${req.body.companyId}`)
+
+  coachRef.update({
+    requests: admin.firestore.FieldValue.arrayUnion(req.body.companyId) 
+  })
+    .then(() => {
+      userRef.update({
+        sentRequests: admin.firestore.FieldValue.arrayUnion(req.body.coachId)
+      })
+    })
+    .then(() => {
+      res.status(201).json({ message: 'request sent successfully' })
+    })
+    .catch((err) => {
+      res.status(500).json({
+        error: 'Something went wrong, enquiry could not be added'
+      })
+      console.error(err)
+    })
+}
+
+exports.deleteCoachRequest = (req, res) => {
+  console.log('boo', req.body)
+  const coachRef = db.doc(`/users/${req.body.coachId}`)
+  const userRef = db.doc(`/users/${req.body.companyId}`)
+
+  coachRef.update({
+    requests: admin.firestore.FieldValue.arrayRemove(req.body.companyId) 
+  })
+    .then(() => {
+      userRef.update({
+        sentRequests: admin.firestore.FieldValue.arrayRemove(req.body.coachId)
+      })
+    })
+    .then(() => {
+      res.status(201).json({ message: 'request sent successfully' })
+    })
+    .catch((err) => {
+      res.status(500).json({
+        error: 'Something went wrong, enquiry could not be added'
+      })
+      console.error(err)
     })
 }
 
@@ -220,6 +270,8 @@ exports.dataDeletion = (req, res) => {
     })
 }
 
+
+
 exports.uploadCoachDocument = (req, res) => {
   const BusBoy = require('busboy')
   const path = require('path')
@@ -228,6 +280,7 @@ exports.uploadCoachDocument = (req, res) => {
   const busboy = new BusBoy({ headers: req.headers })
 
   let documentFileName
+  const { documentType } = req.params
   let documentToBeUploaded = {}
 
   busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
@@ -272,23 +325,21 @@ exports.uploadCoachDocument = (req, res) => {
               } else changingObj = el
             })
 
-            const updatedObj = {
-              ...changingObj, documents:
-                changingObj.documents ? [...changingObj.documents, documentURL]
-                  : [documentURL]
-            }
+            console.log('changing obj', changingObj)
+
+            changingObj.documents[documentType] = documentURL
 
             db.doc(`coaches/${req.params.id}`)
-              .update(updatedObj)
+              .update(changingObj)
               .then(() => {
                 db.doc(`users/${req.user}`)
                   .update({
-                    coaches: [...nonChangingArr, updatedObj],
+                    coaches: [...nonChangingArr, changingObj]
                   })
                   .then(() => {
                     res
                       .status(201)
-                      .json({ message: 'information updated successfully' })
+                      .json({ message: 'information updated successfully', documents: changingObj.documents })
                   })
                   .catch((err) => {
                     console.log(err)
