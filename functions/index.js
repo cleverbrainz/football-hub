@@ -47,7 +47,7 @@ const {
 // Cloud functios and routes for companies collection
 app.get('/companies', getAllCompanies)
 app.post('/companies', postNewCompany)
-app.post('/companies/location', authMiddleware, editCompanyLocation)
+// app.post('/companies/location', authMiddleware, editCompanyLocation)
 app.post('/companies/age', authMiddleware, addAgeDetail)
 app.patch('/companies/array/:detail', authMiddleware, editCompanyDetail)
 app.post('/companies/:detail', addNewDetail)

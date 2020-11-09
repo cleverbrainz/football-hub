@@ -94,6 +94,8 @@ exports.addNewDetail = (req, res) => {
         requestObject.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`
       }
 
+      console.log('stepppp1')
+
       return (
         db
           // .doc(`coaches/${data.id}`)
@@ -102,6 +104,7 @@ exports.addNewDetail = (req, res) => {
       )
     })
     .then(() => {
+      console.log('stepppp2')
       db.doc(`users/${req.body.companyId}`)
         .get()
         .then((data) => {
@@ -130,9 +133,27 @@ exports.editCompanyDetail = (req, res) => {
   console.log(req.body, req.params.detail)
 
   const { detail } = req.params
-  const detailId = req.body.coachId ? req.body.coachId : req.body.serviceId
 
-  db.doc(`${detail}/${detailId}`)
+  let detailId
+
+  switch (req.params.detail) {
+    case 'coaches':
+      detailId = 'coachId'
+      break
+    case 'services':
+      detailId = 'serviceId'
+      break
+    case 'courses':
+      detailId = 'courseId'
+      break
+    case 'locations':
+      detailId = 'locationId'
+      break
+    default:
+      break
+  }
+
+  db.doc(`${detail}/${req.body[detailId]}`)
     .update(req.body)
     .then(() => {
       db.doc(`users/${req.user}`)
@@ -140,12 +161,12 @@ exports.editCompanyDetail = (req, res) => {
         .then((data) => {
           const nonChangingArr = data.data()[detail].filter((el) => {
             return (
-              el[detail === 'coaches' ? 'coachId' : 'serviceId'] !== detailId
+              el[detailId] !== req.body[detailId]
             )
           })
 
           db.doc(`users/${req.user}`).update({
-            [detail]: [...nonChangingArr, req.body],
+            [detail]: [...nonChangingArr, req.body]
           })
         })
     })
@@ -171,15 +192,16 @@ exports.dataDeletion = (req, res) => {
         .get()
         .then((data) => {
           const nonChangingArr = data.data()[detail].filter((el) => {
-            //return el[detail === "coaches" ? "coachId" : "serviceId"] !== id;
+        
             if (detail === "coaches") {
-              return el.coachId !== id;
+              return el.coachId !== id
             } else if (detail === "services") {
-              return el.serviceId !== id;
-            } else {
-              return el.courseId !== id;
-            }
-          });
+              return el.serviceId !== id
+            } else if (detail === 'locations') {
+              return el.locationId !== id
+            } else return el.courseId !== id
+          
+          })
           return db
             .doc(`/users/${req.user}`)
             .update({ [detail]: nonChangingArr })
@@ -191,7 +213,7 @@ exports.dataDeletion = (req, res) => {
             .catch((err) => {
               console.log(err)
               res.status(500).json({
-                error: 'Something went wrong, information could not be deleted',
+                error: 'Something went wrong, information could not be deleted'
               })
             })
         })
@@ -279,17 +301,17 @@ exports.uploadCoachDocument = (req, res) => {
   busboy.end(req.rawBody)
 }
 
-exports.editCompanyLocation = (req, res) => {
-  console.log(req.body)
-  db.doc(`users/${req.user}`)
-    .update({ location: req.body })
-    .then(() => {
-      res.status(201).json({ message: 'information updated successfully' })
-    })
-    .catch((err) => {
-      console.log(err)
-    })
-}
+// exports.editCompanyLocation = (req, res) => {
+//   console.log(req.body)
+//   db.doc(`users/${req.user}`)
+//     .update({ location: req.body })
+//     .then(() => {
+//       res.status(201).json({ message: 'information updated successfully' })
+//     })
+//     .catch((err) => {
+//       console.log(err)
+//     })
+// }
 
 exports.coachImageUpload = (req, res) => {
 
@@ -404,7 +426,7 @@ exports.filterListingCompanies = (req, res) => {
 
   db
     .collection('users')
-    .where('category', '==', 'company')
+    .where('category', '==', 'tester')
     .get()
     .then((data) => {
       const companies = []
@@ -421,18 +443,29 @@ exports.filterListingCompanies = (req, res) => {
       const times = Object.keys(timing.times).length === 0
       const ages = Object.keys(age).length === 0
 
+      console.log(filteredObject)
+
       companies.map(company => {
 
+        const { locations } = company.companyInfo
         const obj = {}
+
         if (location.longitude) {
-          const { latitude, longitude } = company.companyInfo.location
-          const dis = getDistance(
-            location.latitude,
-            location.longitude,
-            latitude, longitude)
-          console.log(dis)
-          if (parseInt(dis) < 20) obj.location = true
-          else obj.location = false
+          if (locations) {
+            locations.map(el => {
+              const { longitude, latitude } = el
+              const dis = getDistance(location.latitude, location.longitude, latitude, longitude)
+
+              if (parseInt(dis) < 10) {
+                console.log('helloooooo')
+                obj.location = true
+                return
+              } else {
+                console.log('byeeeeee')
+                obj.location = false
+              } 
+            })
+          }
         }
 
         if (!days) {
@@ -442,12 +475,10 @@ exports.filterListingCompanies = (req, res) => {
             if (courseType.toLowerCase() === 'weekly') {
               sessions.map(el => {
                 if (timing.days[el.day.toLowerCase()]) {
+                  console.log(el.day.toLowerCase())
                   obj.days = true
                   return
-                } else {
-                  obj.days = false
-                  return
-                }
+                } else obj.days = false
               })
             }
           })
@@ -514,8 +545,6 @@ exports.filterListingCompanies = (req, res) => {
 
           })
 
-          console.log(ageRange)
-          console.log(age)
           for (let i = 0; i < ageRange.length; i++) {
             if (age[ageRange[i]]) {
               obj.age = true
