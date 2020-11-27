@@ -4,6 +4,7 @@ const config = require("../configuration");
 const nodemailer = require("nodemailer");
 
 const firebase = require("firebase");
+const { createAwaitingVerification } = require("./adminController");
 firebase.initializeApp(config);
 
 exports.registerUser = (req, res) => {
@@ -304,7 +305,21 @@ exports.userDocumentUpload = (req, res) => {
 
         return db.doc(`/users/${req.user}`).update({ documentURL });
       })
-      .then(() => {
+      .then((data) => {
+        console.log(data)
+        const { verification, userId, coachInfo } = data.transformResults[0]
+        if (coachInfo.documentation.dbsCertificate && coachInfo.documentation.coachingCertificate) {
+          const verificationData = {
+            userId,
+            name: coachInfo.name,
+            documentation: coachInfo.documentation,
+            verification
+          }
+          createAwaitingVerification(verificationData)
+            .then(data => {
+              return db.doc(`/users/${req.user}`).update({ verificationId: data.id })
+            })
+        }
         res.status(201).json({ message: "Document successfully uploaded" });
       })
       .catch((err) => {
@@ -316,3 +331,12 @@ exports.userDocumentUpload = (req, res) => {
 };
 
 
+exports.updateUserDetails = (req, res) => {
+  const userref = db.doc(`users/${req.body.userId}`)
+
+  userref.update(req.body.updates)
+    .then(() => {
+      res.status(201).send({ message: 'user successfully updated' })
+    })
+    .catch(error => console.log(error))
+}
