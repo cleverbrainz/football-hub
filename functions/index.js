@@ -1,6 +1,7 @@
 // The Cloud Functions for Firebase SDK to create Cloud Functions and setup triggers.
 const functions = require('firebase-functions')
 const app = require('express')()
+const db = require('./utils/admin')
 
 const cors = require('cors')
 app.use(cors())
@@ -12,7 +13,7 @@ const {
   postNewCompany,
   addNewDetail,
   editCompanyDetail,
-  uploadCoachDocument,
+  // uploadCoachDocument,
   dataDeletion,
   uploadCompanyDocument,
   updateUserInformation,
@@ -22,6 +23,9 @@ const {
   filterListings,
   sendCoachRequest,
   deleteCoachRequest,
+  addSelfToCoaches,
+  addPlayerToCourse,
+  addPlayerToList
   getAllListings
 } = require('./utils/controllers/companyController')
 
@@ -33,7 +37,7 @@ const {
 } = require('./utils/controllers/enquiryController')
 
 const { adminPageEdits,
-  getAdminPageDetails } = require('./utils/controllers/adminController')
+  getAdminPageDetails, getVerifications, acceptAwaitingVerification } = require('./utils/controllers/adminController')
 
 const {
   loginUser,
@@ -45,13 +49,18 @@ const {
   forgottenPassword,
   userDocumentUpload,
   initialRegistrationUserInformation,
+  updateUserDetails
 } = require('./utils/controllers/userController')
 
 const {
   acceptCompanyRequest,
   handleCompanyRequest,
-  getAllAppCoaches
+  uploadCoachDocument,
+  searchForCoaches
+  // getAllAppCoaches
 } = require('./utils/controllers/coachController')
+const { checkPubSub } = require('./utils/cloudfunctions')
+
 
 // Cloud functios and routes for companies collection
 app.get('/companies', getAllCompanies)
@@ -60,15 +69,19 @@ app.post('/companies', postNewCompany)
 app.post('/companies/age', authMiddleware, addAgeDetail)
 app.patch('/companies/array/:detail', authMiddleware, editCompanyDetail)
 app.post('/companies/:detail', addNewDetail)
-app.patch('/companies/:id', authMiddleware, updateUserInformation)
+app.patch('/companies/addSelfCoach', authMiddleware, addSelfToCoaches)
+app.patch('/companies/:companyId/players', authMiddleware, addPlayerToList)
+app.get('/coaches/search/:query', searchForCoaches)
 app.post('/coaches/image/:id', authMiddleware, coachImageUpload)
-app.patch('/coaches/document/:documentType/:id', authMiddleware, uploadCoachDocument)
+app.patch('/coaches/:id/document/:documentType', authMiddleware, uploadCoachDocument)
 // app.patch('/company/:id/document', authMiddleware, uploadCompanyDocument)
 app.delete('/companies/:detail/:id', authMiddleware, dataDeletion)
 
 app.post('/filteredCompanies', filterListings )
 
 app.get('/listings', getAllListings)
+
+app.patch('/courses/:courseId/players', authMiddleware, addPlayerToCourse)
 
 // enquiries
 app.post('/enquiries', newEnquiry)
@@ -84,6 +97,8 @@ app.post('/user/:id/image', authMiddleware, customerImageUpload)
 app.post('/user/:id/signup', initialRegistrationUserInformation)
 app.post('/user/document', authMiddleware, userDocumentUpload)
 app.get('/users/:id', getOneUser)
+
+app.patch('/users/:id', authMiddleware, updateUserDetails)
 // app.post('/user/:id', authMiddleware, updateCompanyListingInformation)
 
 app.post('/signup', registerUser)
@@ -99,8 +114,17 @@ app.get('/allCoaches', getAllAppCoaches)
 app.post('/resetpassword', forgottenPassword)
 // app.get('/users/:id', getOneUser)
 
+app.get('/admin/awaitingVerification', getVerifications)
+app.put('/admin/awaitingVerification/:id', acceptAwaitingVerification)
 app.post('/admin/:id', adminPageEdits)
 app.get('/admin/:id', getAdminPageDetails)
 
 // Configures firebase and lets it know that the app container is serving the functionalities
 exports.api = functions.region('europe-west2').https.onRequest(app)
+// checkPubSub()
+exports.checkPubSub = functions.pubsub.schedule('every 2 minutes')
+  .timeZone('Europe/London')
+  .onRun((context) => {
+    console.log(Date.now())
+    return null
+  })
