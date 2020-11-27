@@ -5,6 +5,23 @@ const firebase = require('firebase/app')
 const { user } = require('firebase-functions/lib/providers/auth')
 // import 'firebase/firestore'
 
+exports.getAllAppCoaches = (req, res) => {
+  db
+    .collection('coaches')
+    .get()
+    .then((data) => {
+      const coaches = []
+      data.forEach((doc) => {
+        coaches.push({
+          coachId: doc.id,
+          coachInfo: { ...doc.data() }
+        })
+      })
+      return res.status(200).json(coaches)
+    })
+    .catch((err) => console.error(err))
+}
+
 exports.getAllCoaches = (req, res) => {
   db.collection('users')
     .where('category', '==', 'coach')

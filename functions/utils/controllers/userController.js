@@ -54,10 +54,9 @@ exports.initialRegistrationUserInformation = (req, res) => {
 
   if (req.body.category === 'player' || req.body.category === 'parent') {
     const noImg = 'no-img.jpeg'
+    newUser.bio = ''
     newUser.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`
   } else {
-    // newUser.images = []
-    newUser.reasons_to_join = ['']
     if (req.body.category === 'coach') {
       newUser.verification = {
         coachDocumentationCheck: false,
@@ -72,12 +71,12 @@ exports.initialRegistrationUserInformation = (req, res) => {
         paymentCheck: false
       }
       newUser.coaches = []
+      newUser.bio = ''
     }
   }
 
   console.log('newuser', newUser)
 
-  newUser.bio = ''
   newUser.requests = []
   newUser.sentRequests = []
 
@@ -89,15 +88,15 @@ exports.initialRegistrationUserInformation = (req, res) => {
     )
 }
 
-exports.updateCompanyListingInformation = (req, res) => {
-  const { bio, reasons_to_join } = req.body;
+// exports.updateCompanyListingInformation = (req, res) => {
+//   const { bio, reasons_to_join } = req.body;
 
-  db.doc(`/users/${req.user}`)
-    .update({ bio, reasons_to_join })
-    .then(() =>
-      res.status(201).json({ message: "Information successfully updated" })
-    );
-};
+//   db.doc(`/users/${req.user}`)
+//     .update({ bio, reasons_to_join })
+//     .then(() =>
+//       res.status(201).json({ message: "Information successfully updated" })
+//     );
+// };
 
 exports.loginUser = (req, res) => {
   const { email, password } = req.body;

@@ -19,9 +19,10 @@ const {
   editCompanyLocation,
   addAgeDetail,
   coachImageUpload,
-  filterListingCompanies,
+  filterListings,
   sendCoachRequest,
   deleteCoachRequest,
+  getAllListings
 } = require('./utils/controllers/companyController')
 
 const {
@@ -48,7 +49,8 @@ const {
 
 const {
   acceptCompanyRequest,
-  handleCompanyRequest
+  handleCompanyRequest,
+  getAllAppCoaches
 } = require('./utils/controllers/coachController')
 
 // Cloud functios and routes for companies collection
@@ -64,7 +66,9 @@ app.patch('/coaches/document/:documentType/:id', authMiddleware, uploadCoachDocu
 // app.patch('/company/:id/document', authMiddleware, uploadCompanyDocument)
 app.delete('/companies/:detail/:id', authMiddleware, dataDeletion)
 
-app.post('/filteredCompanies', filterListingCompanies )
+app.post('/filteredCompanies', filterListings )
+
+app.get('/listings', getAllListings)
 
 // enquiries
 app.post('/enquiries', newEnquiry)
@@ -80,14 +84,16 @@ app.post('/user/:id/image', authMiddleware, customerImageUpload)
 app.post('/user/:id/signup', initialRegistrationUserInformation)
 app.post('/user/document', authMiddleware, userDocumentUpload)
 app.get('/users/:id', getOneUser)
-app.post('/user/:id', authMiddleware, updateCompanyListingInformation)
+// app.post('/user/:id', authMiddleware, updateCompanyListingInformation)
 
 app.post('/signup', registerUser)
 app.post('/login', loginUser)
 
-app.post('/user/:id/request', sendCoachRequest)
-app.put('/user/:id/deleterequest', deleteCoachRequest)
-app.put('/user/:id/requests', handleCompanyRequest)
+app.get('/allCoaches', getAllAppCoaches)
+
+// app.post('/user/:id/request', sendCoachRequest)
+// app.put('/user/:id/deleterequest', deleteCoachRequest)
+// app.put('/user/:id/requests', handleCompanyRequest)
 
 // app.get('/users', getAllUsers)
 app.post('/resetpassword', forgottenPassword)
