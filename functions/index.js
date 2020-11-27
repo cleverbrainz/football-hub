@@ -20,12 +20,13 @@ const {
   editCompanyLocation,
   addAgeDetail,
   coachImageUpload,
-  filterListingCompanies,
+  filterListings,
   sendCoachRequest,
   deleteCoachRequest,
   addSelfToCoaches,
   addPlayerToCourse,
   addPlayerToList
+  getAllListings
 } = require('./utils/controllers/companyController')
 
 const {
@@ -56,6 +57,7 @@ const {
   handleCompanyRequest,
   uploadCoachDocument,
   searchForCoaches
+  // getAllAppCoaches
 } = require('./utils/controllers/coachController')
 const { checkPubSub } = require('./utils/cloudfunctions')
 
@@ -75,7 +77,9 @@ app.patch('/coaches/:id/document/:documentType', authMiddleware, uploadCoachDocu
 // app.patch('/company/:id/document', authMiddleware, uploadCompanyDocument)
 app.delete('/companies/:detail/:id', authMiddleware, dataDeletion)
 
-app.post('/filteredCompanies', filterListingCompanies )
+app.post('/filteredCompanies', filterListings )
+
+app.get('/listings', getAllListings)
 
 app.patch('/courses/:courseId/players', authMiddleware, addPlayerToCourse)
 
@@ -93,14 +97,18 @@ app.post('/user/:id/image', authMiddleware, customerImageUpload)
 app.post('/user/:id/signup', initialRegistrationUserInformation)
 app.post('/user/document', authMiddleware, userDocumentUpload)
 app.get('/users/:id', getOneUser)
+
 app.patch('/users/:id', authMiddleware, updateUserDetails)
+// app.post('/user/:id', authMiddleware, updateCompanyListingInformation)
 
 app.post('/signup', registerUser)
 app.post('/login', loginUser)
 
-app.post('/user/:id/request', sendCoachRequest)
-app.put('/user/:id/deleterequest', deleteCoachRequest)
-app.put('/user/:id/requests', handleCompanyRequest)
+app.get('/allCoaches', getAllAppCoaches)
+
+// app.post('/user/:id/request', sendCoachRequest)
+// app.put('/user/:id/deleterequest', deleteCoachRequest)
+// app.put('/user/:id/requests', handleCompanyRequest)
 
 // app.get('/users', getAllUsers)
 app.post('/resetpassword', forgottenPassword)

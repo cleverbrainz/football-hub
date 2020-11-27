@@ -25,12 +25,25 @@ exports.getAllCompanies = (req, res) => {
     .catch((err) => console.error(err))
 }
 exports.updateUserInformation = (req, res) => {
-  db.doc(`/users/${req.user}`)
-    .update({ ...req.body })
-    .then(() =>
-      res.status(201).json({ message: 'Information successfully updated' })
-    )
+  db.collection('listings')
+    .get()
+    .then((data) => {
+      const listings = []
+      // Where doc = QueryDocumentSnapshot, data() returns the object data
+      data.forEach((doc) => {
+        // console.log(doc.id)
+        listings.push({
+          companyId: doc.id,
+          companyInfo: { ...doc.data() }
+        })
+      })
+      return res.status(200).json(listings)
+    })
+    .catch((err) => console.error(err))
 }
+
+
+
 
 exports.postNewCompany = (req, res) => {
   const { name, started, players } = req.body
@@ -51,7 +64,7 @@ exports.postNewCompany = (req, res) => {
 }
 
 exports.addAgeDetail = (req, res) => {
-  console.log(req.body)
+  console.log(req.body[0])
   db.doc(`users/${req.user}`)
     .update({ ...req.body })
     .then(() => {
@@ -63,9 +76,35 @@ exports.addAgeDetail = (req, res) => {
 }
 
 exports.addNewDetail = (req, res) => {
+
+  const getDaysArray = function (start, end) {
+    for (var arr = [], dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)) {
+      arr.push(new Date(dt))
+    }
+    return arr
+  }
+
   const requestObject = { ...req.body }
-  console.log('start', req.body)
-  console.log(req.params.detail)
+
+  if (req.params.detail === 'courses') {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    const { sessions, startTime, endTime, spaces } = requestObject.courseDetails
+    const { courseType, firstDay, lastDay, excludeDays } = req.body.courseDetails
+    if (courseType === 'Camp') {
+      getDaysArray(new Date(firstDay), new Date(lastDay)).map(el => {
+        if (!excludeDays.includes(days[el.getDay()])) {
+          sessions.push({
+            sessionDate: el,
+            startTime,
+            endTime,
+            spaces
+          })
+        }
+      })
+    }
+  } 
+
+  console.log(requestObject)
 
   db.collection(req.params.detail)
     .add(req.body)
@@ -85,6 +124,9 @@ exports.addNewDetail = (req, res) => {
         case 'locations':
           detailId = 'locationId'
           break
+        case 'listings':
+          detailId = 'listingId'
+          break
         default:
           break
       }
@@ -94,7 +136,7 @@ exports.addNewDetail = (req, res) => {
       if (detailId === 'coachId') {
         const noImg = 'no-img.jpeg'
         requestObject.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`
-      }
+      } 
 
       console.log('stepppp1')
 
@@ -106,7 +148,8 @@ exports.addNewDetail = (req, res) => {
       )
     })
     .then(() => {
-      db.doc(`/users/${req.body.companyId}`)
+      console.log('stepppp2')
+      db.doc(`users/${req.body.companyId}`)
         .get()
         .then((data) => {
           let newArr = []
@@ -200,6 +243,9 @@ exports.editCompanyDetail = (req, res) => {
     case 'locations':
       detailId = 'locationId'
       break
+    case 'listings':
+      detailId = 'listingId'
+      break
     default:
       break
   }
@@ -240,13 +286,14 @@ exports.dataDeletion = (req, res) => {
         .get()
         .then((data) => {
           const nonChangingArr = data.data()[detail].filter((el) => {
-            if (detail === 'coaches') {
+            if (detail === "coaches") {
               return el.coachId !== id
             } else if (detail === 'services') {
               return el.serviceId !== id
             } else if (detail === 'locations') {
               return el.locationId !== id
             } else return el.courseId !== id
+
           })
           return db
             .doc(`/users/${req.user}`)
@@ -267,6 +314,7 @@ exports.dataDeletion = (req, res) => {
 }
 
 exports.oldUploadCoachDocument = (req, res) => {
+// exports.uploadCoachDocument = (req, res) => {
   const BusBoy = require('busboy')
   const path = require('path')
   const os = require('os')
@@ -274,7 +322,6 @@ exports.oldUploadCoachDocument = (req, res) => {
   const busboy = new BusBoy({ headers: req.headers })
 
   let documentFileName
-  const { documentType } = req.params
   let documentToBeUploaded = {}
 
   busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
@@ -319,16 +366,19 @@ exports.oldUploadCoachDocument = (req, res) => {
               } else changingObj = el
             })
 
-            console.log('changing obj', changingObj)
-
-            changingObj.documents[documentType] = documentURL
+            const updatedObj = {
+              ...changingObj, documents:
+                changingObj.documents ? [...changingObj.documents, documentURL]
+                  : [documentURL]
+            }
 
             db.doc(`coaches/${req.params.id}`)
-              .update(changingObj)
+              .update(updatedObj)
               .then(() => {
                 db.doc(`users/${req.user}`)
                   .update({
                     coaches: [...nonChangingArr, changingObj],
+                   // coaches: [...nonChangingArr, updatedObj],
                   })
                   .then(() => {
                     res
@@ -438,7 +488,9 @@ exports.coachImageUpload = (req, res) => {
   busboy.end(req.rawBody)
 }
 
-exports.filterListingCompanies = (req, res) => {
+
+exports.filterListings = (req, res) => {
+
   const deg2rad = (deg) => {
     return deg * (Math.PI / 180)
   }
@@ -468,19 +520,19 @@ exports.filterListingCompanies = (req, res) => {
 
   const filteredObject = cleanObject(req.body)
 
-  db.collection('users')
-    .where('category', '==', 'tester')
+  db
+    .collection('listings')
     .get()
     .then((data) => {
-      const companies = []
+      const listings = []
       data.forEach((doc) => {
-        companies.push({
-          companyId: doc.id,
-          companyInfo: { ...doc.data() },
+        listings.push({
+          listingInfo: { ...doc.data() }
         })
       })
 
-      const filteredListingsByLocation = []
+      const filteredListings = []
+      // fitler specifications
       const { timing, location, age } = filteredObject
       const days = Object.keys(timing.days).length === 0
       const times = Object.keys(timing.times).length === 0
@@ -488,63 +540,51 @@ exports.filterListingCompanies = (req, res) => {
 
       console.log(filteredObject)
 
-      companies.map((company) => {
-        const { locations } = company.companyInfo
-        const obj = {}
+      listings.map(listing => {
 
-        if (location.longitude) {
-          if (locations) {
-            locations.map((el) => {
-              const { longitude, latitude } = el
-              const dis = getDistance(
-                location.latitude,
-                location.longitude,
-                latitude,
-                longitude
-              )
+        for (let i = 0; i < listing.listingInfo.courses.length; i++) {
 
-              if (parseInt(dis) < 10) {
-                console.log('helloooooo')
-                obj.location = true
-                return
-              } else {
-                console.log('byeeeeee')
-                obj.location = false
-              }
-            })
-          }
-        }
+          const { courseDetails } = listing.listingInfo.courses[i]
+          const { sessions,
+            courseType,
+            longitude,
+            latitude } = courseDetails
+          const obj = {}
 
-        if (!days) {
-          const { courses } = company.companyInfo
-          courses.map((course) => {
-            const { sessions, courseType } = course.courseDetails
-            if (courseType.toLowerCase() === 'weekly') {
-              sessions.map((el) => {
-                if (timing.days[el.day.toLowerCase()]) {
-                  console.log(el.day.toLowerCase())
-                  obj.days = true
-                  return
-                } else obj.days = false
-              })
+          if (location.longitude) {
+            const dis = getDistance(location.latitude, location.longitude, latitude, longitude)
+            if (parseInt(dis) < 10) {
+              obj.location = true
+            } else {
+              obj.location = false
             }
-          })
-        }
+          }
 
-        if (!times) {
-          const { courses } = company.companyInfo
-          courses.map((el) => {
-            const { sessions, courseType } = el.courseDetails
+          if (!days) {
             if (courseType.toLowerCase() === 'weekly') {
-              sessions.map((el) => {
-                const { startTime } = el
+              for (let j = 0; j < sessions.length; j++) {
+                if (timing.days[sessions[j].day.toLowerCase()]) {
+                  obj.days = true
+                } else {
+                  obj.days = false
+                }
+              }
+
+            }
+          }
+
+          if (!times) {
+            if (courseType.toLowerCase() === 'weekly') {
+
+              for (let j = 0; j < sessions.length; j++) {
+                const { startTime } = sessions[j]
                 const time = parseInt(startTime.charAt(0))
 
                 // morning filteration
                 if (timing.times['morning']) {
                   if (startTime.includes('am')) {
                     obj.times = true
-                    return
+                    // break
                   } else obj.times = false
                 }
                 // afternoon filteration
@@ -554,71 +594,82 @@ exports.filterListingCompanies = (req, res) => {
                     (time === 12 || (time >= 1 && time < 6))
                   ) {
                     obj.times = true
-                    return
+                    // break
                   } else obj.times = false
                 }
                 // evening filteration
                 if (timing.times['evening']) {
                   if (startTime.includes('pm') && time >= 6 && time < 10) {
                     obj.times = true
-                    return
+                    // break
                   } else obj.times = false
                 }
-              })
-            }
-          })
-        }
-
-        // age filteration
-        if (!ages) {
-          const { ageDetails } = company.companyInfo
-          const ageRange = []
-          ageDetails.map((el) => {
-            if (el.startAge !== 'Adults' && el.endAge !== 'Adults') {
-              for (
-                var i = parseInt(el.startAge);
-                i <= parseInt(el.endAge);
-                i++
-              ) {
-                ageRange.push(i.toString())
               }
-            } else if (el.startAge === 'Adults' && el.endAge === 'Adults') {
-              ageRange.push('adults')
-            } else {
-              if (el.startAge === 'Adults') {
+            }
+          }
+
+          // age filteration
+          if (!ages) {
+            const ageRange = []
+
+            if (courseDetails.age === 'Adults') ageRange.push('adults')
+
+            else {
+              const startAge = courseDetails.age.split('-')[0]
+              const endAge = courseDetails.age.split('-')[1]
+
+              if (endAge === 'Adults') {
+                for (var j = parseInt(startAge); j <= 18; j++) {
+                  ageRange.push(j.toString())
+                }
                 ageRange.push('adults')
-                ageRange.push(el.endAge)
               } else {
-                ageRange.push('adults')
-                ageRange.push(el.startAge)
+                for (var k = parseInt(startAge); k <= parseInt(endAge); k++) {
+                  ageRange.push(k.toString())
+                }
               }
             }
-          })
 
-          for (let i = 0; i < ageRange.length; i++) {
-            if (age[ageRange[i]]) {
-              obj.age = true
+            console.log(ageRange)
+
+            for (let i = 0; i < ageRange.length; i++) {
+              if (age[ageRange[i]]) {
+                console.log(ageRange[i])
+                obj.age = true
+                break
+              } else obj.age = false
+            }
+          }
+
+          let result = true
+          for (const j in obj) {
+            if (obj[j] === false) {
+              result = false
               break
-            } else obj.age = false
+            }
+          }
+          console.log(obj)
+          if (result) {
+            filteredListings.push(listing)
+            return
           }
         }
-
-        let result = true
-        for (const i in obj) {
-          if (obj[i] === false) {
-            result = false
-            break
-          }
-        }
-        console.log(obj)
-        if (result) filteredListingsByLocation.push(company)
       })
 
-      return res.status(200).json(filteredListingsByLocation)
+      console.log(filteredListings)
+      return res.status(200).json(filteredListings)
     })
     .catch((err) => {
       console.log(err)
     })
+}
+
+exports.getAllListings = (req, res) => {
+  db.doc(`/listings/${req.user}`)
+    .update({ ...req.body })
+    .then(() =>
+      res.status(201).json({ message: 'Information successfully updated' })
+    )
 }
 
 // exports.uploadCompanyDocument = (req, res) => { }

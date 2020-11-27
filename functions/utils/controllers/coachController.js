@@ -6,6 +6,23 @@ const { user } = require('firebase-functions/lib/providers/auth')
 const { createAwaitingVerification } = require('./adminController')
 // import 'firebase/firestore'
 
+exports.getAllAppCoaches = (req, res) => {
+  db
+    .collection('coaches')
+    .get()
+    .then((data) => {
+      const coaches = []
+      data.forEach((doc) => {
+        coaches.push({
+          coachId: doc.id,
+          coachInfo: { ...doc.data() }
+        })
+      })
+      return res.status(200).json(coaches)
+    })
+    .catch((err) => console.error(err))
+}
+
 exports.getAllCoaches = (req, res) => {
   db.collection('users')
     .where('category', '==', 'coach')
