@@ -121,10 +121,11 @@ app.get('/admin/:id', getAdminPageDetails)
 
 // Configures firebase and lets it know that the app container is serving the functionalities
 exports.api = functions.region('europe-west2').https.onRequest(app)
-// checkPubSub()
-exports.checkPubSub = functions.pubsub.schedule('every 2 minutes')
+
+exports.checkPubSub = functions.pubsub.schedule('every 10 minutes')
   .timeZone('Europe/London')
   .onRun((context) => {
-    console.log('THIS IS PUBSUB FUNCTION')
+    const time = new Date().toTimeString()
+    console.log('pubsub', time)
     return null
   })
