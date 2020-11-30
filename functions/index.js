@@ -25,7 +25,7 @@ const {
   deleteCoachRequest,
   addSelfToCoaches,
   addPlayerToCourse,
-  addPlayerToList
+  addPlayerToList,
   getAllListings
 } = require('./utils/controllers/companyController')
 
@@ -104,7 +104,7 @@ app.patch('/users/:id', authMiddleware, updateUserDetails)
 app.post('/signup', registerUser)
 app.post('/login', loginUser)
 
-app.get('/allCoaches', getAllAppCoaches)
+// app.get('/allCoaches', getAllAppCoaches)
 
 // app.post('/user/:id/request', sendCoachRequest)
 // app.put('/user/:id/deleterequest', deleteCoachRequest)
@@ -125,6 +125,6 @@ exports.api = functions.region('europe-west2').https.onRequest(app)
 exports.checkPubSub = functions.pubsub.schedule('every 2 minutes')
   .timeZone('Europe/London')
   .onRun((context) => {
-    console.log(Date.now())
+    console.log('THIS IS PUBSUB FUNCTION')
     return null
   })

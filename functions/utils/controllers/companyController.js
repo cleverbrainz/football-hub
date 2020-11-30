@@ -5,6 +5,7 @@ const moment = require('moment')
 // const firebase = require('firebase/app')
 // require('firebase/firestore')
 
+
 exports.getAllCompanies = (req, res) => {
   db.collection('users')
     .where('category', '==', 'company')
@@ -102,7 +103,7 @@ exports.addNewDetail = (req, res) => {
         }
       })
     }
-  } 
+  }
 
   console.log(requestObject)
 
@@ -136,7 +137,7 @@ exports.addNewDetail = (req, res) => {
       if (detailId === 'coachId') {
         const noImg = 'no-img.jpeg'
         requestObject.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`
-      } 
+      }
 
       console.log('stepppp1')
 
@@ -227,27 +228,11 @@ exports.editCompanyDetail = (req, res) => {
   console.log(req.body, req.params.detail)
 
   const { detail } = req.params
-
   let detailId
 
-  switch (req.params.detail) {
-    case 'coaches':
-      detailId = 'coachId'
-      break
-    case 'services':
-      detailId = 'serviceId'
-      break
-    case 'courses':
-      detailId = 'courseId'
-      break
-    case 'locations':
-      detailId = 'locationId'
-      break
-    case 'listings':
-      detailId = 'listingId'
-      break
-    default:
-      break
+  const idArr = ['coaches', 'services', 'locations', 'courses', 'listings']
+  if (idArr.includes(detail)) {
+    detailId = detail === 'coaches' ? 'coach' : detail.slice(0, -1) + 'Id'
   }
 
   db.doc(`${detail}/${req.body[detailId]}`)
@@ -256,12 +241,45 @@ exports.editCompanyDetail = (req, res) => {
       db.doc(`users/${req.user}`)
         .get()
         .then((data) => {
+
+          if (detail === 'courses' && data.data().listings) {
+
+            const { listings } = data.data()
+            let courseType
+
+            ['courses', 'camps'].map(el => {
+              for (let i = 0; i < listings[0][el].length; i++) {
+                const { courseId } = listings[0][el][i]
+                if (courseId === req.body[detailId]) {
+                  courseType = el
+                  break
+                }
+              }
+            })
+
+            console.log(courseType)
+            const nonChangingCoursesArr = listings[0][courseType].filter(el => el.courseId !== req.body[detailId])
+
+            db
+              .doc(`/users/${req.user}`)
+              .update({
+                listings: [{
+                  ...listings[0],
+                  [courseType]: [...nonChangingCoursesArr, req.body]
+                }]
+              })
+              .then(() => {
+                db
+                  .doc(`/listings/${listings[0].listingId}`)
+                  .update({ [courseType]: [...nonChangingCoursesArr, req.body] })
+              })
+          }
           const nonChangingArr = data.data()[detail].filter((el) => {
             return el[detailId] !== req.body[detailId]
           })
 
           db.doc(`users/${req.user}`).update({
-            [detail]: [...nonChangingArr, req.body],
+            [detail]: [...nonChangingArr, req.body]
           })
         })
     })
@@ -278,23 +296,58 @@ exports.editCompanyDetail = (req, res) => {
 
 exports.dataDeletion = (req, res) => {
   const { id, detail } = req.params
-  db.collection(detail)
+  db
+    .collection(detail)
     .doc(id)
     .delete()
     .then(() => {
-      db.doc(`users/${req.user}`)
+      db
+        .doc(`users/${req.user}`)
         .get()
         .then((data) => {
           const nonChangingArr = data.data()[detail].filter((el) => {
-            if (detail === "coaches") {
-              return el.coachId !== id
-            } else if (detail === 'services') {
-              return el.serviceId !== id
-            } else if (detail === 'locations') {
-              return el.locationId !== id
-            } else return el.courseId !== id
-
+            const idArr = ['coaches', 'services', 'locations', 'courses', 'listings']
+            if (idArr.includes(detail)) {
+              const text = detail === 'coaches' ? 'coach' : detail.slice(0, -1)
+              return el[`${text}Id`] !== id
+            }
           })
+
+
+
+          if (detail === 'courses' && data.data().listings) {
+
+            const { listings } = data.data()
+            let courseType
+
+            ['courses', 'camps'].map(el => {
+              for (let i = 0; i < listings[0][el].length; i++) {
+                const { courseId } = listings[0][el][i]
+                if (courseId === id) {
+                  courseType = el
+                  break
+                }
+              }
+            })
+
+            console.log(courseType)
+            const nonChangingCoursesArr = listings[0][courseType].filter(el => el.courseId !== id)
+
+            db
+              .doc(`/users/${req.user}`)
+              .update({
+                listings: [{
+                  ...listings[0],
+                  [courseType]: nonChangingCoursesArr
+                }]
+              })
+              .then(() => {
+                db
+                  .doc(`/listings/${listings[0].listingId}`)
+                  .update({ [courseType]: nonChangingCoursesArr })
+              })
+          }
+
           return db
             .doc(`/users/${req.user}`)
             .update({ [detail]: nonChangingArr })
@@ -305,16 +358,18 @@ exports.dataDeletion = (req, res) => {
             })
             .catch((err) => {
               console.log(err)
-              res.status(500).json({
-                error: 'Something went wrong, information could not be deleted',
-              })
+              res
+                .status(500)
+                .json({
+                  error: 'Something went wrong, information could not be deleted',
+                })
             })
         })
     })
 }
 
 exports.oldUploadCoachDocument = (req, res) => {
-// exports.uploadCoachDocument = (req, res) => {
+  // exports.uploadCoachDocument = (req, res) => {
   const BusBoy = require('busboy')
   const path = require('path')
   const os = require('os')
@@ -378,7 +433,7 @@ exports.oldUploadCoachDocument = (req, res) => {
                 db.doc(`users/${req.user}`)
                   .update({
                     coaches: [...nonChangingArr, changingObj],
-                   // coaches: [...nonChangingArr, updatedObj],
+                    // coaches: [...nonChangingArr, updatedObj],
                   })
                   .then(() => {
                     res
@@ -502,9 +557,9 @@ exports.filterListings = (req, res) => {
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(deg2rad(lat1)) *
-        Math.cos(deg2rad(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2)
+      Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2)
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     const d = R * c // Distance in km
     return d.toFixed()
