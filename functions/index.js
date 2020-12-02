@@ -26,7 +26,8 @@ const {
   addSelfToCoaches,
   addPlayerToCourse,
   addPlayerToList,
-  getAllListings
+  getAllListings,
+  getSingleCourse
 } = require('./utils/controllers/companyController')
 
 const {
@@ -81,6 +82,7 @@ app.post('/filteredCompanies', filterListings )
 
 app.get('/listings', getAllListings)
 
+app.get('/courses/:courseId', getSingleCourse)
 app.patch('/courses/:courseId/players', authMiddleware, addPlayerToCourse)
 
 // enquiries
