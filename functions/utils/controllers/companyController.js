@@ -795,6 +795,19 @@ exports.addPlayerToList = (req, res) => {
     .catch((err) => console.log(err))
 }
 
+
+exports.updateRegister = (req, res) => {
+  const registerRef = db.doc(`/courses/${req.params.courseId}`)
+
+  return registerRef.update({
+    register: req.body.updatedRegister
+  })
+    .then(() => {
+      res.status(201).send({ message: 'register updated!'})
+    })
+    .catch(err => console.log(err))
+}
+
 exports.addPlayerToCourse = (req, res) => {
   const courseRef = db.doc(`/courses/${req.params.courseId}`)
   const playerRef = db.doc(`users/${req.body.playerId}`)
