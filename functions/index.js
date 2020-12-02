@@ -18,7 +18,7 @@ const {
   uploadCompanyDocument,
   updateUserInformation,
   editCompanyLocation,
-  addAgeDetail,
+  ageDetails,
   coachImageUpload,
   filterListings,
   sendCoachRequest,
@@ -67,7 +67,8 @@ const { checkPubSub } = require('./utils/cloudfunctions')
 app.get('/companies', getAllCompanies)
 app.post('/companies', postNewCompany)
 // app.post('/companies/location', authMiddleware, editCompanyLocation)
-app.post('/companies/age', authMiddleware, addAgeDetail)
+app.post('/companies/age', authMiddleware, ageDetails)
+app.patch('/companies/age', authMiddleware, ageDetails)
 app.patch('/companies/array/:detail', authMiddleware, editCompanyDetail)
 app.post('/companies/:detail', addNewDetail)
 app.patch('/companies/addSelfCoach', authMiddleware, addSelfToCoaches)

@@ -64,17 +64,56 @@ exports.postNewCompany = (req, res) => {
     })
 }
 
-exports.addAgeDetail = (req, res) => {
-  console.log(req.body[0])
-  db.doc(`users/${req.user}`)
-    .update({ ...req.body })
-    .then(() => {
-      res.status(201).json({ message: 'Age information updated successfully' })
-    })
-    .catch((err) => {
-      console.log(err)
-    })
+
+
+exports.ageDetails = (req, res) => {
+
+  if (req.method === 'POST') {
+    db
+      .doc(`users/${req.user}`)
+      .get()
+      .then(data => {
+        const ageArr = [...data.data().ageDetails].concat(req.body)
+
+        db.doc(`users/${req.user}`)
+          .update({ ageDetails: ageArr })
+          .then(() => {
+            res.status(201).json({ message: 'Age information updated successfully' })
+          })
+          .catch((err) => {
+            console.log(err)
+          })
+      })
+  } else {
+    db
+      .doc(`users/${req.user}`)
+      .get()
+      .then(data => {
+
+        const ageArr = data.data().ageDetails.filter(el => {
+          console.log(el)
+          return el.startAge !== req.body.startAge || el.endAge !== req.body.endAge
+        })
+
+        console.log(ageArr)
+        console.log(req.body)
+
+        db.doc(`users/${req.user}`)
+          .update({ ageDetails: ageArr })
+          .then(() => {
+            res.status(201).json({ message: 'Age information updated successfully' })
+          })
+          .catch((err) => {
+            console.log(err)
+          })
+      })
+  }
+
 }
+
+
+
+
 
 exports.addNewDetail = (req, res) => {
 
@@ -159,7 +198,7 @@ exports.addNewDetail = (req, res) => {
           } else newArr = [requestObject]
 
           db.doc(`users/${req.body.companyId}`).update({
-            [req.params.detail]: newArr,
+            [req.params.detail]: newArr
           })
         })
         .then(() => {
@@ -256,8 +295,9 @@ exports.editCompanyDetail = (req, res) => {
             }
           })
 
-          if (courseType) {
-            const nonChangingCoursesArr = listings[0][courseType].filter(el => el.courseId !== req.body[detailId])
+          if (courseType || detail === 'services') {
+            detail === 'services' ? courseType = 'services' : courseType
+            const nonChangingCoursesArr = listings[0][courseType].filter(el => el[detailId] !== req.body[detailId])
             db
               .doc(`/users/${req.user}`)
               .update({
@@ -272,6 +312,8 @@ exports.editCompanyDetail = (req, res) => {
                   .update({ [courseType]: [...nonChangingCoursesArr, req.body] })
               })
           }
+
+
 
           const nonChangingArr = data.data()[detail].filter((el) => {
             return el[detailId] !== req.body[detailId]
@@ -327,8 +369,9 @@ exports.dataDeletion = (req, res) => {
             }
           })
 
-          if (courseType) {
-            const nonChangingCoursesArr = listings[0][courseType].filter(el => el.courseId !== id)
+          if (courseType || detail === 'services') {
+            detail === 'services' ? courseType = 'services' : courseType
+            const nonChangingCoursesArr = listings[0][courseType].filter(el => el[`${detail.slice(0, -1)}Id`] !== id)
 
             db
               .doc(`/users/${req.user}`)
@@ -732,7 +775,7 @@ exports.getSingleCourse = (req, res) => {
       console.log(response)
       res.status(201).json(response)
     })
-    .catch(error => {console.log(error)})
+    .catch(error => { console.log(error) })
 }
 
 // exports.uploadCompanyDocument = (req, res) => { }
@@ -766,13 +809,13 @@ exports.addPlayerToCourse = (req, res) => {
         .then((data) => {
           const courseData = data.data()
           const { register, courseDetails } = courseData
-          const dayNums = courseDetails.courseType === 'Camp' ? 
+          const dayNums = courseDetails.courseType === 'Camp' ?
             courseDetails.sessions.map((session) =>
-            // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+              // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
               moment(session.sessionDate.toDate()).day()
             ) :
             courseDetails.sessions.map((session) =>
-            // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+              // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
               moment().day(session.day).day()
             )
           console.log({ dayNums })
