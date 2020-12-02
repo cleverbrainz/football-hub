@@ -242,24 +242,22 @@ exports.editCompanyDetail = (req, res) => {
         .get()
         .then((data) => {
 
-          if (detail === 'courses' && data.data().listings) {
+          const { listings } = data.data()
+          let courseType = null
+          const courseFilterArr = ['courses', 'camps']
 
-            const { listings } = data.data()
-            let courseType
-
-            ['courses', 'camps'].map(el => {
-              for (let i = 0; i < listings[0][el].length; i++) {
-                const { courseId } = listings[0][el][i]
-                if (courseId === req.body[detailId]) {
-                  courseType = el
-                  break
-                }
+          courseFilterArr.map(el => {
+            for (let i = 0; i < listings[0][el].length; i++) {
+              const { courseId } = listings[0][el][i]
+              if (courseId === req.body[detailId]) {
+                courseType = el
+                break
               }
-            })
+            }
+          })
 
-            console.log(courseType)
+          if (courseType) {
             const nonChangingCoursesArr = listings[0][courseType].filter(el => el.courseId !== req.body[detailId])
-
             db
               .doc(`/users/${req.user}`)
               .update({
@@ -274,6 +272,7 @@ exports.editCompanyDetail = (req, res) => {
                   .update({ [courseType]: [...nonChangingCoursesArr, req.body] })
               })
           }
+
           const nonChangingArr = data.data()[detail].filter((el) => {
             return el[detailId] !== req.body[detailId]
           })
@@ -296,6 +295,7 @@ exports.editCompanyDetail = (req, res) => {
 
 exports.dataDeletion = (req, res) => {
   const { id, detail } = req.params
+  console.log('this is' + id)
   db
     .collection(detail)
     .doc(id)
@@ -304,7 +304,7 @@ exports.dataDeletion = (req, res) => {
       db
         .doc(`users/${req.user}`)
         .get()
-        .then((data) => {
+        .then(data => {
           const nonChangingArr = data.data()[detail].filter((el) => {
             const idArr = ['coaches', 'services', 'locations', 'courses', 'listings']
             if (idArr.includes(detail)) {
@@ -313,24 +313,21 @@ exports.dataDeletion = (req, res) => {
             }
           })
 
+          const { listings } = data.data()
+          let courseType = null
+          const courseFilterArr = ['courses', 'camps']
 
-
-          if (detail === 'courses' && data.data().listings) {
-
-            const { listings } = data.data()
-            let courseType
-
-            ['courses', 'camps'].map(el => {
-              for (let i = 0; i < listings[0][el].length; i++) {
-                const { courseId } = listings[0][el][i]
-                if (courseId === id) {
-                  courseType = el
-                  break
-                }
+          courseFilterArr.forEach(el => {
+            for (let i = 0; i < listings[0][el].length; i++) {
+              const { courseId } = listings[0][el][i]
+              if (courseId === id) {
+                courseType = el
+                break
               }
-            })
+            }
+          })
 
-            console.log(courseType)
+          if (courseType) {
             const nonChangingCoursesArr = listings[0][courseType].filter(el => el.courseId !== id)
 
             db
