@@ -27,7 +27,8 @@ const {
   addPlayerToCourse,
   addPlayerToList,
   getAllListings,
-  getSingleCourse
+  getSingleCourse,
+  updateRegister
 } = require('./utils/controllers/companyController')
 
 const {
@@ -84,6 +85,7 @@ app.get('/listings', getAllListings)
 
 app.get('/courses/:courseId', getSingleCourse)
 app.patch('/courses/:courseId/players', authMiddleware, addPlayerToCourse)
+app.patch('/courses/:courseId', updateRegister)
 
 // enquiries
 app.post('/enquiries', newEnquiry)
