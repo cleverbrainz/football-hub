@@ -727,14 +727,27 @@ exports.getAllListings = (req, res) => {
     )
 }
 
+exports.getSingleCourse = (req, res) => {
+  console.log(req.params)
+  db.doc(`/courses/${req.params.courseId}`).get()
+    .then(data => {
+      const response = data.data()
+      console.log(response)
+      res.status(201).json(response)
+    })
+    .catch(error => {console.log(error)})
+}
+
 // exports.uploadCompanyDocument = (req, res) => { }
 
 exports.addPlayerToList = (req, res) => {
   const companyRef = db.doc(`/users/${req.params.companyId}`)
 
+  const playerInfo = { name: req.body.playerName, id: req.body.playerId, status: req.body.playerStatus, age: req.body.playerAge }
+
   companyRef
     .update({
-      players: admin.firestore.FieldValue.arrayUnion(req.body.playerId),
+      [`players.${req.body.playerId}`]: playerInfo
     })
     .then(() => {
       res.status(201).send({ message: 'user added to company player list' })
@@ -748,7 +761,7 @@ exports.addPlayerToCourse = (req, res) => {
 
   return courseRef
     .update({
-      playerList: admin.firestore.FieldValue.arrayUnion(req.body.playerId),
+      playerList: admin.firestore.FieldValue.arrayUnion(req.body.playerId)
     })
     .then(() => {
       courseRef
@@ -756,18 +769,25 @@ exports.addPlayerToCourse = (req, res) => {
         .then((data) => {
           const courseData = data.data()
           const { register, courseDetails } = courseData
-          const dayNums = courseDetails.sessions.map((session) =>
-            moment().day(session.day).day()
-          )
+          const dayNums = courseDetails.courseType === 'Camp' ? 
+            courseDetails.sessions.map((session) =>
+            // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+              moment(session.sessionDate.toDate()).day()
+            ) :
+            courseDetails.sessions.map((session) =>
+            // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+              moment().day(session.day).day()
+            )
+          console.log({ dayNums })
           const newRegister = register
             ? addUsersToRegister(register, [
-              { name: req.body.playerName, id: req.body.playerId }
+              { name: req.body.playerName, id: req.body.playerId, age: req.body.playerAge }
             ])
             : createRegister(
-              courseDetails.startDate,
-              courseDetails.endDate,
+              courseDetails.firstDay,
+              courseDetails.lastDay,
               dayNums,
-              [{ name: req.body.playerName, id: req.body.playerId }]
+              [{ name: req.body.playerName, id: req.body.playerId, age: req.body.playerAge }]
             )
           courseRef.update({
             register: newRegister
@@ -777,7 +797,7 @@ exports.addPlayerToCourse = (req, res) => {
         .then((data) => {
           const { companyId, courseId } = data
           playerRef.update({
-            [`courses.${companyId}`]: admin.firestore.FieldValue.arrayUnion(
+            [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
               courseId
             ),
           })
@@ -819,7 +839,7 @@ const createRegister = (startDate, endDate, sessionDays, playerList) => {
   const register = { sessions }
 
   for (const player of playerList) {
-    register[player.id] = { name: player.name }
+    register[player.id] = { name: player.name, age: player.age, id: player.id }
     for (const date of sessions) {
       register[player.id][date] = { attendance: false, notes: '' }
     }
