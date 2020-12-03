@@ -1,4 +1,4 @@
-const { report } = require('process')
+// const { report } = require('process')
 const { db, admin } = require('../admin')
 const config = require('../configuration')
 const moment = require('moment')
@@ -18,7 +18,7 @@ exports.getAllCompanies = (req, res) => {
         // console.log(doc.id)
         companies.push({
           companyId: doc.id,
-          companyInfo: { ...doc.data() },
+          companyInfo: { ...doc.data() }
         })
       })
       return res.status(200).json(companies)
@@ -206,7 +206,7 @@ exports.addNewDetail = (req, res) => {
         })
         .catch((err) => {
           res.status(500).json({
-            error: 'Something went wrong, enquiry could not be added',
+            error: 'Something went wrong, enquiry could not be added'
           })
           console.error(err)
         })
@@ -220,11 +220,11 @@ exports.sendCoachRequest = (req, res) => {
 
   coachRef
     .update({
-      requests: admin.firestore.FieldValue.arrayUnion(req.body.companyId),
+      requests: admin.firestore.FieldValue.arrayUnion(req.body.companyId)
     })
     .then(() => {
       userRef.update({
-        sentRequests: admin.firestore.FieldValue.arrayUnion(req.body.coachId),
+        sentRequests: admin.firestore.FieldValue.arrayUnion(req.body.coachId)
       })
     })
     .then(() => {
@@ -232,7 +232,7 @@ exports.sendCoachRequest = (req, res) => {
     })
     .catch((err) => {
       res.status(500).json({
-        error: 'Something went wrong, enquiry could not be added',
+        error: 'Something went wrong, enquiry could not be added'
       })
       console.error(err)
     })
@@ -245,11 +245,11 @@ exports.deleteCoachRequest = (req, res) => {
 
   coachRef
     .update({
-      requests: admin.firestore.FieldValue.arrayRemove(req.body.companyId),
+      requests: admin.firestore.FieldValue.arrayRemove(req.body.companyId)
     })
     .then(() => {
       userRef.update({
-        sentRequests: admin.firestore.FieldValue.arrayRemove(req.body.coachId),
+        sentRequests: admin.firestore.FieldValue.arrayRemove(req.body.coachId)
       })
     })
     .then(() => {
@@ -257,7 +257,7 @@ exports.deleteCoachRequest = (req, res) => {
     })
     .catch((err) => {
       res.status(500).json({
-        error: 'Something went wrong, enquiry could not be added',
+        error: 'Something went wrong, enquiry could not be added'
       })
       console.error(err)
     })
@@ -330,7 +330,7 @@ exports.editCompanyDetail = (req, res) => {
     .catch((err) => {
       console.log(err)
       res.status(500).json({
-        error: 'Something went wrong, information could not be updated',
+        error: 'Something went wrong, information could not be updated'
       })
     })
 }
@@ -401,7 +401,7 @@ exports.dataDeletion = (req, res) => {
               res
                 .status(500)
                 .json({
-                  error: 'Something went wrong, information could not be deleted',
+                  error: 'Something went wrong, information could not be deleted'
                 })
             })
         })
@@ -442,9 +442,9 @@ exports.oldUploadCoachDocument = (req, res) => {
         resumable: false,
         metadata: {
           metadata: {
-            contentType: documentToBeUploaded.mimetype,
-          },
-        },
+            contentType: documentToBeUploaded.mimetype
+          }
+        }
       })
       .then(() => {
         const documentURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${documentFileName}?alt=media`
@@ -472,7 +472,7 @@ exports.oldUploadCoachDocument = (req, res) => {
               .then(() => {
                 db.doc(`users/${req.user}`)
                   .update({
-                    coaches: [...nonChangingArr, changingObj],
+                    coaches: [...nonChangingArr, changingObj]
                     // coaches: [...nonChangingArr, updatedObj],
                   })
                   .then(() => {
@@ -480,7 +480,7 @@ exports.oldUploadCoachDocument = (req, res) => {
                       .status(201)
                       .json({
                         message: 'information updated successfully',
-                        documents: changingObj.documents,
+                        documents: changingObj.documents
                       })
                   })
                   .catch((err) => {
@@ -542,9 +542,9 @@ exports.coachImageUpload = (req, res) => {
         resumable: false,
         metadata: {
           metadata: {
-            contentType: imageToBeUploaded.mimetype,
-          },
-        },
+            contentType: imageToBeUploaded.mimetype
+          }
+        }
       })
       .then(() => {
         const imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imageFileName}?alt=media`
@@ -568,7 +568,7 @@ exports.coachImageUpload = (req, res) => {
               .then(() => {
                 db.doc(`users/${req.user}`)
                   .update({
-                    coaches: [...nonChangingArr, updatedObj],
+                    coaches: [...nonChangingArr, updatedObj]
                   })
                   .then(() => {
                     res.status(201).json({ message: imageURL })
@@ -769,13 +769,13 @@ exports.getAllListings = (req, res) => {
 
 exports.getSingleCourse = (req, res) => {
   console.log(req.params)
-  db.doc(`/courses/${req.params.courseId}`).get()
+  return db.doc(`/courses/${req.params.courseId}`).get()
     .then(data => {
       const response = data.data()
       console.log(response)
       res.status(201).json(response)
     })
-    .catch(error => { console.log(error) })
+    .catch(error =>  console.log(error))
 }
 
 // exports.uploadCompanyDocument = (req, res) => { }
@@ -785,7 +785,7 @@ exports.addPlayerToList = (req, res) => {
 
   const playerInfo = { name: req.body.playerName, id: req.body.playerId, status: req.body.playerStatus, age: req.body.playerAge }
 
-  companyRef
+  return companyRef
     .update({
       [`players.${req.body.playerId}`]: playerInfo
     })
@@ -803,7 +803,7 @@ exports.updateRegister = (req, res) => {
     register: req.body.updatedRegister
   })
     .then(() => {
-      res.status(201).send({ message: 'register updated!'})
+      res.status(201).send({ message: 'register updated!' })
     })
     .catch(err => console.log(err))
 }
@@ -897,22 +897,22 @@ exports.addPlayerToCourse = (req, res) => {
           playerRef.update({
             [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
               courseId
-            ),
+            )
           })
+            .then(() => res.status(201).send({ message: 'player added to course' }))
         })
+        .catch((err) => console.log(err))
     })
-    .then(() => res.status(201).send('player added to course'))
-    .catch((err) => console.log(err))
 }
 
 exports.addSelfToCoaches = (req, res) => {
   const userref = db.doc(`users/${req.body.userId}`)
 
-  userref
+  return userref
     .update(req.body.updates)
     .then(() => {
       userref.update({
-        coaches: admin.firestore.FieldValue.arrayUnion(req.body.userId),
+        coaches: admin.firestore.FieldValue.arrayUnion(req.body.userId)
       })
     })
     .then(() => {

@@ -1,7 +1,7 @@
 // The Cloud Functions for Firebase SDK to create Cloud Functions and setup triggers.
 const functions = require('firebase-functions')
 const app = require('express')()
-const db = require('./utils/admin')
+// const db = require('./utils/admin')
 
 const cors = require('cors')
 
@@ -23,9 +23,9 @@ const {
   editCompanyDetail,
   // uploadCoachDocument,
   dataDeletion,
-  uploadCompanyDocument,
-  updateUserInformation,
-  editCompanyLocation,
+  // uploadCompanyDocument,
+  // updateUserInformation,
+  // editCompanyLocation,
   ageDetails,
   coachImageUpload,
   filterListings,
@@ -56,7 +56,7 @@ const {
   customerImageUpload,
   imageDeletion,
   getOneUser,
-  updateCompanyListingInformation,
+  // updateCompanyListingInformation,
   forgottenPassword,
   userDocumentUpload,
   initialRegistrationUserInformation,
@@ -64,13 +64,13 @@ const {
 } = require('./utils/controllers/userController')
 
 const {
-  acceptCompanyRequest,
+  // acceptCompanyRequest,
   handleCompanyRequest,
   uploadCoachDocument,
   searchForCoaches
   // getAllAppCoaches
 } = require('./utils/controllers/coachController')
-const { checkPubSub } = require('./utils/cloudfunctions')
+// const { checkPubSub } = require('./utils/cloudfunctions')
 
 
 // Cloud functios and routes for companies collection
