@@ -28,7 +28,8 @@ const {
   addPlayerToList,
   getAllListings,
   getSingleCourse,
-  updateRegister
+  updateRegister,
+  updateCourseCoaches
 } = require('./utils/controllers/companyController')
 
 const {
@@ -86,6 +87,7 @@ app.get('/listings', getAllListings)
 
 app.get('/courses/:courseId', getSingleCourse)
 app.patch('/courses/:courseId/players', authMiddleware, addPlayerToCourse)
+app.patch('/courses/:courseId/coaches', updateCourseCoaches)
 app.patch('/courses/:courseId', updateRegister)
 
 // enquiries
@@ -111,9 +113,9 @@ app.post('/login', loginUser)
 
 // app.get('/allCoaches', getAllAppCoaches)
 
-// app.post('/user/:id/request', sendCoachRequest)
-// app.put('/user/:id/deleterequest', deleteCoachRequest)
-// app.put('/user/:id/requests', handleCompanyRequest)
+app.post('/user/:id/request', sendCoachRequest)
+app.put('/user/:id/deleterequest', deleteCoachRequest)
+app.put('/user/:id/requests', handleCompanyRequest)
 
 // app.get('/users', getAllUsers)
 app.post('/resetpassword', forgottenPassword)

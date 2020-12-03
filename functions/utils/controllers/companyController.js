@@ -808,6 +808,51 @@ exports.updateRegister = (req, res) => {
     .catch(err => console.log(err))
 }
 
+exports.updateCourseCoaches = (req, res) => {
+  console.log('reqbody', req.body)
+  const { companyId, courseId, coaches } = req.body
+  const companyCourseRef = db.doc(`/users/${companyId}`)
+  
+  return companyCourseRef.get()
+    .then(data => {
+      console.log('hello', data.data())
+      const newCourses = [...data.data().courses]
+      let updatedCourseId
+      let previousCoaches
+
+      for (const course of newCourses) {
+        if (course.courseId === courseId) {
+          previousCoaches = course.coaches
+          course.coaches = coaches
+          updatedCourseId = course.courseId
+        }
+      }
+
+      companyCourseRef.update({
+        courses: newCourses
+      }).then(() => {
+        console.log('removed', previousCoaches)
+        
+        for (const removedCoach of previousCoaches) {
+          if (coaches.indexOf(removedCoach) === -1 ) {
+            db.doc(`/users/${removedCoach}`).update({
+              [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(updatedCourseId)
+            })
+          }
+        }
+        for (const addedCoach of coaches) {
+          db.doc(`/users/${addedCoach}`).update({
+            [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(updatedCourseId)
+          })
+        }
+      })
+    })
+    .then(() => {
+      res.status(201).json({ message: 'coaches updated' })
+    })
+    .catch(err => console.log(err))
+}
+
 exports.addPlayerToCourse = (req, res) => {
   const courseRef = db.doc(`/courses/${req.params.courseId}`)
   const playerRef = db.doc(`users/${req.body.playerId}`)
