@@ -311,12 +311,12 @@ exports.searchForCoaches = (req, res) => {
   const coachArray = []
   const userRef = db.collection('users').where('category', '==', 'coach')
 
-  userRef.orderBy('name').startAt(query).endAt(`${query}\uf8ff`).get()
+  return userRef.orderBy('name').startAt(query).endAt(`${query}\uf8ff`).get()
     .then(list => {
       list.forEach(item => {
         coachArray.push(item.data())
       })
-      res.json(coachArray)
+      res.status(201).json(coachArray)
     })
     .catch(err => console.log(err))
 }
