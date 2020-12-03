@@ -15,6 +15,8 @@ exports.newEnquiry = (req, res) => {
     messages: []
   }
 
+
+
   let messageBody = {}
 
   if (req.body.enquiryType === 'booking') {
@@ -36,26 +38,48 @@ exports.newEnquiry = (req, res) => {
     }
   }
 
-  db
-    .collection('enquiries')
-    .add(newEnquiry)
-    .then(data => {
-      db
-        .collection('enquiries')
-        .doc(data.id)
-        .update({ messages: [{ ...messageBody }] })
-    })
-    .then(() => {
-      res
-        .status(201)
-        .json({ message: 'new message added successfully' })
-    })
-    .catch(err => {
-      res
-        .status(500)
-        .json({ error: 'Something went wrong, enquiry could not be added' })
-      console.error(err)
-    })
+  let existing = false
+
+  // if (req.body.enquiryType === 'booking') {
+  //   db
+  //     .collection('enquiries')
+  //     .get()
+  //     .then(data => {
+
+  //       data.forEach((doc) => {
+  //         const query = doc.data()
+  //         if (query.companyId === companyId && query.userId === userId) existing = true
+  //       })
+
+  //       if (existing) {
+
+  //       }
+  //     })
+  // }
+
+  if (!existing) {
+    db
+      .collection('enquiries')
+      .add(newEnquiry)
+      .then(data => {
+        db
+          .collection('enquiries')
+          .doc(data.id)
+          .update({ messages: [{ ...messageBody }] })
+      })
+      .then(() => {
+        res
+          .status(201)
+          .json({ message: 'new message added successfully' })
+      })
+      .catch(err => {
+        res
+          .status(500)
+          .json({ error: 'Something went wrong, enquiry could not be added' })
+        console.error(err)
+      })
+  }
+
 }
 
 exports.getEnquiries = (req, res) => {

@@ -3,8 +3,16 @@ const functions = require('firebase-functions')
 const app = require('express')()
 // const db = require('./utils/admin')
 
-const cors = require('cors')({ origin: '*' })
-app.use(cors)
+const cors = require('cors')
+
+var corsOptions = {
+  origin: '*',
+  allowedHeaders: ['Content-Type', 'Authorization', 'Content-Length', 'X-Requested-With', 'Accept'],
+  methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
+  optionsSuccessStatus: 200
+}
+
+app.use(cors(corsOptions))
 
 // Middleware for authentication
 const authMiddleware = require('./utils/authMiddleware')
@@ -81,7 +89,7 @@ app.patch('/coaches/:id/document/:documentType', authMiddleware, uploadCoachDocu
 // app.patch('/company/:id/document', authMiddleware, uploadCompanyDocument)
 app.delete('/companies/:detail/:id', authMiddleware, dataDeletion)
 
-app.post('/filteredCompanies', filterListings )
+app.post('/filteredCompanies', filterListings)
 
 app.get('/listings', getAllListings)
 
