@@ -25,6 +25,8 @@ exports.getAllCompanies = (req, res) => {
     })
     .catch((err) => console.error(err))
 }
+
+
 exports.updateUserInformation = (req, res) => {
   db.collection('listings')
     .get()
@@ -42,8 +44,6 @@ exports.updateUserInformation = (req, res) => {
     })
     .catch((err) => console.error(err))
 }
-
-
 
 
 exports.postNewCompany = (req, res) => {
@@ -65,7 +65,6 @@ exports.postNewCompany = (req, res) => {
 }
 
 
-
 exports.ageDetails = (req, res) => {
 
   if (req.method === 'POST') {
@@ -73,7 +72,7 @@ exports.ageDetails = (req, res) => {
       .doc(`users/${req.user}`)
       .get()
       .then(data => {
-        const ageArr = [...data.data().ageDetails].concat(req.body)
+        const ageArr = data.data().ageDetails ? [...data.data().ageDetails].concat(req.body) : [...req.body]
 
         db.doc(`users/${req.user}`)
           .update({ ageDetails: ageArr })
@@ -110,9 +109,6 @@ exports.ageDetails = (req, res) => {
   }
 
 }
-
-
-
 
 
 exports.addNewDetail = (req, res) => {
@@ -176,6 +172,8 @@ exports.addNewDetail = (req, res) => {
       if (detailId === 'coachId') {
         const noImg = 'no-img.jpeg'
         requestObject.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`
+      } else if (detailId === 'courseId') {
+        requestObject.coaches = []
       }
 
       console.log('stepppp1')
@@ -213,6 +211,7 @@ exports.addNewDetail = (req, res) => {
     })
 }
 
+
 exports.sendCoachRequest = (req, res) => {
   console.log(req.body)
   const coachRef = db.doc(`/users/${req.body.coachId}`)
@@ -238,6 +237,7 @@ exports.sendCoachRequest = (req, res) => {
     })
 }
 
+
 exports.deleteCoachRequest = (req, res) => {
   console.log('boo', req.body)
   const coachRef = db.doc(`/users/${req.body.coachId}`)
@@ -262,6 +262,7 @@ exports.deleteCoachRequest = (req, res) => {
       console.error(err)
     })
 }
+
 
 exports.editCompanyDetail = (req, res) => {
   console.log(req.body, req.params.detail)
@@ -335,6 +336,7 @@ exports.editCompanyDetail = (req, res) => {
     })
 }
 
+
 exports.dataDeletion = (req, res) => {
   const { id, detail } = req.params
   console.log('this is' + id)
@@ -407,6 +409,7 @@ exports.dataDeletion = (req, res) => {
         })
     })
 }
+
 
 exports.oldUploadCoachDocument = (req, res) => {
   // exports.uploadCoachDocument = (req, res) => {
@@ -505,6 +508,9 @@ exports.oldUploadCoachDocument = (req, res) => {
 //       console.log(err)
 //     })
 // }
+
+// exports.uploadCompanyDocument = (req, res) => { }
+
 
 exports.coachImageUpload = (req, res) => {
   // HTML form data parser for Nodejs
@@ -759,6 +765,7 @@ exports.filterListings = (req, res) => {
     })
 }
 
+
 exports.getAllListings = (req, res) => {
   db.doc(`/listings/${req.user}`)
     .update({ ...req.body })
@@ -766,6 +773,7 @@ exports.getAllListings = (req, res) => {
       res.status(201).json({ message: 'Information successfully updated' })
     )
 }
+
 
 exports.getSingleCourse = (req, res) => {
   console.log(req.params)
@@ -778,7 +786,6 @@ exports.getSingleCourse = (req, res) => {
     .catch(error =>  console.log(error))
 }
 
-// exports.uploadCompanyDocument = (req, res) => { }
 
 exports.addPlayerToList = (req, res) => {
   const companyRef = db.doc(`/users/${req.params.companyId}`)
@@ -807,6 +814,7 @@ exports.updateRegister = (req, res) => {
     })
     .catch(err => console.log(err))
 }
+
 
 exports.updateCourseCoaches = (req, res) => {
   console.log('reqbody', req.body)
@@ -845,13 +853,13 @@ exports.updateCourseCoaches = (req, res) => {
             [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(updatedCourseId)
           })
         }
+      }).then(() => {
+        res.status(201).json({ message: 'coaches updated' })
       })
-    })
-    .then(() => {
-      res.status(201).json({ message: 'coaches updated' })
     })
     .catch(err => console.log(err))
 }
+
 
 exports.addPlayerToCourse = (req, res) => {
   const courseRef = db.doc(`/courses/${req.params.courseId}`)
@@ -905,6 +913,7 @@ exports.addPlayerToCourse = (req, res) => {
     })
 }
 
+
 exports.addSelfToCoaches = (req, res) => {
   const userref = db.doc(`users/${req.body.userId}`)
 
@@ -912,7 +921,8 @@ exports.addSelfToCoaches = (req, res) => {
     .update(req.body.updates)
     .then(() => {
       userref.update({
-        coaches: admin.firestore.FieldValue.arrayUnion(req.body.userId)
+        coaches: admin.firestore.FieldValue.arrayUnion(req.body.userId),
+        companies: admin.firestore.FieldValue.arrayUnion(req.body.userId)
       })
     })
     .then(() => {
@@ -920,6 +930,7 @@ exports.addSelfToCoaches = (req, res) => {
     })
     .catch((error) => console.log(error))
 }
+
 
 const createRegister = (startDate, endDate, sessionDays, playerList) => {
   const sessions = []
@@ -947,6 +958,7 @@ const createRegister = (startDate, endDate, sessionDays, playerList) => {
   return register
 }
 
+
 const addUsersToRegister = (register, newAdditions) => {
   for (const player of newAdditions) {
     register[player.id] = { name: player.name }
@@ -956,3 +968,4 @@ const addUsersToRegister = (register, newAdditions) => {
   }
   return register
 }
+

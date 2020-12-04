@@ -103,26 +103,48 @@ exports.initialRegistrationUserInformation = (req, res) => {
 exports.loginUser = (req, res) => {
   const { email, password } = req.body
   const { valid } = validateLoginFields(req.body)
+  let userId
 
   if (!valid) return res.status(400).json({ message: 'Invalid credentials' })
 
   firebase
     .auth()
     .signInWithEmailAndPassword(email, password)
-    .then((data) => data.user.getIdToken())
+    .then((data) => {
+      
+      userId = data.user.uid
+      return data.user.getIdToken()
+    })
     .then((token) => {
-      db.collection('users')
-        .where('email', '==', email)
+      db.doc(`/users/${userId}`)
         .get()
-        .then(async (data) => {
-          const user = []
-          await data.forEach((doc) => user.push(doc.data()))
-          return {
-            token,
-            accountCategory: user[0].category
+        .then((data) => {
+          
+          // console.log(data.data())
+          // await data.forEach((doc) => user.push(doc.data()))
+          // return {
+          //   token,
+          //   accountCategory: user[0].category
+          // }
+          // return {
+          //   token,
+          //   accountCategory: data.data()[0].category
+          // }
+          let response
+          let status
+          if (data.data().category) {
+            response = {
+              token,
+              accountCategory: data.data().category
+            }
+            status = 201
+          } else {
+            response = { message: 'Invalid credentials' },
+            status = 403 
           }
+          return { response, status }
         })
-        .then((data) => res.json(data))
+        .then((data) => res.status(data.status).send(data.response))
     })
     .catch((err) => {
       return res.status(403).json({ message: 'Invalid credentials', error: err })
