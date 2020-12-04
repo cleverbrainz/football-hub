@@ -12,7 +12,7 @@ var corsOptions = {
   optionsSuccessStatus: 200
 }
 
-app.use(cors(corsOptions))
+app.use(cors())
 
 // Middleware for authentication
 const authMiddleware = require('./utils/authMiddleware')
@@ -137,10 +137,10 @@ app.get('/admin/:id', getAdminPageDetails)
 // Configures firebase and lets it know that the app container is serving the functionalities
 exports.api = functions.region('europe-west2').https.onRequest(app)
 
-exports.checkPubSub = functions.pubsub.schedule('every 10 minutes')
-  .timeZone('Europe/London')
-  .onRun((context) => {
-    const time = new Date().toTimeString()
-    console.log('pubsub', time)
-    return null
-  })
+// exports.checkPubSub = functions.pubsub.schedule('every 10 minutes')
+//   .timeZone('Europe/London')
+//   .onRun((context) => {
+//     const time = new Date().toTimeString()
+//     console.log('pubsub', time)
+//     return null
+//   })
