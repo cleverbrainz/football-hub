@@ -14,7 +14,7 @@ exports.registerUser = (req, res) => {
 
 
   if (!valid) return res.status(400).json(error)
-  localStorage.removeItem('token').then(() => {
+  
     firebase
       .auth()
       .createUserWithEmailAndPassword(email, password)
@@ -39,7 +39,6 @@ exports.registerUser = (req, res) => {
           userId: newUser.userId
         })
       })
-  })
     .catch((err) => {
       if (err.code === 'auth/email-already-in-use') {
         res.status(400).json({ error: 'This email is already in use' })
@@ -105,7 +104,7 @@ exports.loginUser = (req, res) => {
   let userId
 
   if (!valid) return res.status(400).json({ message: 'Invalid credentials' })
-  localStorage.removeItem('token').then(() => {
+  
     firebase
       .auth()
       .signInWithEmailAndPassword(email, password)
@@ -145,7 +144,6 @@ exports.loginUser = (req, res) => {
           })
           .then((data) => res.status(data.status).send(data.response))
       })
-  })
     .catch((err) => {
       return res.status(403).json({ message: 'Invalid credentials', error: err })
     })
