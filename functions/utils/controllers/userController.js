@@ -100,6 +100,31 @@ exports.initialRegistrationUserInformation = (req, res) => {
 // };
 
 
+
+exports.getCompaniesAndCoaches = (req, res) => {
+  console.log('HELLOOO')
+  db.collection('users')
+    .get()
+    .then((data) => {
+      const companies = [],
+        coaches = []
+
+      data.forEach((doc) => {
+        const { category } = doc.data()
+        if (category === 'company') companies.push(doc.data())
+        if (category === 'coach') coaches.push(doc.data())
+
+      })
+
+      return res.status(201).json({ coaches, companies })
+    })
+    .catch((err) => console.error(err))
+}
+
+
+
+
+
 exports.loginUser = (req, res) => {
   const { email, password } = req.body
   const { valid } = validateLoginFields(req.body)
@@ -111,25 +136,15 @@ exports.loginUser = (req, res) => {
     .auth()
     .signInWithEmailAndPassword(email, password)
     .then((data) => {
-      
+      console.log(data.user.uid)
       userId = data.user.uid
       return data.user.getIdToken()
     })
     .then((token) => {
+
       db.doc(`/users/${userId}`)
         .get()
         .then((data) => {
-          
-          // console.log(data.data())
-          // await data.forEach((doc) => user.push(doc.data()))
-          // return {
-          //   token,
-          //   accountCategory: user[0].category
-          // }
-          // return {
-          //   token,
-          //   accountCategory: data.data()[0].category
-          // }
           let response
           let status
           if (data.data().category) {
@@ -140,7 +155,7 @@ exports.loginUser = (req, res) => {
             status = 201
           } else {
             response = { message: 'Invalid credentials' },
-            status = 403 
+              status = 403
           }
           return { response, status }
         })

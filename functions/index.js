@@ -57,6 +57,7 @@ const {
   imageDeletion,
   getOneUser,
   // updateCompanyListingInformation,
+  getCompaniesAndCoaches,
   forgottenPassword,
   userDocumentUpload,
   initialRegistrationUserInformation,
@@ -74,6 +75,8 @@ const {
 
 
 // Cloud functios and routes for companies collection
+
+app.get('/masterlists', getCompaniesAndCoaches)
 app.get('/companies', getAllCompanies)
 app.post('/companies', postNewCompany)
 // app.post('/companies/location', authMiddleware, editCompanyLocation)
@@ -125,7 +128,6 @@ app.post('/user/:id/request', sendCoachRequest)
 app.put('/user/:id/deleterequest', deleteCoachRequest)
 app.put('/user/:id/requests', handleCompanyRequest)
 
-// app.get('/users', getAllUsers)
 app.post('/resetpassword', forgottenPassword)
 // app.get('/users/:id', getOneUser)
 
