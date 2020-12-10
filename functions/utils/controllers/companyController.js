@@ -3,6 +3,7 @@
 const { db, admin } = require('../admin')
 const config = require('../configuration')
 const moment = require('moment')
+const { createAwaitingVerification } = require('./adminController')
 // const firebase = require('firebase/app')
 // require('firebase/firestore')
 
@@ -425,6 +426,78 @@ exports.dataDeletion = (req, res) => {
         })
     })
 }
+
+
+exports.uploadCompanyDocument = (req, res) => {
+  const BusBoy = require('busboy')
+  const path = require('path')
+  const os = require('os')
+  const fs = require('fs')
+  const busboy = new BusBoy({ headers: req.headers })
+  console.log('pre-file')
+  let documentFileName
+  const { documentType } = req.params
+  let documentToBeUploaded = {}
+
+  busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
+    console.log('file')
+    const fileSplit = filename.split('.')
+    const documentExtension = fileSplit[fileSplit.length - 1]
+
+    documentFileName = `${Math.round(
+      Math.random() * 10000000000
+    )}.${documentExtension}`
+
+    const filePath = path.join(os.tmpdir(), documentFileName)
+    documentToBeUploaded = { filePath, mimetype }
+
+    file.pipe(fs.createWriteStream(filePath))
+  })
+
+  busboy.on('finish', () => {
+    console.log('hello')
+    admin
+      .storage()
+      .bucket()
+      .upload(documentToBeUploaded.filePath, {
+        resumable: false,
+        metadata: {
+          metadata: {
+            contentType: documentToBeUploaded.mimetype,
+          },
+        },
+      })
+      .then(() => {
+        const documentURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${documentFileName}?alt=media`
+        const docref = db.doc(`users/${req.user}`)
+        docref
+          .update({
+            [`documents.${documentType}`]: documentURL,
+          })
+          .then(() => {
+            docref.get().then((data) => {
+              req.info = data.data()
+              req.type = 'companyInfo'
+              if (
+                req.info.documents.public_liability_insurance &&
+                req.info.documents.professional_indemnity_insurance &&
+                !req.info.verificationId
+              ) {
+                return createAwaitingVerification(req, res)
+              }
+            })
+          })
+      })
+  })
+  busboy.end(req.rawBody)
+}
+
+
+
+
+
+
+
 
 exports.oldUploadCoachDocument = (req, res) => {
   // exports.uploadCoachDocument = (req, res) => {

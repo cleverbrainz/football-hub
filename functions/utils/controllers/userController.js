@@ -49,9 +49,9 @@ exports.registerUser = (req, res) => {
 exports.initialRegistrationUserInformation = (req, res) => {
   // const user = firebase.auth().currentUser
 
-  const newUser = { ...req.body.requestObject }
+  const newUser = { ...req.body }
 
-  if (newUser.requestObject.category === 'player' || newUser.requestObject.category === 'parent') {
+  if (newUser.category === 'player' || newUser.category === 'parent') {
     const noImg = 'no-img.jpeg'
     newUser.bio = ''
     newUser.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`
@@ -79,12 +79,16 @@ exports.initialRegistrationUserInformation = (req, res) => {
   newUser.requests = []
   newUser.sentRequests = []
 
-  return db
-    .doc(`/users/${req.body.userId}`)
-    .update(newUser)
+  // createAwaitingVerification({ ...newUser, type: 'companyInfo' })
+  //   .then(data => {
+  //     console.log('back to user', data)
+  //     db.doc(`/users/${req.body.userId}`).update({ ...newUser, verificationId: data.id })
+  //   })
+  db.doc(`/users/${req.body.userId}`).update({ ...newUser })
     .then(() =>
       res.status(201).json({ message: 'Information successfully updated' })
     )
+    .catch(err => console.log(err))
 }
 
 // exports.updateCompanyListingInformation = (req, res) => {
@@ -335,7 +339,8 @@ exports.userDocumentUpload = (req, res) => {
             userId,
             name: coachInfo.name,
             documentation: coachInfo.documentation,
-            verification
+            verification,
+            type: 'coachDocument'
           }
           createAwaitingVerification(verificationData)
             .then(data => {
