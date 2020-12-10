@@ -12,35 +12,33 @@ exports.registerUser = (req, res) => {
   const newUser = { name, email }
   const { valid, error } = validateSignupFields(req.body)
 
-  if (!valid) return res.status(400).json(error)
 
-  firebase
-    .auth()
-    .createUserWithEmailAndPassword(email, password)
-    .then((data) => {
-      newUser.userId = data.user.uid
-      newUser.joined = admin.firestore.Timestamp.fromDate(new Date())
-      newUser.account_validation_check = false
-      data.user.getIdToken()
-    })
-    .then(() => {
-      db.collection('users').doc(`${newUser.userId}`).set(newUser)
-    })
-    .then(() => {
-      const user = firebase.auth().currentUser
-      user
-        .sendEmailVerification()
-        .then(() => {
-          res.status(201).json({
-            message:
-              'We\'ve sent you an email with instructions to verfiy your email address. Please make sure it didn\'t wind up in your Junk Mail.',
-            userId: user.uid
-          })
+  if (!valid) return res.status(400).json(error)
+  
+    firebase
+      .auth()
+      .createUserWithEmailAndPassword(email, password)
+      .then((data) => {
+        newUser.userId = data.user.uid
+        newUser.joined = admin.firestore.Timestamp.fromDate(new Date())
+        newUser.account_validation_check = false
+        data.user.getIdToken()
+        return data.user
+      })
+      .then(user => {
+        user
+          .sendEmailVerification()
+      })
+      .then(() => {
+        db.collection('users').doc(`${newUser.userId}`).set(newUser)
+      })
+      .then(() => {
+        res.status(201).json({
+          message:
+            'We\'ve sent you an email with instructions to verfiy your email address. Please make sure it didn\'t wind up in your Junk Mail.',
+          userId: newUser.userId
         })
-        .catch((error) => {
-          console.err(error)
-        })
-    })
+      })
     .catch((err) => {
       if (err.code === 'auth/email-already-in-use') {
         res.status(400).json({ error: 'This email is already in use' })
@@ -49,16 +47,16 @@ exports.registerUser = (req, res) => {
 }
 
 exports.initialRegistrationUserInformation = (req, res) => {
-  const user = firebase.auth().currentUser
+  // const user = firebase.auth().currentUser
 
   const newUser = { ...req.body }
 
-  if (req.body.category === 'player' || req.body.category === 'parent') {
+  if (newUser.category === 'player' || newUser.category === 'parent') {
     const noImg = 'no-img.jpeg'
     newUser.bio = ''
     newUser.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`
   } else {
-    if (req.body.category === 'coach') {
+    if (newUser.category === 'coach') {
       newUser.verification = {
         coachDocumentationCheck: false,
         paymentCheck: false
@@ -81,12 +79,16 @@ exports.initialRegistrationUserInformation = (req, res) => {
   newUser.requests = []
   newUser.sentRequests = []
 
-  return db
-    .doc(`/users/${user.uid}`)
-    .update(newUser)
+  // createAwaitingVerification({ ...newUser, type: 'companyInfo' })
+  //   .then(data => {
+  //     console.log('back to user', data)
+  //     db.doc(`/users/${req.body.userId}`).update({ ...newUser, verificationId: data.id })
+  //   })
+  db.doc(`/users/${req.body.userId}`).update({ ...newUser })
     .then(() =>
       res.status(201).json({ message: 'Information successfully updated' })
     )
+    .catch(err => console.log(err))
 }
 
 // exports.updateCompanyListingInformation = (req, res) => {
@@ -131,36 +133,46 @@ exports.loginUser = (req, res) => {
   let userId
 
   if (!valid) return res.status(400).json({ message: 'Invalid credentials' })
+  
+    firebase
+      .auth()
+      .signInWithEmailAndPassword(email, password)
+      .then((data) => {
 
-  firebase
-    .auth()
-    .signInWithEmailAndPassword(email, password)
-    .then((data) => {
-      console.log(data.user.uid)
-      userId = data.user.uid
-      return data.user.getIdToken()
-    })
-    .then((token) => {
+        userId = data.user.uid
+        return data.user.getIdToken()
+      })
+      .then((token) => {
+        db.doc(`/users/${userId}`)
+          .get()
+          .then((data) => {
 
-      db.doc(`/users/${userId}`)
-        .get()
-        .then((data) => {
-          let response
-          let status
-          if (data.data().category) {
-            response = {
-              token,
-              accountCategory: data.data().category
+            // console.log(data.data())
+            // await data.forEach((doc) => user.push(doc.data()))
+            // return {
+            //   token,
+            //   accountCategory: user[0].category
+            // }
+            // return {
+            //   token,
+            //   accountCategory: data.data()[0].category
+            // }
+            let response
+            let status
+            if (data.data().category) {
+              response = {
+                token,
+                accountCategory: data.data().category
+              }
+              status = 201
+            } else {
+              response = { message: 'Invalid credentials' },
+              status = 403 
             }
-            status = 201
-          } else {
-            response = { message: 'Invalid credentials' },
-              status = 403
-          }
-          return { response, status }
-        })
-        .then((data) => res.status(data.status).send(data.response))
-    })
+            return { response, status }
+          })
+          .then((data) => res.status(data.status).send(data.response))
+      })
     .catch((err) => {
       return res.status(403).json({ message: 'Invalid credentials', error: err })
     })
@@ -352,7 +364,8 @@ exports.userDocumentUpload = (req, res) => {
             userId,
             name: coachInfo.name,
             documentation: coachInfo.documentation,
-            verification
+            verification,
+            type: 'coachDocument'
           }
           createAwaitingVerification(verificationData)
             .then(data => {

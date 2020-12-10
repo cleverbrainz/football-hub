@@ -37,7 +37,8 @@ const {
   getAllListings,
   getSingleCourse,
   updateRegister,
-  updateCourseCoaches
+  updateCourseCoaches,
+  uploadCompanyDocument
 } = require('./utils/controllers/companyController')
 
 const {
@@ -86,6 +87,7 @@ app.patch('/companies/array/:detail', authMiddleware, editCompanyDetail)
 app.post('/companies/:detail', addNewDetail)
 app.patch('/companies/addSelfCoach', authMiddleware, addSelfToCoaches)
 app.patch('/companies/:companyId/players', authMiddleware, addPlayerToList)
+app.patch('/companies/:id/document/:documentType', authMiddleware, uploadCompanyDocument)
 app.get('/coaches/search/:query', searchForCoaches)
 app.post('/coaches/image/:id', authMiddleware, coachImageUpload)
 app.patch('/coaches/:id/document/:documentType', authMiddleware, uploadCoachDocument)

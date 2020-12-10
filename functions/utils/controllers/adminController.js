@@ -20,13 +20,38 @@ exports.getAdminPageDetails = (req, res) => {
 }
 
 exports.createAwaitingVerification = (req, res) => {
-  db.collection('awaitingVerification').add({
+
+  console.log('verify', req)
+
+  const verificationInfo = req.type === 'companyInfo' ? {
     userId: req.info.userId,
-    name: req.info.name,
-    documents: req.info.documents,
     verification: req.info.verification,
-    message: ''
-  })
+    accounts_contact_number: req.info.accounts_contact_number,
+    accounts_email: req.info.accounts_email,
+    vat_number: req.info.vat_number,
+    professional_indemnity_insurance: req.info.professional_indemnity_insurance,
+    public_liability_insurance: req.info.public_liability_insurance,
+    documents: req.info.documents,
+    type: req.type
+  } :
+    { userId: req.info.userId,
+      name: req.info.name,
+      documents: req.info.documents,
+      verification: req.info.verification,
+      message: '',
+      type: req.type
+    }
+
+  // console.log(verificationInfo)
+
+  // db.collection('awaitingVerification').add({
+  //   userId: req.userId,
+  //   name: req.name,
+  //   documents: req.documents,
+  //   verification: req.verification,
+  //   message: ''
+  // })
+  return db.collection('awaitingVerification').add(verificationInfo)
     .then(data => {
       db.doc(`awaitingVerification/${data.id}`).update({
         verificationId: data.id
@@ -35,6 +60,7 @@ exports.createAwaitingVerification = (req, res) => {
         verificationId: data.id
       })
       res.status(201).json({ message: 'Document successfully uploaded', data })
+      // return data
     })
     .catch(error => console.log(error))
 }
