@@ -102,6 +102,31 @@ exports.initialRegistrationUserInformation = (req, res) => {
 // };
 
 
+
+exports.getCompaniesAndCoaches = (req, res) => {
+  console.log('HELLOOO')
+  db.collection('users')
+    .get()
+    .then((data) => {
+      const companies = [],
+        coaches = []
+
+      data.forEach((doc) => {
+        const { category } = doc.data()
+        if (category === 'company') companies.push(doc.data())
+        if (category === 'coach') coaches.push(doc.data())
+
+      })
+
+      return res.status(201).json({ coaches, companies })
+    })
+    .catch((err) => console.error(err))
+}
+
+
+
+
+
 exports.loginUser = (req, res) => {
   const { email, password } = req.body
   const { valid } = validateLoginFields(req.body)
