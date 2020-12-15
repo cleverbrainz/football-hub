@@ -26,6 +26,8 @@ exports.createAwaitingVerification = (req, res) => {
   const verificationInfo = req.type === 'companyInfo' ? {
     userId: req.info.userId,
     verification: req.info.verification,
+    name: req.info.name,
+    company_registration_number: req.info.company_registration_number,
     accounts_contact_number: req.info.accounts_contact_number,
     accounts_email: req.info.accounts_email,
     vat_number: req.info.vat_number,

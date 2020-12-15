@@ -392,3 +392,19 @@ exports.updateUserDetails = (req, res) => {
     })
     .catch(error => console.log(error))
 }
+
+exports.searchForPlayers = (req, res) => {
+
+  const { query } = req.params
+  const coachArray = []
+  const userRef = db.collection('users').where('category', '==', 'player')
+
+  return userRef.orderBy('name').startAt(query.toUpperCase()).endAt(`${query.toLowerCase()}\uf8ff`).get()
+    .then(list => {
+      list.forEach(item => {
+        coachArray.push(item.data())
+      })
+      res.status(201).json(coachArray)
+    })
+    .catch(err => console.log(err))
+}

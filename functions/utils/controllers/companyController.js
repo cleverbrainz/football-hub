@@ -999,7 +999,7 @@ exports.addPlayerToCourse = (req, res) => {
                 age: req.body.playerAge,
               },
             ])
-            : createRegister(
+            : courseDetails.courseType === 'Camp' ? createRegister(
               courseDetails.firstDay,
               courseDetails.lastDay,
               dayNums,
@@ -1010,7 +1010,20 @@ exports.addPlayerToCourse = (req, res) => {
                   age: req.body.playerAge,
                 },
               ]
-            )
+            ) :
+              createRegister(
+                courseDetails.startDate,
+                courseDetails.endDate,
+                dayNums,
+                [
+                  {
+                    name: req.body.playerName,
+                    id: req.body.playerId,
+                    age: req.body.playerAge,
+                  },
+                ]
+              )
+
           courseRef.update({
             register: newRegister,
           })
@@ -1055,6 +1068,7 @@ const createRegister = (startDate, endDate, sessionDays, playerList) => {
   const endMoment = moment(endDate)
 
   while (date.isSameOrBefore(endMoment)) {
+    console.log(date.day())
     if (sessionDays.some((day) => day === date.day())) {
       // console.log(date.day())
       sessions.push(date.format('YYYY-MM-DD'))

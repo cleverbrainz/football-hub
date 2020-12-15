@@ -62,7 +62,8 @@ const {
   forgottenPassword,
   userDocumentUpload,
   initialRegistrationUserInformation,
-  updateUserDetails
+  updateUserDetails,
+  searchForPlayers
 } = require('./utils/controllers/userController')
 
 const {
@@ -117,6 +118,8 @@ app.post('/user/:id/image', authMiddleware, customerImageUpload)
 app.post('/user/:id/signup', initialRegistrationUserInformation)
 app.post('/user/document', authMiddleware, userDocumentUpload)
 app.get('/users/:id', getOneUser)
+app.get('/players/search/:query', searchForPlayers)
+
 
 app.patch('/users/:id', authMiddleware, updateUserDetails)
 // app.post('/user/:id', authMiddleware, updateCompanyListingInformation)
