@@ -5,6 +5,7 @@ const config = require('../configuration')
 const moment = require('moment')
 const { createAwaitingVerification } = require('./adminController')
 // const firebase = require('firebase/app')
+const nodemailer = require('nodemailer');
 // require('firebase/firestore')
 
 exports.getAllCompanies = (req, res) => {
@@ -1097,4 +1098,85 @@ const addUsersToRegister = (register, newAdditions) => {
     }
   }
   return register
+}
+
+
+
+exports.sendPlayerRequestEmail = (req, res) => {
+  console.log(req.body, req.params)
+  const { email, companyName } = req.body
+  const code = req.body.companyId
+  let username = ''
+  const target = req.params.type === 'local'
+    ? 'http://localhost:3000'
+    : 'https://football-hub-4018a.firebaseapp.com'
+
+  let output = `
+    <h2 style='text-align:center'> Welcome to Baller Hub from ${companyName}! </h2>
+    <p> Hello! </p>
+    <p> ${companyName} wants to connect with you on Baller Hub for football training in the future.</p>
+    <p> click the link below to create an account with Baller Hub and learn more.</p>
+    <a href='${target}/register/player/${code}' target='_blank'>Click here to sign up!</a>
+  `
+
+
+
+  db.collection('users').where('email', '==', email).get()
+    .then((data) => {
+
+      const transporter = nodemailer.createTransport({
+        // host: 'smtp.office365.com',
+        // port: 587,
+        // auth: {
+        //   user: 'kenn@indulgefootball.com',
+        //   pass: 'Welcome342!',
+        // },
+        // secureConnection: false,
+        // tls: {
+        //   ciphers: 'SSLv3',
+        // },
+
+        service: 'gmail',
+        auth: {
+          user: 'indulgefootballemail@gmail.com',
+          pass: 'Indulg3Manchester1'
+        }
+      })
+    
+      const mailOptions = {
+        from: 'indulgefootballemail@gmail.com',
+        to: email,
+        subject: `Welcome to Baller Hub from ${companyName}!`,
+        html: output,
+      }
+
+
+      if (!data.empty) {
+        data.forEach(dataUser => {
+          username = dataUser.data().name
+        })
+        output = `
+        <h2 style='text-align:center'>Greetings from ${companyName}! </h2>
+        <p> Hello ${username}! </p>
+        <p> ${companyName} wants to connect with you on Baller Hub for football training in the future.</p>
+        <p> click the link below to head to Baller Hub and connect with ${companyName}.</p>
+        <a href='${target}' target="_blank">Log in and confirm the request!</a>
+      `
+
+        mailOptions.to = `${username} <${email}>`
+        mailOptions.subject = `Baller Hub connection request from ${companyName}!`
+      }
+    
+      transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
+          return res.status(400).send({ error: err })
+        }
+    
+        res.send({ message: 'Message sent: %s', messageId: info.messageId, previewUrl: 'Preview URL: %s', preview: nodemailer.getTestMessageUrl(info) })
+      })
+
+
+
+    })
+
 }

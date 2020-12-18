@@ -38,7 +38,8 @@ const {
   getSingleCourse,
   updateRegister,
   updateCourseCoaches,
-  uploadCompanyDocument
+  uploadCompanyDocument,
+  sendPlayerRequestEmail
 } = require('./utils/controllers/companyController')
 
 const {
@@ -100,7 +101,7 @@ app.post('/filteredCompanies', filterListings)
 app.get('/listings', getAllListings)
 
 app.get('/courses/:courseId', getSingleCourse)
-app.patch('/courses/:courseId/players', authMiddleware, addPlayerToCourse)
+app.patch('/courses/:courseId/players', addPlayerToCourse)
 app.patch('/courses/:courseId/coaches', updateCourseCoaches)
 app.patch('/courses/:courseId', updateRegister)
 
@@ -140,6 +141,9 @@ app.get('/admin/awaitingVerification', getVerifications)
 app.put('/admin/awaitingVerification/:id', acceptAwaitingVerification)
 app.post('/admin/:id', adminPageEdits)
 app.get('/admin/:id', getAdminPageDetails)
+
+
+app.post('/emailRequest/:type', sendPlayerRequestEmail)
 
 // Configures firebase and lets it know that the app container is serving the functionalities
 exports.api = functions.region('europe-west2').https.onRequest(app)
