@@ -31,6 +31,7 @@ exports.registerUser = (req, res) => {
       })
       .then(() => {
         db.collection('users').doc(`${newUser.userId}`).set(newUser)
+        
       })
       .then(() => {
         res.status(201).json({
@@ -61,7 +62,7 @@ exports.initialRegistrationUserInformation = (req, res) => {
         coachDocumentationCheck: false,
         paymentCheck: false
       }
-      newUser.companies = []
+      newUser.companies = newUser.companyLink ? [...newUser.companyLink] : []
       newUser.coachInfo = {}
     } else {
       newUser.verification = {
@@ -85,9 +86,22 @@ exports.initialRegistrationUserInformation = (req, res) => {
   //     db.doc(`/users/${req.body.userId}`).update({ ...newUser, verificationId: data.id })
   //   })
   db.doc(`/users/${req.body.userId}`).update({ ...newUser })
-    .then(() =>
+    .then(() => {
+
+      if (newUser.companyLink) {
+
+        db.doc(`/users/${newUser.companyLink}`).update({ 
+          [`players.${req.body.userId}`]: {
+            age: 16,
+            id: req.body.userId,
+            name: 'Patrick W',
+            status: 'Prospect'
+          }
+        })
+      }
+
       res.status(201).json({ message: 'Information successfully updated' })
-    )
+    })
     .catch(err => console.log(err))
 }
 
