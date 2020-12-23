@@ -150,7 +150,7 @@ app.put('/admin/awaitingVerification/:id', acceptAwaitingVerification)
 app.post('/admin/:id', adminPageEdits)
 app.get('/admin/:id', getAdminPageDetails)
 
-app.post('/emailRequest/:type', sendPlayerRequestEmail)
+app.post('/emailRequest', sendPlayerRequestEmail)
 
 
 
