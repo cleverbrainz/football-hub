@@ -1,25 +1,14 @@
 // The Cloud Functions for Firebase SDK to create Cloud Functions and setup triggers.
 const functions = require('firebase-functions')
-const app = require('express')()
-const moment = require('moment')
-const { db, admin } = require('./utils/admin')
+const express = require('express')
+const app = express()
+const db = require('./utils/admin')
 
 const cors = require('cors')
-
-var corsOptions = {
-  origin: '*',
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'Content-Length',
-    'X-Requested-With',
-    'Accept',
-  ],
-  methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
-  optionsSuccessStatus: 200,
-}
+const stripe = require('stripe')('sk_test_4eC39HqLyjWDarjtT1zdp7dc')
 
 app.use(cors())
+app.use(express.static('.'))
 
 // Middleware for authentication
 const authMiddleware = require('./utils/authMiddleware')
@@ -48,6 +37,8 @@ const {
   uploadCompanyDocument,
   sendPlayerRequestEmail,
 } = require('./utils/controllers/companyController')
+
+const { createStripePayment } = require('./utils/controllers/paymentController')
 
 const {
   newEnquiry,
@@ -159,6 +150,10 @@ app.post('/admin/:id', adminPageEdits)
 app.get('/admin/:id', getAdminPageDetails)
 
 app.post('/emailRequest/:type', sendPlayerRequestEmail)
+
+
+
+app.post('/create-payment', createStripePayment)
 
 // Configures firebase and lets it know that the app container is serving the functionalities
 exports.api = functions.region('europe-west2').https.onRequest(app)
