@@ -285,14 +285,14 @@ exports.uploadCoachDocument = (req, res) => {
         const docref = db.doc(`users/${req.user}`)
         docref
           .update({
-            [`coachInfo.${documentType}`]: documentURL,
+            [`coachInfo.${documentType}`]: documentURL
           })
           .then(() => {
             docref.get().then((data) => {
               req.info = data.data()
               if (
-                req.info.documents.dbsCertificate &&
-                req.info.documents.coachingCertificate &&
+                req.info.coachInfo.dbsCertificate &&
+                req.info.coachInfo.coachingCertificate &&
                 !req.info.verificationId
               ) {
                 createAwaitingVerification(req, res)

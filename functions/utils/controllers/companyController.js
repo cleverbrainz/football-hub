@@ -208,12 +208,13 @@ exports.addNewDetail = (req, res) => {
         .get()
         .then((data) => {
           let newArr = []
-          if (data.data()[req.params.detail]) {
-            newArr = [...data.data()[req.params.detail], requestObject]
+          const check = req.params.detail === 'courses' ? [req.params.detail].active : req.params.detail
+          if (data.data()[check]) {
+            newArr = [...check, requestObject]
           } else newArr = [requestObject]
 
           db.doc(`users/${req.body.companyId}`).update({
-            [req.params.detail]: newArr,
+            [check]: newArr,
           })
         })
         .then(() => {
@@ -874,7 +875,7 @@ exports.addPlayerToList = (req, res) => {
     name: req.body.playerName,
     id: req.body.playerId,
     status: req.body.playerStatus,
-    age: req.body.playerAge,
+    dob: req.body.playerDob,
   }
 
   return companyRef
@@ -904,6 +905,10 @@ exports.updateCourseCoaches = (req, res) => {
   console.log('reqbody', req.body)
   const { companyId, courseId, coaches } = req.body
   const companyCourseRef = db.doc(`/users/${companyId}`)
+
+  db.doc(`/courses/${courseId}`).update({
+    coaches: [...coaches]
+  })
 
   return companyCourseRef
     .get()
@@ -997,7 +1002,7 @@ exports.addPlayerToCourse = (req, res) => {
               {
                 name: req.body.playerName,
                 id: req.body.playerId,
-                age: req.body.playerAge,
+                dob: req.body.playerDob,
               },
             ])
             : courseDetails.courseType === 'Camp' ? createRegister(
@@ -1008,7 +1013,7 @@ exports.addPlayerToCourse = (req, res) => {
                 {
                   name: req.body.playerName,
                   id: req.body.playerId,
-                  age: req.body.playerAge,
+                  dob: req.body.playerDob,
                 },
               ]
             ) :
@@ -1020,7 +1025,7 @@ exports.addPlayerToCourse = (req, res) => {
                   {
                     name: req.body.playerName,
                     id: req.body.playerId,
-                    age: req.body.playerAge,
+                    dob: req.body.playerDob,
                   },
                 ]
               )
@@ -1038,6 +1043,9 @@ exports.addPlayerToCourse = (req, res) => {
                 courseId
               ),
             })
+          db.doc(`/users/${companyId}`).update({
+            [`players.${req.body.playerId}.status`]: 'Active'
+          })
             .then(() =>
               res.status(201).send({ message: 'player added to course' })
             )
@@ -1080,7 +1088,7 @@ const createRegister = (startDate, endDate, sessionDays, playerList) => {
   const register = { sessions }
 
   for (const player of playerList) {
-    register[player.id] = { name: player.name, age: player.age, id: player.id }
+    register[player.id] = { name: player.name, age: player.dob, id: player.id }
     for (const date of sessions) {
       register[player.id][date] = { attendance: false, notes: '' }
     }
