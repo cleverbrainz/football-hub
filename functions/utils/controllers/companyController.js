@@ -5,7 +5,7 @@ const config = require('../configuration')
 const moment = require('moment')
 const { createAwaitingVerification } = require('./adminController')
 // const firebase = require('firebase/app')
-const nodemailer = require('nodemailer');
+const nodemailer = require('nodemailer')
 // require('firebase/firestore')
 
 exports.getAllCompanies = (req, res) => {
@@ -208,12 +208,16 @@ exports.addNewDetail = (req, res) => {
         .get()
         .then((data) => {
           let newArr = []
-          if (data.data()[req.params.detail]) {
-            newArr = [...data.data()[req.params.detail], requestObject]
+          const check =
+            req.params.detail === 'courses'
+              ? [req.params.detail].active
+              : req.params.detail
+          if (data.data()[check]) {
+            newArr = [...check, requestObject]
           } else newArr = [requestObject]
 
           db.doc(`users/${req.body.companyId}`).update({
-            [req.params.detail]: newArr,
+            [check]: newArr,
           })
         })
         .then(() => {
@@ -428,7 +432,6 @@ exports.dataDeletion = (req, res) => {
     })
 }
 
-
 exports.uploadCompanyDocument = (req, res) => {
   const BusBoy = require('busboy')
   const path = require('path')
@@ -492,13 +495,6 @@ exports.uploadCompanyDocument = (req, res) => {
   })
   busboy.end(req.rawBody)
 }
-
-
-
-
-
-
-
 
 exports.oldUploadCoachDocument = (req, res) => {
   // exports.uploadCoachDocument = (req, res) => {
@@ -874,7 +870,7 @@ exports.addPlayerToList = (req, res) => {
     name: req.body.playerName,
     id: req.body.playerId,
     status: req.body.playerStatus,
-    age: req.body.playerAge,
+    dob: req.body.playerDob,
   }
 
   return companyRef
@@ -904,6 +900,10 @@ exports.updateCourseCoaches = (req, res) => {
   console.log('reqbody', req.body)
   const { companyId, courseId, coaches } = req.body
   const companyCourseRef = db.doc(`/users/${companyId}`)
+
+  db.doc(`/courses/${courseId}`).update({
+    coaches: [...coaches],
+  })
 
   return companyCourseRef
     .get()
@@ -935,11 +935,15 @@ exports.updateCourseCoaches = (req, res) => {
                 if (coaches.indexOf(removedCoach) === -1) {
                   category === 'coach'
                     ? db.doc(`/users/${removedCoach}`).update({
-                      [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(updatedCourseId)
-                    })
+                        [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(
+                          updatedCourseId
+                        ),
+                      })
                     : db.doc(`/users/${removedCoach}`).update({
-                      [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(updatedCourseId)
-                    })
+                        [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(
+                          updatedCourseId
+                        ),
+                      })
                 }
               })
           }
@@ -952,11 +956,15 @@ exports.updateCourseCoaches = (req, res) => {
 
                 category === 'coach'
                   ? db.doc(`/users/${addedCoach}`).update({
-                    [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(updatedCourseId)
-                  })
+                      [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
+                        updatedCourseId
+                      ),
+                    })
                   : db.doc(`/users/${addedCoach}`).update({
-                    [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(updatedCourseId)
-                  })
+                      [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
+                        updatedCourseId
+                      ),
+                    })
               })
           }
         })
@@ -984,35 +992,36 @@ exports.addPlayerToCourse = (req, res) => {
           const dayNums =
             courseDetails.courseType === 'Camp'
               ? courseDetails.sessions.map((session) =>
-              // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
-                moment(session.sessionDate.toDate()).day()
-              )
+                  // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+                  moment(session.sessionDate.toDate()).day()
+                )
               : courseDetails.sessions.map((session) =>
-              // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
-                moment().day(session.day).day()
-              )
+                  // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+                  moment().day(session.day).day()
+                )
           console.log({ dayNums })
           const newRegister = register
             ? addUsersToRegister(register, [
-              {
-                name: req.body.playerName,
-                id: req.body.playerId,
-                age: req.body.playerAge,
-              },
-            ])
-            : courseDetails.courseType === 'Camp' ? createRegister(
-              courseDetails.firstDay,
-              courseDetails.lastDay,
-              dayNums,
-              [
                 {
                   name: req.body.playerName,
                   id: req.body.playerId,
-                  age: req.body.playerAge,
+                  dob: req.body.playerDob,
                 },
-              ]
-            ) :
-              createRegister(
+              ])
+            : courseDetails.courseType === 'Camp'
+            ? createRegister(
+                courseDetails.firstDay,
+                courseDetails.lastDay,
+                dayNums,
+                [
+                  {
+                    name: req.body.playerName,
+                    id: req.body.playerId,
+                    dob: req.body.playerDob,
+                  },
+                ]
+              )
+            : createRegister(
                 courseDetails.startDate,
                 courseDetails.endDate,
                 dayNums,
@@ -1020,7 +1029,7 @@ exports.addPlayerToCourse = (req, res) => {
                   {
                     name: req.body.playerName,
                     id: req.body.playerId,
-                    age: req.body.playerAge,
+                    dob: req.body.playerDob,
                   },
                 ]
               )
@@ -1032,11 +1041,14 @@ exports.addPlayerToCourse = (req, res) => {
         })
         .then((data) => {
           const { companyId, courseId } = data
-          playerRef
+          playerRef.update({
+            [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
+              courseId
+            ),
+          })
+          db.doc(`/users/${companyId}`)
             .update({
-              [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
-                courseId
-              ),
+              [`players.${req.body.playerId}.status`]: 'Active',
             })
             .then(() =>
               res.status(201).send({ message: 'player added to course' })
@@ -1080,7 +1092,7 @@ const createRegister = (startDate, endDate, sessionDays, playerList) => {
   const register = { sessions }
 
   for (const player of playerList) {
-    register[player.id] = { name: player.name, age: player.age, id: player.id }
+    register[player.id] = { name: player.name, age: player.dob, id: player.id }
     for (const date of sessions) {
       register[player.id][date] = { attendance: false, notes: '' }
     }
@@ -1100,16 +1112,15 @@ const addUsersToRegister = (register, newAdditions) => {
   return register
 }
 
-
-
 exports.sendPlayerRequestEmail = (req, res) => {
   console.log(req.body, req.params)
-  const { email, companyName } = req.body
-  const code = req.body.companyId
+  const { email, companyName, companyId, type } = req.body
+  const code = companyId
   let username = ''
-  const target = req.params.type === 'local'
-    ? 'http://localhost:3000'
-    : 'https://football-hub-4018a.firebaseapp.com'
+  const target =
+    type === 'localhost'
+      ? 'http://localhost:3000'
+      : 'https://football-hub-4018a.firebaseapp.com'
 
   let output = `
     <h2 style='text-align:center'> Welcome to Baller Hub from ${companyName}! </h2>
@@ -1119,11 +1130,10 @@ exports.sendPlayerRequestEmail = (req, res) => {
     <a href='${target}/register/player/${code}' target='_blank'>Click here to sign up!</a>
   `
 
-
-
-  db.collection('users').where('email', '==', email).get()
+  db.collection('users')
+    .where('email', '==', email)
+    .get()
     .then((data) => {
-
       const transporter = nodemailer.createTransport({
         // host: 'smtp.office365.com',
         // port: 587,
@@ -1139,10 +1149,10 @@ exports.sendPlayerRequestEmail = (req, res) => {
         service: 'gmail',
         auth: {
           user: 'indulgefootballemail@gmail.com',
-          pass: 'Indulg3Manchester1'
-        }
+          pass: 'Indulg3Manchester1',
+        },
       })
-    
+
       const mailOptions = {
         from: 'indulgefootballemail@gmail.com',
         to: email,
@@ -1150,33 +1160,35 @@ exports.sendPlayerRequestEmail = (req, res) => {
         html: output,
       }
 
-
-      if (!data.empty) {
-        data.forEach(dataUser => {
+      data.forEach((dataUser) => {
+        if (dataUser.exists) {
           username = dataUser.data().name
-        })
-        output = `
+          console.log('username', username)
+
+          mailOptions.html = `
         <h2 style='text-align:center'>Greetings from ${companyName}! </h2>
         <p> Hello ${username}! </p>
         <p> ${companyName} wants to connect with you on Baller Hub for football training in the future.</p>
         <p> click the link below to head to Baller Hub and connect with ${companyName}.</p>
-        <a href='${target}' target="_blank">Log in and confirm the request!</a>
+        <a href='${target}/login' target="_blank">Log in and confirm the request!</a>
       `
 
-        mailOptions.to = `${username} <${email}>`
-        mailOptions.subject = `Baller Hub connection request from ${companyName}!`
-      }
-    
+          mailOptions.to = `${username} <${email}>`
+          mailOptions.subject = `Baller Hub connection request from ${companyName}!`
+        }
+      })
+
       transporter.sendMail(mailOptions, (err, info) => {
         if (err) {
           return res.status(400).send({ error: err })
         }
-    
-        res.send({ message: 'Message sent: %s', messageId: info.messageId, previewUrl: 'Preview URL: %s', preview: nodemailer.getTestMessageUrl(info) })
+
+        res.send({
+          message: 'Message sent: %s',
+          messageId: info.messageId,
+          previewUrl: 'Preview URL: %s',
+          preview: nodemailer.getTestMessageUrl(info),
+        })
       })
-
-
-
     })
-
 }

@@ -53,6 +53,10 @@ exports.initialRegistrationUserInformation = (req, res) => {
   const newUser = { ...req.body }
 
   if (newUser.category === 'player' || newUser.category === 'parent') {
+    newUser.dob = `${newUser.birthdayYear}-${newUser.birthdayMonth}-${newUser.birthdayDay}`
+    delete newUser.birthdayYear
+    delete newUser.birthdayMonth
+    delete newUser.birthdayDay
     const noImg = 'no-img.jpeg'
     newUser.bio = ''
     newUser.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`
@@ -94,7 +98,7 @@ exports.initialRegistrationUserInformation = (req, res) => {
           [`players.${req.body.userId}`]: {
             age: 16,
             id: req.body.userId,
-            name: 'Patrick W',
+            name: newUser.name,
             status: 'Prospect'
           }
         })
