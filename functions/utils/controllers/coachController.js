@@ -290,12 +290,15 @@ exports.uploadCoachDocument = (req, res) => {
           .then(() => {
             docref.get().then((data) => {
               req.info = data.data()
+              req.type = 'coachInfo'
               if (
                 req.info.coachInfo.dbsCertificate &&
                 req.info.coachInfo.coachingCertificate &&
-                !req.info.verificationId
+                !req.info.verificationId.coachInfo
               ) {
                 createAwaitingVerification(req, res)
+              } else {
+                res.send(req.info)
               }
             })
           })

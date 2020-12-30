@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer')
 
 const firebase = require('firebase')
 const { createAwaitingVerification } = require('./adminController')
+const { get } = require('http')
 firebase.initializeApp(config)
 
 exports.registerUser = (req, res) => {
@@ -12,34 +13,31 @@ exports.registerUser = (req, res) => {
   const newUser = { name, email }
   const { valid, error } = validateSignupFields(req.body)
 
-
   if (!valid) return res.status(400).json(error)
-  
-    firebase
-      .auth()
-      .createUserWithEmailAndPassword(email, password)
-      .then((data) => {
-        newUser.userId = data.user.uid
-        newUser.joined = admin.firestore.Timestamp.fromDate(new Date())
-        newUser.account_validation_check = false
-        data.user.getIdToken()
-        return data.user
+
+  firebase
+    .auth()
+    .createUserWithEmailAndPassword(email, password)
+    .then((data) => {
+      newUser.userId = data.user.uid
+      newUser.joined = admin.firestore.Timestamp.fromDate(new Date())
+      newUser.account_validation_check = false
+      data.user.getIdToken()
+      return data.user
+    })
+    .then((user) => {
+      user.sendEmailVerification()
+    })
+    .then(() => {
+      db.collection('users').doc(`${newUser.userId}`).set(newUser)
+    })
+    .then(() => {
+      res.status(201).json({
+        message:
+          "We've sent you an email with instructions to verfiy your email address. Please make sure it didn't wind up in your Junk Mail.",
+        userId: newUser.userId,
       })
-      .then(user => {
-        user
-          .sendEmailVerification()
-      })
-      .then(() => {
-        db.collection('users').doc(`${newUser.userId}`).set(newUser)
-        
-      })
-      .then(() => {
-        res.status(201).json({
-          message:
-            'We\'ve sent you an email with instructions to verfiy your email address. Please make sure it didn\'t wind up in your Junk Mail.',
-          userId: newUser.userId
-        })
-      })
+    })
     .catch((err) => {
       if (err.code === 'auth/email-already-in-use') {
         res.status(400).json({ error: 'This email is already in use' })
@@ -60,11 +58,12 @@ exports.initialRegistrationUserInformation = (req, res) => {
     const noImg = 'no-img.jpeg'
     newUser.bio = ''
     newUser.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`
+    newUser.courses = {}
   } else {
     if (newUser.category === 'coach') {
       newUser.verification = {
         coachDocumentationCheck: false,
-        paymentCheck: false
+        paymentCheck: false,
       }
       newUser.companies = newUser.companyLink ? [...newUser.companyLink] : []
       newUser.coachInfo = {}
@@ -72,7 +71,7 @@ exports.initialRegistrationUserInformation = (req, res) => {
       newUser.verification = {
         coachDocumentationCheck: false,
         companyDetailsCheck: false,
-        paymentCheck: false
+        paymentCheck: false,
       }
       newUser.coaches = []
       newUser.bio = ''
@@ -89,24 +88,36 @@ exports.initialRegistrationUserInformation = (req, res) => {
   //     console.log('back to user', data)
   //     db.doc(`/users/${req.body.userId}`).update({ ...newUser, verificationId: data.id })
   //   })
-  db.doc(`/users/${req.body.userId}`).update({ ...newUser })
-    .then(() => {
+  db.doc(`/users/${req.body.userId}`)
+    .get()
+    .then((data) => {
+      const userData = data.data()
 
       if (newUser.companyLink) {
-
-        db.doc(`/users/${newUser.companyLink}`).update({ 
-          [`players.${req.body.userId}`]: {
-            age: 16,
+        if (newUser.category === 'player') {
+          
+          const playerInfo = {
+            age: newUser.dob,
             id: req.body.userId,
-            name: newUser.name,
+            name: userData.name,
             status: 'Prospect'
           }
-        })
+
+          db.doc(`/users/${newUser.companyLink}`).update({
+            [`players.${req.body.userId}`]: playerInfo
+          })
+
+        } else if (newUser.category === 'coach') {
+          db.doc(`/users/${newUser.companyLink}`).update({
+            coaches: admin.firestore.FieldValue.arrayUnion(req.body.userId)
+          })
+        }
       }
+      db.doc(`/users/${req.body.userId}`).update({ ...newUser })
 
       res.status(201).json({ message: 'Information successfully updated' })
     })
-    .catch(err => console.log(err))
+    .catch((err) => console.log(err))
 }
 
 // exports.updateCompanyListingInformation = (req, res) => {
@@ -118,8 +129,6 @@ exports.initialRegistrationUserInformation = (req, res) => {
 //       res.status(201).json({ message: 'Information successfully updated' })
 //     );
 // };
-
-
 
 exports.getCompaniesAndCoaches = (req, res) => {
   console.log('HELLOOO')
@@ -133,7 +142,6 @@ exports.getCompaniesAndCoaches = (req, res) => {
         const { category } = doc.data()
         if (category === 'company') companies.push(doc.data())
         if (category === 'coach') coaches.push(doc.data())
-
       })
 
       return res.status(201).json({ coaches, companies })
@@ -141,62 +149,55 @@ exports.getCompaniesAndCoaches = (req, res) => {
     .catch((err) => console.error(err))
 }
 
-
-
-
-
 exports.loginUser = (req, res) => {
   const { email, password } = req.body
   const { valid } = validateLoginFields(req.body)
   let userId
 
   if (!valid) return res.status(400).json({ message: 'Invalid credentials' })
-  
-    firebase
-      .auth()
-      .signInWithEmailAndPassword(email, password)
-      .then((data) => {
 
-        userId = data.user.uid
-        return data.user.getIdToken()
-      })
-      .then((token) => {
-        db.doc(`/users/${userId}`)
-          .get()
-          .then((data) => {
-
-            // console.log(data.data())
-            // await data.forEach((doc) => user.push(doc.data()))
-            // return {
-            //   token,
-            //   accountCategory: user[0].category
-            // }
-            // return {
-            //   token,
-            //   accountCategory: data.data()[0].category
-            // }
-            let response
-            let status
-            if (data.data().category) {
-              response = {
-                token,
-                accountCategory: data.data().category
-              }
-              status = 201
-            } else {
-              response = { message: 'Invalid credentials' },
-              status = 403 
+  firebase
+    .auth()
+    .signInWithEmailAndPassword(email, password)
+    .then((data) => {
+      userId = data.user.uid
+      return data.user.getIdToken()
+    })
+    .then((token) => {
+      db.doc(`/users/${userId}`)
+        .get()
+        .then((data) => {
+          // console.log(data.data())
+          // await data.forEach((doc) => user.push(doc.data()))
+          // return {
+          //   token,
+          //   accountCategory: user[0].category
+          // }
+          // return {
+          //   token,
+          //   accountCategory: data.data()[0].category
+          // }
+          let response
+          let status
+          if (data.data().category) {
+            response = {
+              token,
+              accountCategory: data.data().category,
             }
-            return { response, status }
-          })
-          .then((data) => res.status(data.status).send(data.response))
-      })
+            status = 201
+          } else {
+            ;(response = { message: 'Invalid credentials' }), (status = 403)
+          }
+          return { response, status }
+        })
+        .then((data) => res.status(data.status).send(data.response))
+    })
     .catch((err) => {
-      return res.status(403).json({ message: 'Invalid credentials', error: err })
+      return res
+        .status(403)
+        .json({ message: 'Invalid credentials', error: err })
     })
 }
-
-
 
 exports.imageDeletion = (req, res) => {
   db.collection('users')
@@ -258,9 +259,9 @@ exports.customerImageUpload = (req, res) => {
         resumable: false,
         metadata: {
           metadata: {
-            contentType: imageToBeUploaded.mimetype
-          }
-        }
+            contentType: imageToBeUploaded.mimetype,
+          },
+        },
       })
       .then(() => {
         db.collection('users')
@@ -323,7 +324,7 @@ exports.forgottenPassword = (req, res) => {
     .then(() => {
       return res.status(200).json({
         message:
-          'We\'ve sent you an email with instructions to reset your password. Please make sure it didn\'t wind up in your Junk Mail.'
+          "We've sent you an email with instructions to reset your password. Please make sure it didn't wind up in your Junk Mail.",
       })
     })
     .catch((err) => {
@@ -365,9 +366,9 @@ exports.userDocumentUpload = (req, res) => {
         resumable: false,
         metadata: {
           metadata: {
-            contentType: documentToBeUploaded.mimetype
-          }
-        }
+            contentType: documentToBeUploaded.mimetype,
+          },
+        },
       })
       .then(() => {
         const documentURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${documentFileName}?alt=media`
@@ -377,18 +378,22 @@ exports.userDocumentUpload = (req, res) => {
       .then((data) => {
         console.log(data)
         const { verification, userId, coachInfo } = data.transformResults[0]
-        if (coachInfo.documentation.dbsCertificate && coachInfo.documentation.coachingCertificate) {
+        if (
+          coachInfo.documentation.dbsCertificate &&
+          coachInfo.documentation.coachingCertificate
+        ) {
           const verificationData = {
             userId,
             name: coachInfo.name,
             documentation: coachInfo.documentation,
             verification,
-            type: 'coachDocument'
+            type: 'coachDocument',
           }
-          createAwaitingVerification(verificationData)
-            .then(data => {
-              return db.doc(`/users/${req.user}`).update({ verificationId: data.id })
-            })
+          createAwaitingVerification(verificationData).then((data) => {
+            return db
+              .doc(`/users/${req.user}`)
+              .update({ verificationId: data.id })
+          })
         }
         res.status(201).json({ message: 'Document successfully uploaded' })
       })
@@ -400,29 +405,32 @@ exports.userDocumentUpload = (req, res) => {
   busboy.end(req.rawBody)
 }
 
-
 exports.updateUserDetails = (req, res) => {
   const userref = db.doc(`users/${req.body.userId}`)
 
-  return userref.update(req.body.updates)
+  return userref
+    .update(req.body.updates)
     .then(() => {
       res.status(201).send({ message: 'user successfully updated' })
     })
-    .catch(error => console.log(error))
+    .catch((error) => console.log(error))
 }
 
 exports.searchForPlayers = (req, res) => {
-
   const { query } = req.params
   const coachArray = []
   const userRef = db.collection('users').where('category', '==', 'player')
 
-  return userRef.orderBy('name').startAt(query.toUpperCase()).endAt(`${query.toLowerCase()}\uf8ff`).get()
-    .then(list => {
-      list.forEach(item => {
+  return userRef
+    .orderBy('name')
+    .startAt(query.toUpperCase())
+    .endAt(`${query.toLowerCase()}\uf8ff`)
+    .get()
+    .then((list) => {
+      list.forEach((item) => {
         coachArray.push(item.data())
       })
       res.status(201).json(coachArray)
     })
-    .catch(err => console.log(err))
+    .catch((err) => console.log(err))
 }

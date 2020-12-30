@@ -208,16 +208,18 @@ exports.addNewDetail = (req, res) => {
         .get()
         .then((data) => {
           let newArr = []
-          const check =
-            req.params.detail === 'courses'
-              ? [req.params.detail].active
-              : req.params.detail
-          if (data.data()[check]) {
-            newArr = [...check, requestObject]
-          } else newArr = [requestObject]
+          const previous = req.params.detail === 'courses' ? data.data().courses.active : data.data()[req.params.detail]
+          const updateString = req.params.detail === 'courses' ? 'courses.active' : req.params.detail
+          if (previous) {
+            newArr = [...previous, requestObject]
+            console.log(newArr)
+          } else {
+            newArr = [requestObject]
+            console.log('prev')
+          }
 
           db.doc(`users/${req.body.companyId}`).update({
-            [check]: newArr,
+            [updateString]: newArr,
           })
         })
         .then(() => {
@@ -231,6 +233,36 @@ exports.addNewDetail = (req, res) => {
         })
     })
 }
+
+exports.retrieveCompanyCourses = (req, res) => {
+  const { courses, company } = req.body
+  const promises = courses.map(course => {
+    return db.doc(`courses/${course}`).get().then(data => {
+      return data.data()
+    })
+  })
+
+  Promise.all(promises).then(courseArray => {
+    db.doc(`users/${company}`).get().then(data => {
+      let updatedCourses
+      const companyData = data.data()
+      if (companyData.courses.active) {
+        updatedCourses = [...companyData.courses.active, ...courseArray]
+        console.log('merged', updatedCourses)
+      } else {
+        updatedCourses = [...courseArray]
+        console.log('fresh', updatedCourses)
+      }
+      db.doc(`users/${company}`).update({
+        ['courses.active']: updatedCourses
+      })
+    })
+  })
+    .then(() => {
+      res.status(201).send({ message: 'sorted!' })
+    }) 
+}
+ 
 
 exports.sendCoachRequest = (req, res) => {
   console.log(req.body)
@@ -485,9 +517,11 @@ exports.uploadCompanyDocument = (req, res) => {
               if (
                 req.info.documents.public_liability_insurance &&
                 req.info.documents.professional_indemnity_insurance &&
-                !req.info.verificationId
+                !req.info.verificationId.companyInfo
               ) {
                 return createAwaitingVerification(req, res)
+              } else {
+                res.send(req.info)
               }
             })
           })
@@ -1191,4 +1225,84 @@ exports.sendPlayerRequestEmail = (req, res) => {
         })
       })
     })
+}
+
+exports.sendCoachRequestEmail = (req, res) => {
+  console.log(req.body, req.params)
+  const { email, companyName, name, companyId, type } = req.body
+  const code = companyId
+  const target =
+    type === 'localhost'
+      ? 'http://localhost:3000'
+      : 'https://football-hub-4018a.firebaseapp.com'
+
+  const output = `
+    <h2 style='text-align:center'> Welcome to Baller Hub from ${companyName}! </h2>
+    <p> Hello! ${name}</p>
+    <p> ${companyName} wants to connect with you on Baller Hub and become a member of their training team.</p>
+    <p> click the link below to create an account with Baller Hub and learn more.</p>
+    <a href='${target}/register/trainer/${code}' target='_blank'>Click here to sign up!</a>
+  `
+
+  // db.collection('users')
+  //   .where('email', '==', email)
+  //   .get()
+  //   .then((data) => {
+      const transporter = nodemailer.createTransport({
+        // host: 'smtp.office365.com',
+        // port: 587,
+        // auth: {
+        //   user: 'kenn@indulgefootball.com',
+        //   pass: 'Welcome342!',
+        // },
+        // secureConnection: false,
+        // tls: {
+        //   ciphers: 'SSLv3',
+        // },
+
+        service: 'gmail',
+        auth: {
+          user: 'indulgefootballemail@gmail.com',
+          pass: 'Indulg3Manchester1',
+        },
+      })
+
+      const mailOptions = {
+        from: 'indulgefootballemail@gmail.com',
+        to: `${name} <${email}>`,
+        subject: `Welcome to Baller Hub from ${companyName}!`,
+        html: output,
+      }
+
+      // data.forEach((dataUser) => {
+      //   if (dataUser.exists) {
+      //     username = dataUser.data().name
+      //     console.log('username', username)
+
+      //     mailOptions.html = `
+      //   <h2 style='text-align:center'>Greetings from ${companyName}! </h2>
+      //   <p> Hello ${username}! </p>
+      //   <p> ${companyName} wants to connect with you on Baller Hub for football training in the future.</p>
+      //   <p> click the link below to head to Baller Hub and connect with ${companyName}.</p>
+      //   <a href='${target}/login' target="_blank">Log in and confirm the request!</a>
+      // `
+
+      //     mailOptions.to = `${username} <${email}>`
+      //     mailOptions.subject = `Baller Hub connection request from ${companyName}!`
+      //   }
+      // })
+
+      transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
+          return res.status(400).send({ error: err })
+        }
+
+        res.send({
+          message: 'Message sent: %s',
+          messageId: info.messageId,
+          previewUrl: 'Preview URL: %s',
+          preview: nodemailer.getTestMessageUrl(info),
+        })
+      })
+    // })
 }
