@@ -38,7 +38,7 @@ exports.createAwaitingVerification = (req, res) => {
   } :
     { userId: req.info.userId,
       name: req.info.name,
-      documents: req.info.documents,
+      coachInfo: req.info.coachInfo,
       verification: req.info.verification,
       message: '',
       type: req.type
@@ -59,9 +59,9 @@ exports.createAwaitingVerification = (req, res) => {
         verificationId: data.id
       })
       db.doc(`users/${req.user}`).update({
-        verificationId: data.id
+        [`verificationId.${req.type}`]: data.id
       })
-      res.status(201).json({ message: 'Document successfully uploaded', data })
+      res.status(201).json({ message: 'Document successfully uploaded', data: req.info })
       // return data
     })
     .catch(error => console.log(error))
@@ -88,9 +88,9 @@ exports.acceptAwaitingVerification = (req, res) => {
   db.collection('awaitingVerification').doc(`${req.body.verificationId}`).delete()
     .then(() =>{
       db.doc(`users/${req.body.userId}`).update({
-        verification: req.body.accepted,
-        message: req.body.message,
-        verificationId: ''
+        [`verification.${req.body.accepted}`]: true,
+        [`verificationId.${req.body.type}`]: '',
+        message: req.body.message
       })
       return res.status(201).json({ message: 'Documents successfully verified!' })
     })

@@ -37,6 +37,8 @@ const {
   updateCourseCoaches,
   uploadCompanyDocument,
   sendPlayerRequestEmail,
+  retrieveCompanyCourses,
+  sendCoachRequestEmail,
 } = require('./utils/controllers/companyController')
 
 const { createStripePayment } = require('./utils/controllers/paymentController')
@@ -151,6 +153,9 @@ app.post('/admin/:id', adminPageEdits)
 app.get('/admin/:id', getAdminPageDetails)
 
 app.post('/emailRequest', sendPlayerRequestEmail)
+app.post('/emailRequestCoach', sendCoachRequestEmail)
+
+app.post('/retrieveCourse', retrieveCompanyCourses)
 
 
 
