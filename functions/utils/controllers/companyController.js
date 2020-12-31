@@ -8,6 +8,8 @@ const { createAwaitingVerification } = require('./adminController')
 const nodemailer = require('nodemailer')
 // require('firebase/firestore')
 
+const { validateEmailAddressInput } = require('../validators')
+
 exports.getAllCompanies = (req, res) => {
   db.collection('users')
     .where('category', '==', 'company')
@@ -260,9 +262,9 @@ exports.retrieveCompanyCourses = (req, res) => {
   })
     .then(() => {
       res.status(201).send({ message: 'sorted!' })
-    }) 
+    })
 }
- 
+
 
 exports.sendCoachRequest = (req, res) => {
   console.log(req.body)
@@ -331,7 +333,7 @@ exports.editCompanyDetail = (req, res) => {
       db.doc(`users/${req.user}`)
         .get()
         .then((data) => {
-          const { listings } = data.data()
+          const { listings, courses } = data.data()
           let courseType = null
           const courseFilterArr = ['courses', 'camps']
 
@@ -347,9 +349,8 @@ exports.editCompanyDetail = (req, res) => {
 
           if (courseType || detail === 'services') {
             detail === 'services' ? (courseType = 'services') : courseType
-            const nonChangingCoursesArr = listings[0][courseType].filter(
-              (el) => el[detailId] !== req.body[detailId]
-            )
+            const nonChangingCoursesArr = listings[0][courseType].filter(el => el[detailId] !== req.body[detailId])
+
             db.doc(`/users/${req.user}`)
               .update({
                 listings: [
@@ -366,13 +367,15 @@ exports.editCompanyDetail = (req, res) => {
               })
           }
 
-          const nonChangingArr = data.data()[detail].filter((el) => {
-            return el[detailId] !== req.body[detailId]
-          })
+          const arrayToFilter = detail === 'courses' ? data.data()[detail].active : data.data()[detail]
+          const nonChangingArr = arrayToFilter.filter((el) => el[detailId] !== req.body[detailId])
 
-          db.doc(`users/${req.user}`).update({
-            [detail]: [...nonChangingArr, req.body],
-          })
+          db.doc(`users/${req.user}`)
+            .update(detail === 'courses' ? {
+              [detail]: { ...courses, active: [...nonChangingArr, req.body] }
+            } : {
+              [detail]: [...nonChangingArr, req.body],
+            })
         })
     })
     .then(() => {
@@ -388,7 +391,7 @@ exports.editCompanyDetail = (req, res) => {
 
 exports.dataDeletion = (req, res) => {
   const { id, detail } = req.params
-  console.log('this is' + id)
+  console.log(detail)
   db.collection(detail)
     .doc(id)
     .delete()
@@ -396,7 +399,9 @@ exports.dataDeletion = (req, res) => {
       db.doc(`users/${req.user}`)
         .get()
         .then((data) => {
-          const nonChangingArr = data.data()[detail].filter((el) => {
+          const { courses } = data.data()
+          const arrayToFilter = detail === 'courses' ? data.data()[detail].active : data.data()[detail]
+          const nonChangingArr = arrayToFilter.filter((el) => {
             const idArr = [
               'coaches',
               'services',
@@ -448,14 +453,14 @@ exports.dataDeletion = (req, res) => {
 
           return db
             .doc(`/users/${req.user}`)
-            .update({ [detail]: nonChangingArr })
+            .update(detail === 'courses' ? { [detail]: { ...courses, active: nonChangingArr } } : { [detail]: nonChangingArr })
             .then(() => {
               res
                 .status(201)
                 .json({ message: 'information deleted successfully' })
             })
             .catch((err) => {
-              console.log(err)
+              // console.log(err)
               res.status(500).json({
                 error: 'Something went wrong, information could not be deleted',
               })
@@ -718,9 +723,9 @@ exports.filterListings = (req, res) => {
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(deg2rad(lat1)) *
-        Math.cos(deg2rad(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2)
+      Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2)
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     const d = R * c // Distance in km
     return d.toFixed()
@@ -1148,6 +1153,7 @@ const addUsersToRegister = (register, newAdditions) => {
 
 exports.sendPlayerRequestEmail = (req, res) => {
   console.log(req.body, req.params)
+
   const { email, companyName, companyId, type } = req.body
   const code = companyId
   let username = ''
@@ -1163,6 +1169,10 @@ exports.sendPlayerRequestEmail = (req, res) => {
     <p> click the link below to create an account with Baller Hub and learn more.</p>
     <a href='${target}/register/player/${code}' target='_blank'>Click here to sign up!</a>
   `
+
+  const valid = validateEmailAddressInput(email)
+  if (!valid) return res.status(400).json({ message: 'Invalid email address' })
+
 
   db.collection('users')
     .where('email', '==', email)
