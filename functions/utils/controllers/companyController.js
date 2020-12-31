@@ -235,7 +235,7 @@ exports.addNewDetail = (req, res) => {
 }
 
 exports.retrieveCompanyCourses = (req, res) => {
-  const { courses, company } = req.body
+  const { courses, company, type } = req.body
   const promises = courses.map(course => {
     return db.doc(`courses/${course}`).get().then(data => {
       return data.data()
@@ -246,15 +246,15 @@ exports.retrieveCompanyCourses = (req, res) => {
     db.doc(`users/${company}`).get().then(data => {
       let updatedCourses
       const companyData = data.data()
-      if (companyData.courses.active) {
-        updatedCourses = [...companyData.courses.active, ...courseArray]
+      if (companyData.courses[type]) {
+        updatedCourses = [...companyData.courses[type], ...courseArray]
         console.log('merged', updatedCourses)
       } else {
         updatedCourses = [...courseArray]
         console.log('fresh', updatedCourses)
       }
       db.doc(`users/${company}`).update({
-        ['courses.active']: updatedCourses
+        [`courses.${type}`]: updatedCourses
       })
     })
   })
@@ -521,7 +521,7 @@ exports.uploadCompanyDocument = (req, res) => {
               ) {
                 return createAwaitingVerification(req, res)
               } else {
-                res.send(req.info)
+                return res.status(201).json({ message: 'file uploaded', data: req.info })
               }
             })
           })
@@ -969,15 +969,15 @@ exports.updateCourseCoaches = (req, res) => {
                 if (coaches.indexOf(removedCoach) === -1) {
                   category === 'coach'
                     ? db.doc(`/users/${removedCoach}`).update({
-                        [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(
-                          updatedCourseId
-                        ),
-                      })
+                      [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(
+                        updatedCourseId
+                      ),
+                    })
                     : db.doc(`/users/${removedCoach}`).update({
-                        [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(
-                          updatedCourseId
-                        ),
-                      })
+                      [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(
+                        updatedCourseId
+                      ),
+                    })
                 }
               })
           }
@@ -990,15 +990,15 @@ exports.updateCourseCoaches = (req, res) => {
 
                 category === 'coach'
                   ? db.doc(`/users/${addedCoach}`).update({
-                      [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
-                        updatedCourseId
-                      ),
-                    })
+                    [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
+                      updatedCourseId
+                    ),
+                  })
                   : db.doc(`/users/${addedCoach}`).update({
-                      [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
-                        updatedCourseId
-                      ),
-                    })
+                    [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
+                      updatedCourseId
+                    ),
+                  })
               })
           }
         })
@@ -1026,24 +1026,24 @@ exports.addPlayerToCourse = (req, res) => {
           const dayNums =
             courseDetails.courseType === 'Camp'
               ? courseDetails.sessions.map((session) =>
-                  // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
-                  moment(session.sessionDate.toDate()).day()
-                )
+              // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+                moment(session.sessionDate.toDate()).day()
+              )
               : courseDetails.sessions.map((session) =>
-                  // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
-                  moment().day(session.day).day()
-                )
+              // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+                moment().day(session.day).day()
+              )
           console.log({ dayNums })
           const newRegister = register
             ? addUsersToRegister(register, [
-                {
-                  name: req.body.playerName,
-                  id: req.body.playerId,
-                  dob: req.body.playerDob,
-                },
-              ])
+              {
+                name: req.body.playerName,
+                id: req.body.playerId,
+                dob: req.body.playerDob,
+              },
+            ])
             : courseDetails.courseType === 'Camp'
-            ? createRegister(
+              ? createRegister(
                 courseDetails.firstDay,
                 courseDetails.lastDay,
                 dayNums,
@@ -1055,7 +1055,7 @@ exports.addPlayerToCourse = (req, res) => {
                   },
                 ]
               )
-            : createRegister(
+              : createRegister(
                 courseDetails.startDate,
                 courseDetails.endDate,
                 dayNums,
@@ -1156,7 +1156,7 @@ exports.sendPlayerRequestEmail = (req, res) => {
       ? 'http://localhost:3000'
       : 'https://football-hub-4018a.firebaseapp.com'
 
-  let output = `
+  const output = `
     <h2 style='text-align:center'> Welcome to Baller Hub from ${companyName}! </h2>
     <p> Hello! </p>
     <p> ${companyName} wants to connect with you on Baller Hub for football training in the future.</p>
@@ -1248,61 +1248,61 @@ exports.sendCoachRequestEmail = (req, res) => {
   //   .where('email', '==', email)
   //   .get()
   //   .then((data) => {
-      const transporter = nodemailer.createTransport({
-        // host: 'smtp.office365.com',
-        // port: 587,
-        // auth: {
-        //   user: 'kenn@indulgefootball.com',
-        //   pass: 'Welcome342!',
-        // },
-        // secureConnection: false,
-        // tls: {
-        //   ciphers: 'SSLv3',
-        // },
+  const transporter = nodemailer.createTransport({
+    // host: 'smtp.office365.com',
+    // port: 587,
+    // auth: {
+    //   user: 'kenn@indulgefootball.com',
+    //   pass: 'Welcome342!',
+    // },
+    // secureConnection: false,
+    // tls: {
+    //   ciphers: 'SSLv3',
+    // },
 
-        service: 'gmail',
-        auth: {
-          user: 'indulgefootballemail@gmail.com',
-          pass: 'Indulg3Manchester1',
-        },
-      })
+    service: 'gmail',
+    auth: {
+      user: 'indulgefootballemail@gmail.com',
+      pass: 'Indulg3Manchester1',
+    },
+  })
 
-      const mailOptions = {
-        from: 'indulgefootballemail@gmail.com',
-        to: `${name} <${email}>`,
-        subject: `Welcome to Baller Hub from ${companyName}!`,
-        html: output,
-      }
+  const mailOptions = {
+    from: 'indulgefootballemail@gmail.com',
+    to: `${name} <${email}>`,
+    subject: `Welcome to Baller Hub from ${companyName}!`,
+    html: output,
+  }
 
-      // data.forEach((dataUser) => {
-      //   if (dataUser.exists) {
-      //     username = dataUser.data().name
-      //     console.log('username', username)
+  // data.forEach((dataUser) => {
+  //   if (dataUser.exists) {
+  //     username = dataUser.data().name
+  //     console.log('username', username)
 
-      //     mailOptions.html = `
-      //   <h2 style='text-align:center'>Greetings from ${companyName}! </h2>
-      //   <p> Hello ${username}! </p>
-      //   <p> ${companyName} wants to connect with you on Baller Hub for football training in the future.</p>
-      //   <p> click the link below to head to Baller Hub and connect with ${companyName}.</p>
-      //   <a href='${target}/login' target="_blank">Log in and confirm the request!</a>
-      // `
+  //     mailOptions.html = `
+  //   <h2 style='text-align:center'>Greetings from ${companyName}! </h2>
+  //   <p> Hello ${username}! </p>
+  //   <p> ${companyName} wants to connect with you on Baller Hub for football training in the future.</p>
+  //   <p> click the link below to head to Baller Hub and connect with ${companyName}.</p>
+  //   <a href='${target}/login' target="_blank">Log in and confirm the request!</a>
+  // `
 
-      //     mailOptions.to = `${username} <${email}>`
-      //     mailOptions.subject = `Baller Hub connection request from ${companyName}!`
-      //   }
-      // })
+  //     mailOptions.to = `${username} <${email}>`
+  //     mailOptions.subject = `Baller Hub connection request from ${companyName}!`
+  //   }
+  // })
 
-      transporter.sendMail(mailOptions, (err, info) => {
-        if (err) {
-          return res.status(400).send({ error: err })
-        }
+  transporter.sendMail(mailOptions, (err, info) => {
+    if (err) {
+      return res.status(400).send({ error: err })
+    }
 
-        res.send({
-          message: 'Message sent: %s',
-          messageId: info.messageId,
-          previewUrl: 'Preview URL: %s',
-          preview: nodemailer.getTestMessageUrl(info),
-        })
-      })
-    // })
+    res.send({
+      message: 'Message sent: %s',
+      messageId: info.messageId,
+      previewUrl: 'Preview URL: %s',
+      preview: nodemailer.getTestMessageUrl(info),
+    })
+  })
+  // })
 }

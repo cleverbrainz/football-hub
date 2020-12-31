@@ -38,7 +38,7 @@ const {
   uploadCompanyDocument,
   sendPlayerRequestEmail,
   retrieveCompanyCourses,
-  sendCoachRequestEmail,
+  sendCoachRequestEmail
 } = require('./utils/controllers/companyController')
 
 const { createStripePayment } = require('./utils/controllers/paymentController')
@@ -47,14 +47,14 @@ const {
   newEnquiry,
   getEnquiries,
   updateOneEnquiry,
-  preRegistrationEnquiry,
+  preRegistrationEnquiry
 } = require('./utils/controllers/enquiryController')
 
 const {
   adminPageEdits,
   getAdminPageDetails,
   getVerifications,
-  acceptAwaitingVerification,
+  acceptAwaitingVerification
 } = require('./utils/controllers/adminController')
 
 const {
@@ -69,14 +69,14 @@ const {
   userDocumentUpload,
   initialRegistrationUserInformation,
   updateUserDetails,
-  searchForPlayers,
+  searchForPlayers
 } = require('./utils/controllers/userController')
 
 const {
   // acceptCompanyRequest,
   handleCompanyRequest,
   uploadCoachDocument,
-  searchForCoaches,
+  searchForCoaches
   // getAllAppCoaches
 } = require('./utils/controllers/coachController')
 // const { checkPubSub } = require('./utils/cloudfunctions')
@@ -210,7 +210,7 @@ async function getData(activeCourseArray) {
             ),
             [`courses.${companyId}.past`]: admin.firestore.FieldValue.arrayUnion(
               course.courseId
-            ),
+            )
           })
         })
 
@@ -222,7 +222,7 @@ async function getData(activeCourseArray) {
               ),
               [`coursesCoaching.past.${companyId}`]: admin.firestore.FieldValue.arrayUnion(
                 course
-              ),
+              )
             })
           } else {
             db.doc(`users/${coach}`).update({
@@ -231,7 +231,7 @@ async function getData(activeCourseArray) {
               ),
               [`courses.past.${companyId}`]: admin.firestore.FieldValue.arrayUnion(
                 course
-              ),
+              )
             })
           }
         })
