@@ -3,7 +3,7 @@ const { db, admin } = require('../admin')
 const config = require('../configuration')
 const firebase = require('firebase/app')
 const { user } = require('firebase-functions/lib/providers/auth')
-const { createAwaitingVerification } = require('./adminController')
+const { createAwaitingVerification, updateAwaitingVerification } = require('./adminController')
 // import 'firebase/firestore'
 
 exports.getAllAppCoaches = (req, res) => {
@@ -35,7 +35,7 @@ exports.getAllCoaches = (req, res) => {
         // console.log(doc.id)
         coaches.push({
           coachId: doc.id,
-          coachInfo: { ...doc.data() },
+          coachInfo: { ...doc.data() }
         })
       })
       return res.status(200).json(coaches)
@@ -78,11 +78,11 @@ exports.addCoachInfo = (req, res) => {
           if (data.data()['category'] === 'company') {
             newArr = [...data.data()['coaches'], requestObject]
             db.doc(`users/${req.user}`).update({
-              ['coaches']: newArr,
+              ['coaches']: newArr
             })
           } else {
             db.doc(`users/${req.user}`).update({
-              ['coachInfo']: newArr,
+              ['coachInfo']: newArr
             })
           }
         })
@@ -91,7 +91,7 @@ exports.addCoachInfo = (req, res) => {
         })
         .catch((err) => {
           res.status(500).json({
-            error: 'Something went wrong, coach could not be added',
+            error: 'Something went wrong, coach could not be added'
           })
           console.error(err)
         })
@@ -117,7 +117,7 @@ exports.editCoachDetail = (req, res) => {
           })
 
           db.doc(`users/${req.user}`).update({
-            [detail]: [...nonChangingArr, req.body],
+            [detail]: [...nonChangingArr, req.body]
           })
         })
     })
@@ -127,7 +127,7 @@ exports.editCoachDetail = (req, res) => {
     .catch((err) => {
       console.log(err)
       res.status(500).json({
-        error: 'Something went wrong, information could not be updated',
+        error: 'Something went wrong, information could not be updated'
       })
     })
 }
@@ -141,21 +141,21 @@ exports.handleCompanyRequest = (req, res) => {
 
   const userUpdates = accept
     ? {
-        companies: admin.firestore.FieldValue.arrayUnion(req.body.companyId),
-        requests: admin.firestore.FieldValue.arrayRemove(req.body.companyId),
-      }
+      companies: admin.firestore.FieldValue.arrayUnion(req.body.companyId),
+      requests: admin.firestore.FieldValue.arrayRemove(req.body.companyId)
+    }
     : {
-        requests: admin.firestore.FieldValue.arrayRemove(req.body.companyId),
-      }
+      requests: admin.firestore.FieldValue.arrayRemove(req.body.companyId)
+    }
 
   const companyUpdates = accept
     ? {
-        coaches: admin.firestore.FieldValue.arrayUnion(req.body.userId),
-        sentRequests: admin.firestore.FieldValue.arrayRemove(req.body.userId),
-      }
+      coaches: admin.firestore.FieldValue.arrayUnion(req.body.userId),
+      sentRequests: admin.firestore.FieldValue.arrayRemove(req.body.userId)
+    }
     : {
-        sentRequests: admin.firestore.FieldValue.arrayRemove(req.body.userId),
-      }
+      sentRequests: admin.firestore.FieldValue.arrayRemove(req.body.userId)
+    }
 
   userRef
     .update(userUpdates)
@@ -176,7 +176,7 @@ exports.handleCompanyRequest = (req, res) => {
     .catch((err) => {
       console.log(err)
       res.status(500).json({
-        error: 'Something went wrong, information could not be updated',
+        error: 'Something went wrong, information could not be updated'
       })
     })
 }
@@ -191,14 +191,14 @@ exports.acceptCompanyRequest = (req, res) => {
   userRef
     .update({
       companies: firebase.firestore.FieldValue.arrayUnion(req.body.companyId),
-      requests: firebase.firestore.FieldValue.arrayRemove(req.body.companyId),
+      requests: firebase.firestore.FieldValue.arrayRemove(req.body.companyId)
     })
     .then(() => {
       companyRef.update({
         coaches: firebase.firestore.FieldValue.arrayUnion(req.body.coachId),
         sentRequests: firebase.firestore.FieldValue.arrayRemove(
           req.body.coachId
-        ),
+        )
       })
     })
     .then(() => {
@@ -211,7 +211,7 @@ exports.acceptCompanyRequest = (req, res) => {
     .catch((err) => {
       console.log(err)
       res.status(500).json({
-        error: 'Something went wrong, information could not be updated',
+        error: 'Something went wrong, information could not be updated'
       })
     })
   // .get()
@@ -269,35 +269,41 @@ exports.uploadCoachDocument = (req, res) => {
 
   busboy.on('finish', () => {
     console.log('hello')
-    admin
+    return admin
       .storage()
       .bucket()
       .upload(documentToBeUploaded.filePath, {
         resumable: false,
         metadata: {
           metadata: {
-            contentType: documentToBeUploaded.mimetype,
-          },
-        },
+            contentType: documentToBeUploaded.mimetype
+          }
+        }
       })
       .then(() => {
         const documentURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${documentFileName}?alt=media`
         const docref = db.doc(`users/${req.user}`)
-        docref
+        return docref
           .update({
             [`coachInfo.${documentType}`]: documentURL
           })
           .then(() => {
-            docref.get().then((data) => {
+            console.log('here')
+            return docref.get().then((data) => {
               req.info = data.data()
               req.type = 'coachInfo'
               if (
                 req.info.coachInfo.dbsCertificate &&
                 req.info.coachInfo.coachingCertificate &&
-                !req.info.verificationId.coachInfo
+                (!req.info.verificationId || !req.info.verificationId.coachInfo)
               ) {
+                console.log('creating')
                 createAwaitingVerification(req, res)
+              } else if (req.info.verificationId.coachInfo) {
+                console.log('updating')
+                updateAwaitingVerification(req, res)
               } else {
+                console.log('non')
                 res.send(req.info)
               }
             })

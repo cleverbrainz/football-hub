@@ -237,7 +237,7 @@ exports.addNewDetail = (req, res) => {
 }
 
 exports.retrieveCompanyCourses = (req, res) => {
-  const { courses, company } = req.body
+  const { courses, company, type } = req.body
   const promises = courses.map(course => {
     return db.doc(`courses/${course}`).get().then(data => {
       return data.data()
@@ -248,15 +248,15 @@ exports.retrieveCompanyCourses = (req, res) => {
     db.doc(`users/${company}`).get().then(data => {
       let updatedCourses
       const companyData = data.data()
-      if (companyData.courses.active) {
-        updatedCourses = [...companyData.courses.active, ...courseArray]
+      if (companyData.courses[type]) {
+        updatedCourses = [...companyData.courses[type], ...courseArray]
         console.log('merged', updatedCourses)
       } else {
         updatedCourses = [...courseArray]
         console.log('fresh', updatedCourses)
       }
       db.doc(`users/${company}`).update({
-        ['courses.active']: updatedCourses
+        [`courses.${type}`]: updatedCourses
       })
     })
   })
@@ -526,7 +526,7 @@ exports.uploadCompanyDocument = (req, res) => {
               ) {
                 return createAwaitingVerification(req, res)
               } else {
-                res.send(req.info)
+                return res.status(201).json({ message: 'file uploaded', data: req.info })
               }
             })
           })
@@ -1031,11 +1031,11 @@ exports.addPlayerToCourse = (req, res) => {
           const dayNums =
             courseDetails.courseType === 'Camp'
               ? courseDetails.sessions.map((session) =>
-                // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+              // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
                 moment(session.sessionDate.toDate()).day()
               )
               : courseDetails.sessions.map((session) =>
-                // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+              // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
                 moment().day(session.day).day()
               )
           console.log({ dayNums })
@@ -1162,7 +1162,7 @@ exports.sendPlayerRequestEmail = (req, res) => {
       ? 'http://localhost:3000'
       : 'https://football-hub-4018a.firebaseapp.com'
 
-  let output = `
+  const output = `
     <h2 style='text-align:center'> Welcome to Baller Hub from ${companyName}! </h2>
     <p> Hello! </p>
     <p> ${companyName} wants to connect with you on Baller Hub for football training in the future.</p>
