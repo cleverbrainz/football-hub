@@ -96,7 +96,7 @@ exports.initialRegistrationUserInformation = (req, res) => {
 
       if (newUser.companyLink) {
         if (newUser.category === 'player') {
-          
+
           const playerInfo = {
             age: newUser.dob,
             id: req.body.userId,
@@ -296,6 +296,7 @@ exports.customerImageUpload = (req, res) => {
 }
 
 exports.getOneUser = (req, res) => {
+  const promises = []
   console.log(req.params.id)
   db.collection('users')
     .where('userId', '==', req.params.id)
@@ -303,12 +304,28 @@ exports.getOneUser = (req, res) => {
     .then((data) => {
       const user = []
       data.forEach((doc) => {
-        user.push(doc.data())
+        const userData = doc.data()
+        userData.subscriptions = {}
+        userData.stripe_account = {}
+       
+        const arr = ['subscriptions', 'stripe_account']
+        for (const type of arr) {
+          promises.push(db
+            .doc(`/users/${doc.id}`)
+            .collection(type)
+            .get()
+            .then(subItems => {
+              !subItems.empty ? subItems.forEach(subItem => userData[type] = subItem.data()) : delete userData[type]
+            })
+          )
+        }
+        user.push(userData)
       })
-      return res.json(user)
+      Promise.all(promises).then(() => res.json(user))
     })
     .catch((err) => console.error(err))
 }
+
 
 exports.forgottenPassword = (req, res) => {
   const { email } = req.body

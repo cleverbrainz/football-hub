@@ -126,8 +126,6 @@ exports.addNewDetail = (req, res) => {
     return arr
   }
 
-  const requestObject = { ...req.body }
-
   if (req.params.detail === 'courses') {
     const days = [
       'Sunday',
@@ -159,81 +157,88 @@ exports.addNewDetail = (req, res) => {
     }
   }
 
-  console.log(requestObject)
+  const requestObject = { ...req.body }
 
-  db.collection(req.params.detail)
-    .add(req.body)
-    .then((data) => {
-      let detailId
+  if (req.params.detail === 'contact') {
+    delete req.body.companyId
 
-      switch (req.params.detail) {
-        case 'coaches':
-          detailId = 'coachId'
-          break
-        case 'services':
-          detailId = 'serviceId'
-          break
-        case 'courses':
-          detailId = 'courseId'
-          break
-        case 'locations':
-          detailId = 'locationId'
-          break
-        case 'listings':
-          detailId = 'listingId'
-          break
-        default:
-          break
-      }
+    db
+      .doc(`users/${requestObject.companyId}`)
+      .update({ contactInformation: req.body })
+      .then(() => {
+        res.status(201).json({ message: 'new message added successfully' })
+      })
+      .catch(() => {
+        res.status(500).json({
+          error: 'Something went wrong, enquiry could not be added',
+        })
+      })
+    console.log(requestObject)
 
-      requestObject[detailId] = data.id
+  } else {
+    db.collection(req.params.detail)
+      .add(requestObject)
+      .then((data) => {
+        let detailId
 
-      if (detailId === 'coachId') {
-        const noImg = 'no-img.jpeg'
-        requestObject.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`
-      } else if (detailId === 'courseId') {
-        requestObject.coaches = []
-      }
+        const idArr = ['coaches', 'services', 'locations', 'courses', 'listings']
+        if (idArr.includes(req.params.detail)) {
+          detailId = req.params.detail === 'coaches' ? 'coach' : req.params.detail.slice(0, -1) + 'Id'
+        }
 
-      console.log('stepppp1')
+        requestObject[detailId] = data.id
 
-      return (
-        db
-          // .doc(`coaches/${data.id}`)
-          .doc(`${req.params.detail}/${data.id}`)
-          .update({ [detailId]: data.id })
-      )
-    })
-    .then(() => {
-      console.log('stepppp2')
-      db.doc(`users/${req.body.companyId}`)
-        .get()
-        .then((data) => {
-          let newArr = []
-          const previous = req.params.detail === 'courses' ? data.data().courses.active : data.data()[req.params.detail]
-          const updateString = req.params.detail === 'courses' ? 'courses.active' : req.params.detail
-          if (previous) {
-            newArr = [...previous, requestObject]
-            console.log(newArr)
-          } else {
-            newArr = [requestObject]
-            console.log('prev')
-          }
+        if (detailId === 'coachId') {
+          const noImg = 'no-img.jpeg'
+          requestObject.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`
+        } else if (detailId === 'courseId') {
+          requestObject.coaches = []
+        }
 
-          db.doc(`users/${req.body.companyId}`).update({
-            [updateString]: newArr,
+        console.log('stepppp1')
+
+        return (
+          db
+            .doc(`${req.params.detail}/${data.id}`)
+            .update({ [detailId]: data.id })
+        )
+      })
+      .then(() => {
+        console.log('stepppp2')
+        db.doc(`users/${req.body.companyId}`)
+          .get()
+          .then((data) => {
+            let newArr = []
+            const previous = req.params.detail === 'courses' ? data.data().courses.active : data.data()[req.params.detail]
+            const updateString = req.params.detail === 'courses' ? 'courses.active' : req.params.detail
+            if (previous) {
+              newArr = [...previous, requestObject]
+              console.log(newArr)
+            } else {
+              newArr = [requestObject]
+              console.log('prev')
+            }
+
+
+
+            db.doc(`users/${req.body.companyId}`).update({
+              [updateString]: newArr,
+            })
           })
-        })
-        .then(() => {
-          res.status(201).json({ message: 'new message added successfully' })
-        })
-        .catch((err) => {
-          res.status(500).json({
-            error: 'Something went wrong, enquiry could not be added',
+          .then(() => {
+            res.status(201).json({ message: 'new message added successfully' })
           })
-          console.error(err)
-        })
-    })
+          .catch((err) => {
+            res.status(500).json({
+              error: 'Something went wrong, enquiry could not be added',
+            })
+            console.error(err)
+          })
+      })
+  }
+
+
+
 }
 
 exports.retrieveCompanyCourses = (req, res) => {
@@ -327,66 +332,84 @@ exports.editCompanyDetail = (req, res) => {
     detailId = detail === 'coaches' ? 'coach' : detail.slice(0, -1) + 'Id'
   }
 
-  db.doc(`${detail}/${req.body[detailId]}`)
-    .update(req.body)
-    .then(() => {
-      db.doc(`users/${req.user}`)
-        .get()
-        .then((data) => {
-          const { listings, courses } = data.data()
-          let courseType = null
-          const courseFilterArr = ['courses', 'camps']
+  if (detail === 'contact') {
+    delete req.body.companyId
 
-          courseFilterArr.map((el) => {
-            for (let i = 0; i < listings[0][el].length; i++) {
-              const { courseId } = listings[0][el][i]
-              if (courseId === req.body[detailId]) {
-                courseType = el
-                break
-              }
-            }
-          })
-
-          if (courseType || detail === 'services') {
-            detail === 'services' ? (courseType = 'services') : courseType
-            const nonChangingCoursesArr = listings[0][courseType].filter(el => el[detailId] !== req.body[detailId])
-
-            db.doc(`/users/${req.user}`)
-              .update({
-                listings: [
-                  {
-                    ...listings[0],
-                    [courseType]: [...nonChangingCoursesArr, req.body],
-                  },
-                ],
-              })
-              .then(() => {
-                db.doc(`/listings/${listings[0].listingId}`).update({
-                  [courseType]: [...nonChangingCoursesArr, req.body],
-                })
-              })
-          }
-
-          const arrayToFilter = detail === 'courses' ? data.data()[detail].active : data.data()[detail]
-          const nonChangingArr = arrayToFilter.filter((el) => el[detailId] !== req.body[detailId])
-
-          db.doc(`users/${req.user}`)
-            .update(detail === 'courses' ? {
-              [detail]: { ...courses, active: [...nonChangingArr, req.body] }
-            } : {
-              [detail]: [...nonChangingArr, req.body],
-            })
-        })
-    })
-    .then(() => {
-      res.status(201).json({ message: 'information updated successfully' })
-    })
-    .catch((err) => {
-      console.log(err)
-      res.status(500).json({
-        error: 'Something went wrong, information could not be updated',
+    db
+      .doc(`users/${req.user}`)
+      .update({ contactInformation: req.body })
+      .then(() => {
+        res.status(201).json({ message: 'new message updated successfully' })
       })
-    })
+      .catch(() => {
+        res.status(500).json({
+          error: 'Something went wrong, enquiry could not be added',
+        })
+      })
+
+  } else {
+
+    db.doc(`${detail}/${req.body[detailId]}`)
+      .update(req.body)
+      .then(() => {
+        db.doc(`users/${req.user}`)
+          .get()
+          .then((data) => {
+            const { listings, courses } = data.data()
+            let courseType = null
+            const courseFilterArr = ['courses', 'camps']
+
+            courseFilterArr.map((el) => {
+              for (let i = 0; i < listings[0][el].length; i++) {
+                const { courseId } = listings[0][el][i]
+                if (courseId === req.body[detailId]) {
+                  courseType = el
+                  break
+                }
+              }
+            })
+
+            if (courseType || detail === 'services') {
+              detail === 'services' ? (courseType = 'services') : courseType
+              const nonChangingCoursesArr = listings[0][courseType].filter(el => el[detailId] !== req.body[detailId])
+
+              db.doc(`/users/${req.user}`)
+                .update({
+                  listings: [
+                    {
+                      ...listings[0],
+                      [courseType]: [...nonChangingCoursesArr, req.body],
+                    },
+                  ],
+                })
+                .then(() => {
+                  db.doc(`/listings/${listings[0].listingId}`).update({
+                    [courseType]: [...nonChangingCoursesArr, req.body],
+                  })
+                })
+            }
+
+            const arrayToFilter = detail === 'courses' ? data.data()[detail].active : data.data()[detail]
+            const nonChangingArr = arrayToFilter.filter((el) => el[detailId] !== req.body[detailId])
+
+            db.doc(`users/${req.user}`)
+              .update(detail === 'courses' ? {
+                [detail]: { ...courses, active: [...nonChangingArr, req.body] }
+              } : {
+                  [detail]: [...nonChangingArr, req.body],
+                })
+          })
+      })
+      .then(() => {
+        res.status(201).json({ message: 'information updated successfully' })
+      })
+      .catch((err) => {
+        console.log(err)
+        res.status(500).json({
+          error: 'Something went wrong, information could not be updated',
+        })
+      })
+  }
 }
 
 exports.dataDeletion = (req, res) => {
@@ -763,20 +786,23 @@ exports.filterListings = (req, res) => {
       listings.map((listing) => {
         for (let i = 0; i < listing.listingInfo.courses.length; i++) {
           const { courseDetails } = listing.listingInfo.courses[i]
-          const { sessions, courseType, longitude, latitude } = courseDetails
+          const { sessions, courseType } = courseDetails
           const obj = {}
 
           if (location.longitude) {
-            const dis = getDistance(
-              location.latitude,
-              location.longitude,
-              latitude,
-              longitude
-            )
-            if (parseInt(dis) < 10) {
-              obj.location = true
-            } else {
-              obj.location = false
+            for (let j = 0; j < sessions.length; j++) {
+              const { longitude, latitude } = sessions[j]
+              const dis = getDistance(
+                location.latitude,
+                location.longitude,
+                latitude,
+                longitude
+              )
+              if (parseInt(dis) < 10) {
+                obj.location = true
+              } else {
+                obj.location = false
+              }
             }
           }
 
@@ -1031,11 +1057,11 @@ exports.addPlayerToCourse = (req, res) => {
           const dayNums =
             courseDetails.courseType === 'Camp'
               ? courseDetails.sessions.map((session) =>
-              // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+                // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
                 moment(session.sessionDate.toDate()).day()
               )
               : courseDetails.sessions.map((session) =>
-              // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+                // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
                 moment().day(session.day).day()
               )
           console.log({ dayNums })

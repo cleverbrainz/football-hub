@@ -5,6 +5,7 @@ const firebase = require('firebase/app')
 const { user } = require('firebase-functions/lib/providers/auth')
 const { createAwaitingVerification, updateAwaitingVerification } = require('./adminController')
 // import 'firebase/firestore'
+const nodemailer = require('nodemailer')
 
 exports.getAllAppCoaches = (req, res) => {
   db
@@ -134,6 +135,7 @@ exports.editCoachDetail = (req, res) => {
 
 exports.handleCompanyRequest = (req, res) => {
   // const coachRef = db.doc(`coaches/${req.body.coachId}`)
+  const { comapanyEmail, coachName } = req.body
   console.log(req.body)
   const companyRef = db.doc(`users/${req.body.companyId}`)
   const userRef = db.doc(`/users/${req.body.userId}`)
@@ -163,10 +165,56 @@ exports.handleCompanyRequest = (req, res) => {
       companyRef.update(companyUpdates)
     })
     .then(() => {
+
+      let output
+
+
       if (accept) {
         // if (len === userRef.companies.length) {
         //   res.status(403).json({ message: 'Company already exists' })
         // } else {
+
+        const target =
+          type === 'localhost'
+            ? 'http://localhost:3000'
+            : 'https://football-hub-4018a.firebaseapp.com'
+
+        output = `
+    <h2 style='text-align:center'> FT Baller! </h2>
+    <p> Hello, ${name}</p>
+    <p> ${coachName} has accepted your invitation on FT Baller and has become a member of your training team.</p>
+    <p> click the link below to log in and view this on your account</p>
+    <a href='${target}/login' target='_blank'>Log in</a>   `
+
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: 'indulgefootballemail@gmail.com',
+            pass: 'Indulg3Manchester1'
+          }
+        })
+
+
+        const mailOptions = {
+          from: 'indulgefootballemail@gmail.com',
+          to: comapanyEmail,
+          subject: `Coach invitation acceptance from ${coachName}!`,
+          html: output
+        }
+
+        transporter.sendMail(mailOptions, (err, info) => {
+          if (err) {
+            return res.status(400).send({ error: err })
+          }
+
+          res.send({
+            message: 'Message sent: %s',
+            messageId: info.messageId,
+            previewUrl: 'Preview URL: %s',
+            preview: nodemailer.getTestMessageUrl(info)
+          })
+        })
+
         res.status(201).json({ message: 'Company added successfully' })
         // }
       } else {
@@ -181,65 +229,67 @@ exports.handleCompanyRequest = (req, res) => {
     })
 }
 
-exports.acceptCompanyRequest = (req, res) => {
-  // const coachRef = db.doc(`coaches/${req.body.coachId}`)
-  const companyRef = db.doc(`users/${req.body.companyId}`)
-  const userRef = db.doc(`/users/${req.body.userId}`)
+// exports.acceptCompanyRequest = (req, res) => {
+//   // const coachRef = db.doc(`coaches/${req.body.coachId}`)
+//   const companyRef = db.doc(`users/${req.body.companyId}`)
+//   const userRef = db.doc(`/users/${req.body.userId}`)
 
-  const len = userRef.companies.length
+//   const len = userRef.companies.length
 
-  userRef
-    .update({
-      companies: firebase.firestore.FieldValue.arrayUnion(req.body.companyId),
-      requests: firebase.firestore.FieldValue.arrayRemove(req.body.companyId)
-    })
-    .then(() => {
-      companyRef.update({
-        coaches: firebase.firestore.FieldValue.arrayUnion(req.body.coachId),
-        sentRequests: firebase.firestore.FieldValue.arrayRemove(
-          req.body.coachId
-        )
-      })
-    })
-    .then(() => {
-      if (len === userRef.companies.length) {
-        res.status(403).json({ message: 'Company already exists' })
-      } else {
-        res.status(201).json({ message: 'Company added successfully' })
-      }
-    })
-    .catch((err) => {
-      console.log(err)
-      res.status(500).json({
-        error: 'Something went wrong, information could not be updated'
-      })
-    })
-  // .get()
-  // .then((data) => {
-  //   // const toBeUpdated = data.data()['companies']
-  //   // if (toBeUpdated.some(company => company.companyId === req.body.companyId)) {
-  //   //   existing = true
-  //   // } else {
-  //   //   db.doc(`coaches/${req.coachId}`).update({
-  //   //     companies: [...toBeUpdated, req.body.companyId]
-  //   //   })
-  //   // }
+//   userRef
+//     .update({
+//       companies: firebase.firestore.FieldValue.arrayUnion(req.body.companyId),
+//       requests: firebase.firestore.FieldValue.arrayRemove(req.body.companyId)
+//     })
+//     .then(() => {
+//       companyRef.update({
+//         coaches: firebase.firestore.FieldValue.arrayUnion(req.body.coachId),
+//         sentRequests: firebase.firestore.FieldValue.arrayRemove(
+//           req.body.coachId
+//         )
+//       })
+//     })
+//     .then(() => {
+//       if (len === userRef.companies.length) {
+//         res.status(403).json({ message: 'Company already exists' })
+//       } else {
+//         res.status(201).json({ message: 'Company added successfully' })
+//       }
+//     })
+//     .catch((err) => {
+//       console.log(err)
+//       res.status(500).json({
+//         error: 'Something went wrong, information could not be updated'
+//       })
+//     })
 
-  // })
-  // .then(() => {
-  //   if (existing) {
-  //     res.status(403).json({ message: 'Company already exists' })
-  //   } else {
-  //     res.status(201).json({ message: 'Company added successfully' })
-  //   }
-  // })
-  // .catch((err) => {
-  //   console.log(err)
-  //   res.status(500).json({
-  //     error: 'Something went wrong, information could not be updated',
-  //   })
-  // })
-}
+
+// .get()
+// .then((data) => {
+//   // const toBeUpdated = data.data()['companies']
+//   // if (toBeUpdated.some(company => company.companyId === req.body.companyId)) {
+//   //   existing = true
+//   // } else {
+//   //   db.doc(`coaches/${req.coachId}`).update({
+//   //     companies: [...toBeUpdated, req.body.companyId]
+//   //   })
+//   // }
+
+// })
+// .then(() => {
+//   if (existing) {
+//     res.status(403).json({ message: 'Company already exists' })
+//   } else {
+//     res.status(201).json({ message: 'Company added successfully' })
+//   }
+// })
+// .catch((err) => {
+//   console.log(err)
+//   res.status(500).json({
+//     error: 'Something went wrong, information could not be updated',
+//   })
+// })
+
 
 exports.uploadCoachDocument = (req, res) => {
   const BusBoy = require('busboy')
@@ -330,12 +380,12 @@ exports.searchForCoaches = (req, res) => {
     .catch(err => console.log(err))
 }
 
-// console.log('changing obj', changingObj)
+    // console.log('changing obj', changingObj)
 
-// changingObj.documents[documentType] = documentURL
+    // changingObj.documents[documentType] = documentURL
 
 // db.doc(`coaches/${req.params.id}`)
-//   .update(changingObj)
+          //   .update(changingObj)
 //   .then(() => {
 //     db.doc(`users/${req.user}`)
 //       .update({
