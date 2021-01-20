@@ -93,7 +93,7 @@ exports.updateAwaitingVerification = (req, res) => {
     }
 
   db.doc(`/awaitingVerification/${req.info.verificationId[req.type]}`).update({
-    verificationInfo
+    ...verificationInfo
   })
     .then(() => {
       res.status(201).json({ message: 'document updated!', data: req.info })

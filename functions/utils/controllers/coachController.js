@@ -295,11 +295,13 @@ exports.uploadCoachDocument = (req, res) => {
               if (
                 req.info.coachInfo.dbsCertificate &&
                 req.info.coachInfo.coachingCertificate &&
-                (!req.info.verificationId || !req.info.verificationId.coachInfo)
+                (!req.info.verificationId || req.info.verificationId.coachInfo === '')
               ) {
                 console.log('creating')
                 createAwaitingVerification(req, res)
-              } else if (req.info.verificationId.coachInfo) {
+              } else if (req.info.coachInfo.dbsCertificate &&
+                req.info.coachInfo.coachingCertificate &&
+                req.info.verificationId.coachInfo !== '') {
                 console.log('updating')
                 updateAwaitingVerification(req, res)
               } else {

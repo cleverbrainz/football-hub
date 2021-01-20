@@ -3,7 +3,10 @@
 const { db, admin } = require('../admin')
 const config = require('../configuration')
 const moment = require('moment')
-const { createAwaitingVerification } = require('./adminController')
+const {
+  createAwaitingVerification,
+  updateAwaitingVerification,
+} = require('./adminController')
 // const firebase = require('firebase/app')
 const nodemailer = require('nodemailer')
 // require('firebase/firestore')
@@ -210,8 +213,14 @@ exports.addNewDetail = (req, res) => {
         .get()
         .then((data) => {
           let newArr = []
-          const previous = req.params.detail === 'courses' ? data.data().courses.active : data.data()[req.params.detail]
-          const updateString = req.params.detail === 'courses' ? 'courses.active' : req.params.detail
+          const previous =
+            req.params.detail === 'courses'
+              ? data.data().courses.active
+              : data.data()[req.params.detail]
+          const updateString =
+            req.params.detail === 'courses'
+              ? 'courses.active'
+              : req.params.detail
           if (previous) {
             newArr = [...previous, requestObject]
             console.log(newArr)
@@ -238,50 +247,102 @@ exports.addNewDetail = (req, res) => {
 
 exports.retrieveCompanyCourses = (req, res) => {
   const { courses, company, type } = req.body
-  const promises = courses.map(course => {
-    return db.doc(`courses/${course}`).get().then(data => {
-      return data.data()
-    })
+  const promises = courses.map((course) => {
+    return db
+      .doc(`courses/${course}`)
+      .get()
+      .then((data) => {
+        return data.data()
+      })
   })
 
-  Promise.all(promises).then(courseArray => {
-    db.doc(`users/${company}`).get().then(data => {
-      let updatedCourses
-      const companyData = data.data()
-      if (companyData.courses[type]) {
-        updatedCourses = [...companyData.courses[type], ...courseArray]
-        console.log('merged', updatedCourses)
-      } else {
-        updatedCourses = [...courseArray]
-        console.log('fresh', updatedCourses)
-      }
-      db.doc(`users/${company}`).update({
-        [`courses.${type}`]: updatedCourses
-      })
+  Promise.all(promises)
+    .then((courseArray) => {
+      db.doc(`users/${company}`)
+        .get()
+        .then((data) => {
+          let updatedCourses
+          const companyData = data.data()
+          if (companyData.courses[type]) {
+            updatedCourses = [...companyData.courses[type], ...courseArray]
+            console.log('merged', updatedCourses)
+          } else {
+            updatedCourses = [...courseArray]
+            console.log('fresh', updatedCourses)
+          }
+          db.doc(`users/${company}`).update({
+            [`courses.${type}`]: updatedCourses,
+          })
+        })
     })
-  })
     .then(() => {
       res.status(201).send({ message: 'sorted!' })
     })
 }
 
-
 exports.sendCoachRequest = (req, res) => {
   console.log(req.body)
+  const { coachName, coachEmail, type } = req.body
+  const target =
+    type === 'localhost'
+      ? 'http://localhost:3000'
+      : 'https://football-hub-4018a.firebaseapp.com'
+  const firstName = coachName.split(' ')[0]
   const coachRef = db.doc(`/users/${req.body.coachId}`)
   const userRef = db.doc(`/users/${req.body.companyId}`)
 
-  coachRef
-    .update({
-      requests: admin.firestore.FieldValue.arrayUnion(req.body.companyId),
-    })
-    .then(() => {
-      userRef.update({
-        sentRequests: admin.firestore.FieldValue.arrayUnion(req.body.coachId),
+  userRef
+    .get()
+    .then((data) => {
+      const userCompany = data.data().name
+
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: 'indulgefootballemail@gmail.com',
+          pass: 'Indulg3Manchester1',
+        },
       })
-    })
-    .then(() => {
-      res.status(201).json({ message: 'request sent successfully' })
+
+      const mailOptions = {
+        from: 'indulgefootballemail@gmail.com',
+        to: `${coachName} <${coachEmail}>`,
+        subject: `Baller Hub connection request from ${userCompany}!`,
+        html: `
+      <h2 style='text-align:center'>Greetings from ${userCompany}! </h2>
+      <p> Hello ${firstName}! </p>
+      <p> ${userCompany} wants to connect with you on Baller Hub for football training in the future.</p>
+      <p> click the link below to head to Baller Hub and connect with ${userCompany}.</p>
+      <a href='${target}/login' target="_blank">Log in and confirm the request!</a>
+    `,
+      }
+      transporter
+        .sendMail(mailOptions, (err, info) => {
+          if (err) {
+            return res.status(400).send({ error: err })
+          }
+          return info
+        })
+        .then((info) => {
+          coachRef
+            .update({
+              requests: admin.firestore.FieldValue.arrayUnion(
+                req.body.companyId
+              ),
+            })
+            .then(() => {
+              userRef.update({
+                sentRequests: admin.firestore.FieldValue.arrayUnion(
+                  req.body.coachId
+                ),
+              })
+            })
+            .then(() => {
+              res
+                .status(201)
+                .json({ message: 'request sent successfully', info })
+            })
+        })
     })
     .catch((err) => {
       res.status(500).json({
@@ -349,7 +410,9 @@ exports.editCompanyDetail = (req, res) => {
 
           if (courseType || detail === 'services') {
             detail === 'services' ? (courseType = 'services') : courseType
-            const nonChangingCoursesArr = listings[0][courseType].filter(el => el[detailId] !== req.body[detailId])
+            const nonChangingCoursesArr = listings[0][courseType].filter(
+              (el) => el[detailId] !== req.body[detailId]
+            )
 
             db.doc(`/users/${req.user}`)
               .update({
@@ -367,15 +430,26 @@ exports.editCompanyDetail = (req, res) => {
               })
           }
 
-          const arrayToFilter = detail === 'courses' ? data.data()[detail].active : data.data()[detail]
-          const nonChangingArr = arrayToFilter.filter((el) => el[detailId] !== req.body[detailId])
+          const arrayToFilter =
+            detail === 'courses'
+              ? data.data()[detail].active
+              : data.data()[detail]
+          const nonChangingArr = arrayToFilter.filter(
+            (el) => el[detailId] !== req.body[detailId]
+          )
 
-          db.doc(`users/${req.user}`)
-            .update(detail === 'courses' ? {
-              [detail]: { ...courses, active: [...nonChangingArr, req.body] }
-            } : {
-              [detail]: [...nonChangingArr, req.body],
-            })
+          db.doc(`users/${req.user}`).update(
+            detail === 'courses'
+              ? {
+                  [detail]: {
+                    ...courses,
+                    active: [...nonChangingArr, req.body],
+                  },
+                }
+              : {
+                  [detail]: [...nonChangingArr, req.body],
+                }
+          )
         })
     })
     .then(() => {
@@ -400,7 +474,10 @@ exports.dataDeletion = (req, res) => {
         .get()
         .then((data) => {
           const { courses } = data.data()
-          const arrayToFilter = detail === 'courses' ? data.data()[detail].active : data.data()[detail]
+          const arrayToFilter =
+            detail === 'courses'
+              ? data.data()[detail].active
+              : data.data()[detail]
           const nonChangingArr = arrayToFilter.filter((el) => {
             const idArr = [
               'coaches',
@@ -453,14 +530,18 @@ exports.dataDeletion = (req, res) => {
 
           return db
             .doc(`/users/${req.user}`)
-            .update(detail === 'courses' ? { [detail]: { ...courses, active: nonChangingArr } } : { [detail]: nonChangingArr })
+            .update(
+              detail === 'courses'
+                ? { [detail]: { ...courses, active: nonChangingArr } }
+                : { [detail]: nonChangingArr }
+            )
             .then(() => {
               res
                 .status(201)
                 .json({ message: 'information deleted successfully' })
             })
             .catch((err) => {
-              // console.log(err)
+              console.log(err)
               res.status(500).json({
                 error: 'Something went wrong, information could not be deleted',
               })
@@ -522,11 +603,16 @@ exports.uploadCompanyDocument = (req, res) => {
               if (
                 req.info.documents.public_liability_insurance &&
                 req.info.documents.professional_indemnity_insurance &&
-                !req.info.verificationId.companyInfo
+                (!req.info.verificationId ||
+                  !req.info.verificationId.companyInfo)
               ) {
                 return createAwaitingVerification(req, res)
+              } else if (req.info.verificationId.companyInfo) {
+                return updateAwaitingVerification(req, res)
               } else {
-                return res.status(201).json({ message: 'file uploaded', data: req.info })
+                return res
+                  .status(201)
+                  .json({ message: 'file uploaded', data: req.info })
               }
             })
           })
@@ -723,9 +809,9 @@ exports.filterListings = (req, res) => {
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(deg2rad(lat1)) *
-      Math.cos(deg2rad(lat2)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2)
+        Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2)
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     const d = R * c // Distance in km
     return d.toFixed()
@@ -948,7 +1034,7 @@ exports.updateCourseCoaches = (req, res) => {
     .get()
     .then((data) => {
       console.log('hello', data.data())
-      const newCourses = [...data.data().courses]
+      const newCourses = [...data.data().courses.active]
       let updatedCourseId
       let previousCoaches
 
@@ -961,7 +1047,7 @@ exports.updateCourseCoaches = (req, res) => {
       }
 
       companyCourseRef
-        .update({ courses: newCourses })
+        .update({ 'courses.active': newCourses })
         .then(() => {
           console.log('removed', previousCoaches)
 
@@ -974,15 +1060,15 @@ exports.updateCourseCoaches = (req, res) => {
                 if (coaches.indexOf(removedCoach) === -1) {
                   category === 'coach'
                     ? db.doc(`/users/${removedCoach}`).update({
-                      [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(
-                        updatedCourseId
-                      ),
-                    })
+                        [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(
+                          updatedCourseId
+                        ),
+                      })
                     : db.doc(`/users/${removedCoach}`).update({
-                      [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(
-                        updatedCourseId
-                      ),
-                    })
+                        [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(
+                          updatedCourseId
+                        ),
+                      })
                 }
               })
           }
@@ -995,15 +1081,15 @@ exports.updateCourseCoaches = (req, res) => {
 
                 category === 'coach'
                   ? db.doc(`/users/${addedCoach}`).update({
-                    [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
-                      updatedCourseId
-                    ),
-                  })
+                      [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
+                        updatedCourseId
+                      ),
+                    })
                   : db.doc(`/users/${addedCoach}`).update({
-                    [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
-                      updatedCourseId
-                    ),
-                  })
+                      [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
+                        updatedCourseId
+                      ),
+                    })
               })
           }
         })
@@ -1031,24 +1117,24 @@ exports.addPlayerToCourse = (req, res) => {
           const dayNums =
             courseDetails.courseType === 'Camp'
               ? courseDetails.sessions.map((session) =>
-              // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
-                moment(session.sessionDate.toDate()).day()
-              )
+                  // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+                  moment(session.sessionDate.toDate()).day()
+                )
               : courseDetails.sessions.map((session) =>
-              // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
-                moment().day(session.day).day()
-              )
+                  // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+                  moment().day(session.day).day()
+                )
           console.log({ dayNums })
           const newRegister = register
             ? addUsersToRegister(register, [
-              {
-                name: req.body.playerName,
-                id: req.body.playerId,
-                dob: req.body.playerDob,
-              },
-            ])
+                {
+                  name: req.body.playerName,
+                  id: req.body.playerId,
+                  dob: req.body.playerDob,
+                },
+              ])
             : courseDetails.courseType === 'Camp'
-              ? createRegister(
+            ? createRegister(
                 courseDetails.firstDay,
                 courseDetails.lastDay,
                 dayNums,
@@ -1060,7 +1146,7 @@ exports.addPlayerToCourse = (req, res) => {
                   },
                 ]
               )
-              : createRegister(
+            : createRegister(
                 courseDetails.startDate,
                 courseDetails.endDate,
                 dayNums,
@@ -1173,7 +1259,6 @@ exports.sendPlayerRequestEmail = (req, res) => {
   const valid = validateEmailAddressInput(email)
   if (!valid) return res.status(400).json({ message: 'Invalid email address' })
 
-
   db.collection('users')
     .where('email', '==', email)
     .get()
@@ -1254,65 +1339,54 @@ exports.sendCoachRequestEmail = (req, res) => {
     <a href='${target}/register/trainer/${code}' target='_blank'>Click here to sign up!</a>
   `
 
-  // db.collection('users')
-  //   .where('email', '==', email)
-  //   .get()
-  //   .then((data) => {
-  const transporter = nodemailer.createTransport({
-    // host: 'smtp.office365.com',
-    // port: 587,
-    // auth: {
-    //   user: 'kenn@indulgefootball.com',
-    //   pass: 'Welcome342!',
-    // },
-    // secureConnection: false,
-    // tls: {
-    //   ciphers: 'SSLv3',
-    // },
+  db.collection('users')
+    .where('email', '==', email)
+    .get()
+    .then((data) => {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: 'indulgefootballemail@gmail.com',
+          pass: 'Indulg3Manchester1',
+        },
+      })
 
-    service: 'gmail',
-    auth: {
-      user: 'indulgefootballemail@gmail.com',
-      pass: 'Indulg3Manchester1',
-    },
-  })
+      const mailOptions = {
+        from: 'indulgefootballemail@gmail.com',
+        to: `${name} <${email}>`,
+        subject: `Welcome to Baller Hub from ${companyName}!`,
+        html: output,
+      }
 
-  const mailOptions = {
-    from: 'indulgefootballemail@gmail.com',
-    to: `${name} <${email}>`,
-    subject: `Welcome to Baller Hub from ${companyName}!`,
-    html: output,
-  }
+      data.forEach((dataUser) => {
+        if (dataUser.exists) {
+          const username = dataUser.data().name
+          console.log('username', username)
 
-  // data.forEach((dataUser) => {
-  //   if (dataUser.exists) {
-  //     username = dataUser.data().name
-  //     console.log('username', username)
+          mailOptions.html = `
+    <h2 style='text-align:center'>Greetings from ${companyName}! </h2>
+    <p> Hello ${username}! </p>
+    <p> ${companyName} wants to connect with you on Baller Hub for football training in the future.</p>
+    <p> click the link below to head to Baller Hub and connect with ${companyName}.</p>
+    <a href='${target}/login' target="_blank">Log in and confirm the request!</a>
+  `
 
-  //     mailOptions.html = `
-  //   <h2 style='text-align:center'>Greetings from ${companyName}! </h2>
-  //   <p> Hello ${username}! </p>
-  //   <p> ${companyName} wants to connect with you on Baller Hub for football training in the future.</p>
-  //   <p> click the link below to head to Baller Hub and connect with ${companyName}.</p>
-  //   <a href='${target}/login' target="_blank">Log in and confirm the request!</a>
-  // `
+          mailOptions.to = `${username} <${email}>`
+          mailOptions.subject = `Baller Hub connection request from ${companyName}!`
+        }
+      })
 
-  //     mailOptions.to = `${username} <${email}>`
-  //     mailOptions.subject = `Baller Hub connection request from ${companyName}!`
-  //   }
-  // })
+      transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
+          return res.status(400).send({ error: err })
+        }
 
-  transporter.sendMail(mailOptions, (err, info) => {
-    if (err) {
-      return res.status(400).send({ error: err })
-    }
-
-    res.send({
-      message: 'Message sent: %s',
-      messageId: info.messageId,
-      previewUrl: 'Preview URL: %s',
-      preview: nodemailer.getTestMessageUrl(info),
+        res.send({
+          message: 'Message sent: %s',
+          messageId: info.messageId,
+          previewUrl: 'Preview URL: %s',
+          preview: nodemailer.getTestMessageUrl(info),
+        })
+      })
     })
-  })
-  // })
 }
