@@ -6,6 +6,7 @@ const { db, admin } = require('./utils/admin')
 const moment = require('moment')
 
 const cors = require('cors')
+
 const stripe = require('stripe')('sk_test_4eC39HqLyjWDarjtT1zdp7dc')
 const bodyParser = require('body-parser');
 app.use(cors())
@@ -79,6 +80,7 @@ const {
   searchForCoaches
   // getAllAppCoaches
 } = require('./utils/controllers/coachController')
+const { getAllPlans, createNewSubscription, createConnectedAccount, handleWebhook, createEditAccountLink } = require('./utils/controllers/stripeController')
 // const { checkPubSub } = require('./utils/cloudfunctions')
 
 // Cloud functios and routes for companies collection
@@ -160,6 +162,17 @@ app.post('/create-payment', createStripePayment)
 
 
 app.post('/webhook-course-booking', webhookCourseBooking)
+
+
+app.get('/plans', getAllPlans)
+
+app.post('/subscriptions/new', createNewSubscription)
+app.post('/connectAccount/new', createConnectedAccount)
+app.post('/connectAccount/edit', createEditAccountLink)
+
+
+app.post('/stripewebhook', handleWebhook)
+// app.get('/subscriptions/portal', getPortal)
 
 // Configures firebase and lets it know that the app container is serving the functionalities
 exports.api = functions.region('europe-west2').https.onRequest(app)

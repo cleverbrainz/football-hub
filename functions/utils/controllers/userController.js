@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer')
 
 const firebase = require('firebase')
 const { createAwaitingVerification } = require('./adminController')
+const { createBrotliCompress } = require('zlib')
 firebase.initializeApp(config)
 
 exports.registerUser = (req, res) => {
@@ -151,16 +152,18 @@ exports.getCompaniesAndCoaches = (req, res) => {
 }
 
 exports.loginUser = (req, res) => {
+  
   const { email, password } = req.body
   const { valid } = validateLoginFields(req.body)
   let userId
 
   if (!valid) return res.status(400).json({ message: 'Invalid credentials' })
 
-  firebase
+  return firebase
     .auth()
     .signInWithEmailAndPassword(email, password)
     .then((data) => {
+      console.log(data.user)
       userId = data.user.uid
       return data.user.getIdToken()
     })
@@ -307,19 +310,15 @@ exports.getOneUser = (req, res) => {
         const userData = doc.data()
         userData.subscriptions = {}
         userData.stripe_account = {}
-       
+        user.push(userData)
         const arr = ['subscriptions', 'stripe_account']
         for (const type of arr) {
-          promises.push(db
-            .doc(`/users/${doc.id}`)
-            .collection(type)
-            .get()
+          promises.push(db.doc(`/users/${doc.id}`).collection(`${type}`).get()
             .then(subItems => {
               !subItems.empty ? subItems.forEach(subItem => userData[type] = subItem.data()) : delete userData[type]
             })
           )
         }
-        user.push(userData)
       })
       Promise.all(promises).then(() => res.json(user))
     })
