@@ -6,8 +6,9 @@ const { db, admin } = require('./utils/admin')
 const moment = require('moment')
 
 const cors = require('cors')
-// const stripe = require('stripe')('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
 
+const stripe = require('stripe')('sk_test_4eC39HqLyjWDarjtT1zdp7dc')
+const bodyParser = require('body-parser');
 app.use(cors())
 app.use(express.static('.'))
 
@@ -41,7 +42,7 @@ const {
   sendCoachRequestEmail
 } = require('./utils/controllers/companyController')
 
-const { createStripePayment } = require('./utils/controllers/paymentController')
+const { createStripePayment, webhookCourseBooking } = require('./utils/controllers/paymentController')
 
 const {
   newEnquiry,
@@ -157,10 +158,10 @@ app.post('/emailRequest', sendPlayerRequestEmail)
 app.post('/emailRequestCoach', sendCoachRequestEmail)
 
 app.post('/retrieveCourse', retrieveCompanyCourses)
-
-
-
 app.post('/create-payment', createStripePayment)
+
+
+app.post('/webhook-course-booking', webhookCourseBooking)
 
 
 app.get('/plans', getAllPlans)
@@ -175,6 +176,8 @@ app.post('/stripewebhook', handleWebhook)
 
 // Configures firebase and lets it know that the app container is serving the functionalities
 exports.api = functions.region('europe-west2').https.onRequest(app)
+
+
 
 // exports.checkPubSub = functions.pubsub.schedule('every 10 minutes')
 //   .timeZone('Europe/London')

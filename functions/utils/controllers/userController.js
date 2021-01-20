@@ -97,7 +97,7 @@ exports.initialRegistrationUserInformation = (req, res) => {
 
       if (newUser.companyLink) {
         if (newUser.category === 'player') {
-          
+
           const playerInfo = {
             age: newUser.dob,
             id: req.body.userId,
@@ -324,6 +324,7 @@ exports.getOneUser = (req, res) => {
     })
     .catch((err) => console.error(err))
 }
+
 
 exports.forgottenPassword = (req, res) => {
   const { email } = req.body
