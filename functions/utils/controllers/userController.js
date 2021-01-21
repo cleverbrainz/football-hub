@@ -5,7 +5,6 @@ const nodemailer = require('nodemailer')
 
 const firebase = require('firebase')
 const { createAwaitingVerification } = require('./adminController')
-const { createBrotliCompress } = require('zlib')
 firebase.initializeApp(config)
 
 exports.registerUser = (req, res) => {
