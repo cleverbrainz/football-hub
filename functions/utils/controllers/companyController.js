@@ -128,7 +128,9 @@ exports.addNewDetail = (req, res) => {
     }
     return arr
   }
+
   const requestObject = { ...req.body }
+
   if (req.params.detail === 'courses') {
     const days = [
       'Sunday',
@@ -139,7 +141,7 @@ exports.addNewDetail = (req, res) => {
       'Friday',
       'Saturday',
     ]
-    
+
     const { sessions, startTime, endTime, spaces } = requestObject.courseDetails
     const {
       courseType,
@@ -160,7 +162,6 @@ exports.addNewDetail = (req, res) => {
       })
     }
   }
-
 
   if (req.params.detail === 'contact') {
     delete req.body.companyId
@@ -222,7 +223,6 @@ exports.addNewDetail = (req, res) => {
               console.log('prev')
             }
 
-
             db.doc(`users/${req.body.companyId}`).update({
               [updateString]: newArr,
             })
@@ -240,11 +240,12 @@ exports.addNewDetail = (req, res) => {
   }
 }
 
+
   exports.retrieveCompanyCourses = (req, res) => {
     const { courses, company, type } = req.body
     const promises = courses.map((course) => {
       return db
-        .doc(`courses/${course}`)
+        .doc(`courses/${course}`)    
         .get()
         .then((data) => {
           return data.data()
@@ -810,13 +811,13 @@ exports.addNewDetail = (req, res) => {
       const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(deg2rad(lat1)) *
-        Math.cos(deg2rad(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2)
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-      const d = R * c // Distance in km
-      return d.toFixed()
-    }
+      Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    const d = R * c // Distance in km
+    return d.toFixed()
+  }
 
     function cleanObject(obj) {
       for (var propName in obj) {
@@ -1083,26 +1084,26 @@ exports.addNewDetail = (req, res) => {
                 .then((data) => {
                   const category = data.data().category
 
-                  category === 'coach'
-                    ? db.doc(`/users/${addedCoach}`).update({
-                      [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
-                        updatedCourseId
-                      ),
-                    })
-                    : db.doc(`/users/${addedCoach}`).update({
-                      [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
-                        updatedCourseId
-                      ),
-                    })
-                })
-            }
-          })
-          .then(() => {
-            res.status(201).json({ message: 'coaches updated' })
-          })
-      })
-      .catch((err) => console.log(err))
-  }
+                category === 'coach'
+                  ? db.doc(`/users/${addedCoach}`).update({
+                    [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
+                      updatedCourseId
+                    ),
+                  })
+                  : db.doc(`/users/${addedCoach}`).update({
+                    [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
+                      updatedCourseId
+                    ),
+                  })
+              })
+          }
+        })
+        .then(() => {
+          res.status(201).json({ message: 'coaches updated' })
+        })
+    })
+    .catch((err) => console.log(err))
+}
 
   exports.addPlayerToCourse = (req, res) => {
     const courseRef = db.doc(`/courses/${req.params.courseId}`)
@@ -1121,47 +1122,48 @@ exports.addNewDetail = (req, res) => {
             const dayNums =
             courseDetails.courseType === 'Camp'
               ? courseDetails.sessions.map((session) =>
-              // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+
+                // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
                 moment(session.sessionDate.toDate()).day()
               )
               : courseDetails.sessions.map((session) =>
-              // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+                // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
                 moment().day(session.day).day()
               )
-            console.log({ dayNums })
-            const newRegister = register
-              ? addUsersToRegister(register, [
-                {
-                  name: req.body.playerName,
-                  id: req.body.playerId,
-                  dob: req.body.playerDob,
-                },
-              ])
-              : courseDetails.courseType === 'Camp'
-                ? createRegister(
-                  courseDetails.firstDay,
-                  courseDetails.lastDay,
-                  dayNums,
-                  [
-                    {
-                      name: req.body.playerName,
-                      id: req.body.playerId,
-                      dob: req.body.playerDob,
-                    },
-                  ]
-                )
-                : createRegister(
-                  courseDetails.startDate,
-                  courseDetails.endDate,
-                  dayNums,
-                  [
-                    {
-                      name: req.body.playerName,
-                      id: req.body.playerId,
-                      dob: req.body.playerDob,
-                    },
-                  ]
-                )
+          console.log({ dayNums })
+          const newRegister = register
+            ? addUsersToRegister(register, [
+              {
+                name: req.body.playerName,
+                id: req.body.playerId,
+                dob: req.body.playerDob,
+              },
+            ])
+            : courseDetails.courseType === 'Camp'
+              ? createRegister(
+                courseDetails.firstDay,
+                courseDetails.lastDay,
+                dayNums,
+                [
+                  {
+                    name: req.body.playerName,
+                    id: req.body.playerId,
+                    dob: req.body.playerDob,
+                  },
+                ]
+              )
+              : createRegister(
+                courseDetails.startDate,
+                courseDetails.endDate,
+                dayNums,
+                [
+                  {
+                    name: req.body.playerName,
+                    id: req.body.playerId,
+                    dob: req.body.playerDob,
+                  },
+                ]
+              )
 
             courseRef.update({
               register: newRegister,

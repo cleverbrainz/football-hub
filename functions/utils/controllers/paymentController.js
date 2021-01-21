@@ -6,7 +6,7 @@ const moment = require('moment')
 
 
 exports.createStripePayment = async (req, res) => {
-  const { unitPrice, spaces, product, metadata, accountId } = req.body
+  const { unitPrice, spaces, product, metadata, accountId, stripeId } = req.body
   const successDomain = 'http://localhost:3000/checkout'
 
   const session = await stripe.checkout.sessions.create({
@@ -25,7 +25,7 @@ exports.createStripePayment = async (req, res) => {
         quantity: spaces
       }
     ],
-
+    customer: stripeId,
     payment_intent_data: {
       application_fee_amount: ((unitPrice * 100) * 4) * 0.02,
       on_behalf_of: accountId,
@@ -109,11 +109,14 @@ const addPlayerToCourse = (metadata) => {
   const courseRef = db.doc(`/courses/${courseId}`)
   const playerRef = db.doc(`users/${playerId}`)
 
+  console.log('step 1')
+
   return courseRef
     .update({
       playerList: admin.firestore.FieldValue.arrayUnion(playerId)
     })
     .then(() => {
+      console.log('step 2')
       courseRef
         .get()
         .then((data) => {
@@ -170,12 +173,14 @@ const addPlayerToCourse = (metadata) => {
           return courseData
         })
         .then((data) => {
+          console.log('step 3')
           const { companyId, courseId } = data
           playerRef.update({
             [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
               courseId
             )
           })
+          console.log('step 4')
           db.doc(`/users/${companyId}`)
             .update({
               [`players.${playerId}.status`]: 'Active'
