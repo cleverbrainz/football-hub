@@ -129,6 +129,8 @@ exports.addNewDetail = (req, res) => {
     return arr
   }
 
+  const requestObject = { ...req.body }
+
   if (req.params.detail === 'courses') {
     const days = [
       'Sunday',
@@ -139,6 +141,8 @@ exports.addNewDetail = (req, res) => {
       'Friday',
       'Saturday',
     ]
+
+
     const { sessions, startTime, endTime, spaces } = requestObject.courseDetails
     const {
       courseType,
@@ -160,7 +164,7 @@ exports.addNewDetail = (req, res) => {
     }
   }
 
-  const requestObject = { ...req.body }
+
 
   if (req.params.detail === 'contact') {
     delete req.body.companyId
@@ -222,34 +226,34 @@ exports.addNewDetail = (req, res) => {
               console.log('prev')
             }
 
-      return (
-        db
-          // .doc(`coaches/${data.id}`)
-          .doc(`${req.params.detail}/${data.id}`)
-          .update({ [detailId]: data.id })
-      )
-    })
-    .then(() => {
-      console.log('stepppp2')
-      db.doc(`users/${req.body.companyId}`)
-        .get()
-        .then((data) => {
-          let newArr = []
-          const previous =
-            req.params.detail === 'courses'
-              ? data.data().courses.active
-              : data.data()[req.params.detail]
-          const updateString =
-            req.params.detail === 'courses'
-              ? 'courses.active'
-              : req.params.detail
-          if (previous) {
-            newArr = [...previous, requestObject]
-            console.log(newArr)
-          } else {
-            newArr = [requestObject]
-            console.log('prev')
-          }
+            //   return (
+            //     db
+            //       // .doc(`coaches/${data.id}`)
+            //       .doc(`${req.params.detail}/${data.id}`)
+            //       .update({ [detailId]: data.id })
+            //   )
+            // })
+            // .then(() => {
+            //   console.log('stepppp2')
+            //   db.doc(`users/${req.body.companyId}`)
+            //     .get()
+            //     .then((data) => {
+            //       let newArr = []
+            //       const previous =
+            //         req.params.detail === 'courses'
+            //           ? data.data().courses.active
+            //           : data.data()[req.params.detail]
+            //       const updateString =
+            //         req.params.detail === 'courses'
+            //           ? 'courses.active'
+            //           : req.params.detail
+            //       if (previous) {
+            //         newArr = [...previous, requestObject]
+            //         console.log(newArr)
+            //       } else {
+            //         newArr = [requestObject]
+            //         console.log('prev')
+            //       }
 
 
             db.doc(`users/${req.body.companyId}`).update({
@@ -267,10 +271,8 @@ exports.addNewDetail = (req, res) => {
           })
       })
   }
-
-
-
 }
+
 
 exports.retrieveCompanyCourses = (req, res) => {
   const { courses, company, type } = req.body
@@ -841,9 +843,9 @@ exports.filterListings = (req, res) => {
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(deg2rad(lat1)) *
-        Math.cos(deg2rad(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2)
+      Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2)
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     const d = R * c // Distance in km
     return d.toFixed()
@@ -1095,15 +1097,15 @@ exports.updateCourseCoaches = (req, res) => {
                 if (coaches.indexOf(removedCoach) === -1) {
                   category === 'coach'
                     ? db.doc(`/users/${removedCoach}`).update({
-                        [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(
-                          updatedCourseId
-                        ),
-                      })
+                      [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(
+                        updatedCourseId
+                      ),
+                    })
                     : db.doc(`/users/${removedCoach}`).update({
-                        [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(
-                          updatedCourseId
-                        ),
-                      })
+                      [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(
+                        updatedCourseId
+                      ),
+                    })
                 }
               })
           }
@@ -1116,15 +1118,15 @@ exports.updateCourseCoaches = (req, res) => {
 
                 category === 'coach'
                   ? db.doc(`/users/${addedCoach}`).update({
-                      [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
-                        updatedCourseId
-                      ),
-                    })
+                    [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
+                      updatedCourseId
+                    ),
+                  })
                   : db.doc(`/users/${addedCoach}`).update({
-                      [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
-                        updatedCourseId
-                      ),
-                    })
+                    [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
+                      updatedCourseId
+                    ),
+                  })
               })
           }
         })
@@ -1152,24 +1154,24 @@ exports.addPlayerToCourse = (req, res) => {
           const dayNums =
             courseDetails.courseType === 'Camp'
               ? courseDetails.sessions.map((session) =>
-                  // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
-                  moment(session.sessionDate.toDate()).day()
-                )
+                // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+                moment(session.sessionDate.toDate()).day()
+              )
               : courseDetails.sessions.map((session) =>
-                  // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
-                  moment().day(session.day).day()
-                )
+                // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+                moment().day(session.day).day()
+              )
           console.log({ dayNums })
           const newRegister = register
             ? addUsersToRegister(register, [
-                {
-                  name: req.body.playerName,
-                  id: req.body.playerId,
-                  dob: req.body.playerDob,
-                },
-              ])
+              {
+                name: req.body.playerName,
+                id: req.body.playerId,
+                dob: req.body.playerDob,
+              },
+            ])
             : courseDetails.courseType === 'Camp'
-            ? createRegister(
+              ? createRegister(
                 courseDetails.firstDay,
                 courseDetails.lastDay,
                 dayNums,
@@ -1181,7 +1183,7 @@ exports.addPlayerToCourse = (req, res) => {
                   },
                 ]
               )
-            : createRegister(
+              : createRegister(
                 courseDetails.startDate,
                 courseDetails.endDate,
                 dayNums,
