@@ -41,7 +41,10 @@ const {
   getSingleListing,
   updateLiveListings
 } = require('./utils/controllers/companyController')
-const { createStripePayment, webhookCourseBooking } = require('./utils/controllers/paymentController')
+const { 
+  createStripePayment, 
+  retrieveConnectedAccount,
+  webhookCourseBooking } = require('./utils/controllers/paymentController')
 const {
   newEnquiry,
   getEnquiries,
@@ -75,7 +78,12 @@ const {
   searchForCoaches
   // getAllAppCoaches
 } = require('./utils/controllers/coachController')
-const { getAllPlans, createNewSubscription, createConnectedAccount, handleWebhook, createEditAccountLink } = require('./utils/controllers/stripeController')
+const { 
+  getAllPlans, 
+  createNewSubscription, 
+  createConnectedAccount, 
+  handleWebhook, 
+  createEditAccountLink } = require('./utils/controllers/stripeController')
 // const { checkPubSub } = require('./utils/cloudfunctions')
 // Cloud functios and routes for companies collection
 app.get('/masterlists', getCompaniesAndCoaches)
@@ -151,6 +159,8 @@ app.post('/connectAccount/new', createConnectedAccount)
 app.post('/connectAccount/edit', createEditAccountLink)
 
 app.post('/stripewebhook', handleWebhook)
+
+app.get('/connected-account/:id', retrieveConnectedAccount)
 // app.get('/subscriptions/portal', getPortal)
 // Configures firebase and lets it know that the app container is serving the functionalities
 exports.api = functions.region('europe-west2').https.onRequest(app)

@@ -4,8 +4,16 @@ const firebase = require('firebase')
 const nodemailer = require("nodemailer");
 const nodeoutlook = require('nodejs-nodemailer-outlook')
 
-exports.newEnquiry = (req, res) => {
-  const { name, email, companyId, message, subject, userId, company } = req.body
+exports.newEnquiry = async (req, res) => {
+  const {
+    name,
+    email,
+    companyId,
+    message,
+    subject,
+    userId,
+    company } = req.body
+
   const newEnquiry = {
     email,
     companyId,
@@ -14,8 +22,6 @@ exports.newEnquiry = (req, res) => {
     company,
     messages: []
   }
-
-
 
   let messageBody = {}
 
@@ -40,32 +46,49 @@ exports.newEnquiry = (req, res) => {
 
   let existing = false
 
-  // if (req.body.enquiryType === 'booking') {
-  //   db
-  //     .collection('enquiries')
-  //     .get()
-  //     .then(data => {
+  await db
+    .collection('enquiries')
+    .get()
+    .then(async data => {
 
-  //       data.forEach((doc) => {
-  //         const query = doc.data()
-  //         if (query.companyId === companyId && query.userId === userId) existing = true
-  //       })
+      await data.forEach((doc) => {
+        const query = doc.data()
 
-  //       if (existing) {
+        if (query.companyId === companyId && query.userId === userId) {
+          console.log('hellooo')
+          existing = true
+          const existingEnquiryId = query.enquiryId
+          const newMessagesArr = [...query.messages, messageBody]
 
-  //       }
-  //     })
-  // }
+          db
+            .doc(`enquiries/${existingEnquiryId}`)
+            .update({ messages: newMessagesArr })
 
-  if (!existing) {
+        }
+      })
+        .then(() => {
+          res
+            .status(201)
+            .json({ message: 'new message added successfully' })
+        })
+        .catch(err => {
+          res
+            .status(500)
+            .json({ error: 'Something went wrong, enquiry could not be added' })
+          console.error(err)
+        })
+    })
+
+  if (!existing)
     db
       .collection('enquiries')
       .add(newEnquiry)
       .then(data => {
+        console.log(messageBody)
         db
           .collection('enquiries')
           .doc(data.id)
-          .update({ messages: [{ ...messageBody }] })
+          .update({ enquiryId: data.id, messages: [{ ...messageBody }] })
       })
       .then(() => {
         res
@@ -78,8 +101,6 @@ exports.newEnquiry = (req, res) => {
           .json({ error: 'Something went wrong, enquiry could not be added' })
         console.error(err)
       })
-  }
-
 }
 
 exports.getEnquiries = (req, res) => {

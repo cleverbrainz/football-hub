@@ -306,7 +306,6 @@ exports.retrieveCompanyCourses = (req, res) => {
         return data.data()
       })
   })
-
   Promise.all(promises)
     .then((courseArray) => {
       db.doc(`users/${company}`)
@@ -392,7 +391,6 @@ exports.sendCoachRequest = (req, res) => {
             .status(201)
             .json({ message: 'request sent successfully', emailInfo })
         })
-    })
     .catch((err) => {
       res.status(500).json({
         error: 'Something went wrong, enquiry could not be added',
@@ -440,7 +438,8 @@ exports.editCompanyDetail = (req, res) => {
   if (detail === 'contact') {
     delete req.body.companyId
 
-    db.doc(`users/${req.user}`)
+    db
+      .doc(`users/${req.user}`)
       .update({ contactInformation: req.body })
       .then(() => {
         res.status(201).json({ message: 'new message updated successfully' })
@@ -450,6 +449,7 @@ exports.editCompanyDetail = (req, res) => {
           error: 'Something went wrong, enquiry could not be added',
         })
       })
+
   } else {
     db.doc(`${detail}/${req.body[detailId]}`)
       .update(req.body)
@@ -527,6 +527,7 @@ exports.editCompanyDetail = (req, res) => {
   }
 }
 
+
 exports.dataDeletion = (req, res) => {
   const { id, detail } = req.params
   console.log(detail)
@@ -555,7 +556,6 @@ exports.dataDeletion = (req, res) => {
               return el[`${text}Id`] !== id
             }
           })
-
           const { listings } = data.data()
           let courseType = null
           const courseFilterArr = ['courses', 'camps']
@@ -1086,6 +1086,7 @@ exports.updateRegister = (req, res) => {
     .then(() => {
       res.status(201).send({ message: 'register updated!' })
     })
+
     .catch((err) => console.log(err))
 }
 
@@ -1128,15 +1129,15 @@ exports.updateCourseCoaches = (req, res) => {
                 if (coaches.indexOf(removedCoach) === -1) {
                   category === 'coach'
                     ? db.doc(`/users/${removedCoach}`).update({
-                        [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(
-                          updatedCourseId
-                        ),
-                      })
+                      [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(
+                        updatedCourseId
+                      ),
+                    })
                     : db.doc(`/users/${removedCoach}`).update({
-                        [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(
-                          updatedCourseId
-                        ),
-                      })
+                      [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayRemove(
+                        updatedCourseId
+                      ),
+                    })
                 }
               })
           }
@@ -1458,3 +1459,4 @@ exports.sendCoachRequestEmail = (req, res) => {
       })
     })
 }
+
