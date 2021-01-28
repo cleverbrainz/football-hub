@@ -135,7 +135,7 @@ exports.editCoachDetail = (req, res) => {
 
 exports.handleCompanyRequest = (req, res) => {
   // const coachRef = db.doc(`coaches/${req.body.coachId}`)
-  const { comapanyEmail, coachName } = req.body
+  const { companyEmail, coachName } = req.body
   console.log(req.body)
   const companyRef = db.doc(`users/${req.body.companyId}`)
   const userRef = db.doc(`/users/${req.body.userId}`)
@@ -174,16 +174,17 @@ exports.handleCompanyRequest = (req, res) => {
         //   res.status(403).json({ message: 'Company already exists' })
         // } else {
 
-        const target =
-          type === 'localhost'
-            ? 'http://localhost:3000'
-            : 'https://football-hub-4018a.firebaseapp.com'
+        const target = 'http://localhost:3000'
+          // type === 'localhost'
+            // ? 'http://localhost:3000'
+            // : 'https://football-hub-4018a.firebaseapp.com'
 
         output = `
     <h2 style='text-align:center'> FT Baller! </h2>
-    <p> Hello, ${name}</p>
+    <p> Hello!</p>
     <p> ${coachName} has accepted your invitation on FT Baller and has become a member of your training team.</p>
     <p> click the link below to log in and view this on your account</p>
+    <p> should send to ${companyEmail} <p/>
     <a href='${target}/login' target='_blank'>Log in</a>   `
 
         const transporter = nodemailer.createTransport({
@@ -197,7 +198,7 @@ exports.handleCompanyRequest = (req, res) => {
 
         const mailOptions = {
           from: 'indulgefootballemail@gmail.com',
-          to: comapanyEmail,
+          to: 'patrick.cf.white@gmail.com',
           subject: `Coach invitation acceptance from ${coachName}!`,
           html: output
         }
@@ -207,7 +208,7 @@ exports.handleCompanyRequest = (req, res) => {
             return res.status(400).send({ error: err })
           }
 
-          res.send({
+          return res.send({
             message: 'Message sent: %s',
             messageId: info.messageId,
             previewUrl: 'Preview URL: %s',
@@ -215,7 +216,7 @@ exports.handleCompanyRequest = (req, res) => {
           })
         })
 
-        res.status(201).json({ message: 'Company added successfully' })
+        // res.status(201).json({ message: 'Company added successfully' })
         // }
       } else {
         res.status(201).json({ message: 'Offer declined' })

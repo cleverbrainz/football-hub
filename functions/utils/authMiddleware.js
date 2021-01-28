@@ -4,14 +4,18 @@ const { db, admin } = require('./admin')
 // Checks that the user bears a token and that they have the right of access for an endpoint
 // OAuth 2.0 is a protocol that allows a user to grant a third-party web site or application access to the user's protected resources
 module.exports = (req, res, next) => {
+  // console.log('middleware req')
   
   const authToken = req.headers.authorization
+  // console.log(authToken)
 
   if (!authToken || !authToken.startsWith('Bearer')) {
+    console.log('nope')
     return res.status(401).json({ message: 'Unauthorized, no token' })
   }
 
   const token = authToken.replace('Bearer ', '')
+  console.log(token)
 
   admin  
     .auth()
