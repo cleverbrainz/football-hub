@@ -36,7 +36,10 @@ const {
   uploadCompanyDocument,
   sendPlayerRequestEmail,
   retrieveCompanyCourses,
-  sendCoachRequestEmail
+  sendCoachRequestEmail,
+  addNewListing,
+  getSingleListing,
+  updateLiveListings
 } = require('./utils/controllers/companyController')
 const { 
   createStripePayment, 
@@ -109,12 +112,15 @@ app.patch(
 app.delete('/companies/:detail/:id', authMiddleware, dataDeletion)
 app.post('/filteredCompanies', filterListings)
 app.get('/listings', getAllListings)
+app.get('/listings/:listingId', getSingleListing)
+app.patch('/listings/live', updateLiveListings)
 app.get('/courses/:courseId', getSingleCourse)
 app.patch('/courses/:courseId/players', addPlayerToCourse)
 app.patch('/courses/:courseId/coaches', updateCourseCoaches)
 app.patch('/courses/:courseId', updateRegister)
 // enquiries
 app.post('/enquiries', newEnquiry)
+app.post('/addNewListing', addNewListing)
 // app.get('/enquiries/:company', authMiddleware, getCompanyEnquiry)
 app.get('/enquiries/:category', authMiddleware, getEnquiries)
 app.patch('/enquiries/:id', updateOneEnquiry)

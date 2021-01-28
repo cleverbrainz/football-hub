@@ -12,6 +12,7 @@ const nodemailer = require('nodemailer')
 // require('firebase/firestore')
 
 const { validateEmailAddressInput } = require('../validators')
+const { Firestore } = require('@google-cloud/firestore')
 
 exports.getAllCompanies = (req, res) => {
   db.collection('users')
@@ -117,6 +118,49 @@ exports.ageDetails = (req, res) => {
   }
 }
 
+
+exports.addNewListing = (req, res) => {
+
+  const listingObj = { ...req.body }
+  
+  return db.collection('listings')
+    .add(listingObj)
+    .then(data => {
+      listingObj.id = data.id
+      return db.doc(`/listings/${data.id}`).update({ listingId: data.id })
+    }).then(() => {
+      return db.doc(`/users/${listingObj.companyId}`).update({ listings: admin.firestore.FieldValue.arrayUnion(listingObj.id) })
+    })
+    .then(() => res.status(201).json({ message: 'listing added' }))
+    .catch(err => res.status(400).send(err))
+
+}
+
+
+exports.getSingleListing = (req, res) => {
+  console.log(req.params)
+  return db
+    .doc(`/listings/${req.params.listingId}`)
+    .get()
+    .then((data) => {
+      const response = data.data()
+      console.log(response)
+      res.status(201).json(response)
+    })
+    .catch((error) => console.log(error))
+}
+
+exports.updateLiveListings = (req, res) => {
+  const promises = []
+  req.body.updates.forEach(([id, status]) => {
+    promises.push(db.doc(`/listings/${id}`).update({ status: status }))
+  })
+  Promise.all(promises).then(() => {
+    res.status(201).json({ message: 'updated'})
+  })
+    .catch(err => res.status(404).json({ err: err }))
+}
+
 exports.addNewDetail = (req, res) => {
   const getDaysArray = function (start, end) {
     for (
@@ -166,8 +210,7 @@ exports.addNewDetail = (req, res) => {
   if (req.params.detail === 'contact') {
     delete req.body.companyId
 
-    db
-      .doc(`users/${requestObject.companyId}`)
+    db.doc(`users/${requestObject.companyId}`)
       .update({ contactInformation: req.body })
       .then(() => {
         res.status(201).json({ message: 'new message added successfully' })
@@ -178,16 +221,24 @@ exports.addNewDetail = (req, res) => {
         })
       })
     console.log(requestObject)
-
   } else {
     db.collection(req.params.detail)
       .add(requestObject)
       .then((data) => {
         let detailId
 
-        const idArr = ['coaches', 'services', 'locations', 'courses', 'listings']
+        const idArr = [
+          'coaches',
+          'services',
+          'locations',
+          'courses',
+          'listings',
+        ]
         if (idArr.includes(req.params.detail)) {
-          detailId = req.params.detail === 'coaches' ? 'coach' : req.params.detail.slice(0, -1) + 'Id'
+          detailId =
+            req.params.detail === 'coaches'
+              ? 'coach'
+              : req.params.detail.slice(0, -1) + 'Id'
         }
 
         requestObject[detailId] = data.id
@@ -201,20 +252,25 @@ exports.addNewDetail = (req, res) => {
 
         console.log('stepppp1')
 
-        return (
-          db
-            .doc(`${req.params.detail}/${data.id}`)
-            .update({ [detailId]: data.id })
-        )
+        return db
+          .doc(`${req.params.detail}/${data.id}`)
+          .update({ [detailId]: data.id })
       })
       .then(() => {
         console.log('stepppp2')
         db.doc(`users/${req.body.companyId}`)
           .get()
           .then((data) => {
+            
             let newArr = []
-            const previous = req.params.detail === 'courses' ? data.data().courses.active : data.data()[req.params.detail]
-            const updateString = req.params.detail === 'courses' ? 'courses.active' : req.params.detail
+            const previous =
+              req.params.detail === 'courses'
+                ? data.data().courses.active
+                : data.data()[req.params.detail]
+            const updateString =
+              req.params.detail === 'courses'
+                ? 'courses.active'
+                : req.params.detail
             if (previous) {
               newArr = [...previous, requestObject]
               console.log(newArr)
@@ -240,7 +296,6 @@ exports.addNewDetail = (req, res) => {
   }
 }
 
-
 exports.retrieveCompanyCourses = (req, res) => {
   const { courses, company, type } = req.body
   const promises = courses.map((course) => {
@@ -251,7 +306,6 @@ exports.retrieveCompanyCourses = (req, res) => {
         return data.data()
       })
   })
-
   Promise.all(promises)
     .then((courseArray) => {
       db.doc(`users/${company}`)
@@ -312,34 +366,31 @@ exports.sendCoachRequest = (req, res) => {
       <a href='${target}/login' target="_blank">Log in and confirm the request!</a>
     `,
       }
-      transporter
-        .sendMail(mailOptions, (err, info) => {
-          if (err) {
-            return res.status(400).send({ error: err })
-          }
-          return info
+
+      let emailInfo
+      transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
+          return res.status(400).send({ error: err })
+        }
+        emailInfo = info
+      })
+
+      coachRef
+        .update({
+          requests: admin.firestore.FieldValue.arrayUnion(req.body.companyId),
         })
-        .then((info) => {
-          coachRef
-            .update({
-              requests: admin.firestore.FieldValue.arrayUnion(
-                req.body.companyId
-              ),
-            })
-            .then(() => {
-              userRef.update({
-                sentRequests: admin.firestore.FieldValue.arrayUnion(
-                  req.body.coachId
-                ),
-              })
-            })
-            .then(() => {
-              res
-                .status(201)
-                .json({ message: 'request sent successfully', info })
-            })
+        .then(() => {
+          userRef.update({
+            sentRequests: admin.firestore.FieldValue.arrayUnion(
+              req.body.coachId
+            ),
+          })
         })
-    })
+        .then(() => {
+          res
+            .status(201)
+            .json({ message: 'request sent successfully', emailInfo })
+        })
     .catch((err) => {
       res.status(500).json({
         error: 'Something went wrong, enquiry could not be added',
@@ -400,7 +451,6 @@ exports.editCompanyDetail = (req, res) => {
       })
 
   } else {
-
     db.doc(`${detail}/${req.body[detailId]}`)
       .update(req.body)
       .then(() => {
@@ -423,7 +473,9 @@ exports.editCompanyDetail = (req, res) => {
 
             if (courseType || detail === 'services') {
               detail === 'services' ? (courseType = 'services') : courseType
-              const nonChangingCoursesArr = listings[0][courseType].filter(el => el[detailId] !== req.body[detailId])
+              const nonChangingCoursesArr = listings[0][courseType].filter(
+                (el) => el[detailId] !== req.body[detailId]
+              )
 
               db.doc(`/users/${req.user}`)
                 .update({
@@ -441,15 +493,26 @@ exports.editCompanyDetail = (req, res) => {
                 })
             }
 
-            const arrayToFilter = detail === 'courses' ? data.data()[detail].active : data.data()[detail]
-            const nonChangingArr = arrayToFilter.filter((el) => el[detailId] !== req.body[detailId])
+            const arrayToFilter =
+              detail === 'courses'
+                ? data.data()[detail].active
+                : data.data()[detail]
+            const nonChangingArr = arrayToFilter.filter(
+              (el) => el[detailId] !== req.body[detailId]
+            )
 
-            db.doc(`users/${req.user}`)
-              .update(detail === 'courses' ? {
-                [detail]: { ...courses, active: [...nonChangingArr, req.body] }
-              } : {
-                  [detail]: [...nonChangingArr, req.body],
-                })
+            db.doc(`users/${req.user}`).update(
+              detail === 'courses'
+                ? {
+                    [detail]: {
+                      ...courses,
+                      active: [...nonChangingArr, req.body],
+                    },
+                  }
+                : {
+                    [detail]: [...nonChangingArr, req.body],
+                  }
+            )
           })
       })
       .then(() => {
@@ -493,7 +556,6 @@ exports.dataDeletion = (req, res) => {
               return el[`${text}Id`] !== id
             }
           })
-
           const { listings } = data.data()
           let courseType = null
           const courseFilterArr = ['courses', 'camps']
@@ -811,9 +873,9 @@ exports.filterListings = (req, res) => {
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(deg2rad(lat1)) *
-      Math.cos(deg2rad(lat2)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2)
+        Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2)
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     const d = R * c // Distance in km
     return d.toFixed()
@@ -834,6 +896,7 @@ exports.filterListings = (req, res) => {
     .then((data) => {
       const listings = []
       data.forEach((doc) => {
+        if (doc.data().status === 'live')
         listings.push({
           listingInfo: { ...doc.data() },
         })
@@ -1023,6 +1086,7 @@ exports.updateRegister = (req, res) => {
     .then(() => {
       res.status(201).send({ message: 'register updated!' })
     })
+
     .catch((err) => console.log(err))
 }
 
@@ -1086,15 +1150,15 @@ exports.updateCourseCoaches = (req, res) => {
 
                 category === 'coach'
                   ? db.doc(`/users/${addedCoach}`).update({
-                    [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
-                      updatedCourseId
-                    ),
-                  })
+                      [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
+                        updatedCourseId
+                      ),
+                    })
                   : db.doc(`/users/${addedCoach}`).update({
-                    [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
-                      updatedCourseId
-                    ),
-                  })
+                      [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
+                        updatedCourseId
+                      ),
+                    })
               })
           }
         })
@@ -1122,25 +1186,24 @@ exports.addPlayerToCourse = (req, res) => {
           const dayNums =
             courseDetails.courseType === 'Camp'
               ? courseDetails.sessions.map((session) =>
-
-                // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
-                moment(session.sessionDate.toDate()).day()
-              )
+                  // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+                  moment(session.sessionDate.toDate()).day()
+                )
               : courseDetails.sessions.map((session) =>
-                // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
-                moment().day(session.day).day()
-              )
+                  // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+                  moment().day(session.day).day()
+                )
           console.log({ dayNums })
           const newRegister = register
             ? addUsersToRegister(register, [
-              {
-                name: req.body.playerName,
-                id: req.body.playerId,
-                dob: req.body.playerDob,
-              },
-            ])
+                {
+                  name: req.body.playerName,
+                  id: req.body.playerId,
+                  dob: req.body.playerDob,
+                },
+              ])
             : courseDetails.courseType === 'Camp'
-              ? createRegister(
+            ? createRegister(
                 courseDetails.firstDay,
                 courseDetails.lastDay,
                 dayNums,
@@ -1152,7 +1215,7 @@ exports.addPlayerToCourse = (req, res) => {
                   },
                 ]
               )
-              : createRegister(
+            : createRegister(
                 courseDetails.startDate,
                 courseDetails.endDate,
                 dayNums,
@@ -1396,3 +1459,4 @@ exports.sendCoachRequestEmail = (req, res) => {
       })
     })
 }
+
