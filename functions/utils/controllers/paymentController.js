@@ -3,7 +3,49 @@ const YOUR_DOMAIN = 'http://localhost:3000/checkout'
 const { db, admin } = require('../admin')
 const moment = require('moment')
 
+async function stripeCalls(accountId, paginationId) {
 
+  const transfers = await stripe.transfers.list({
+    limit: 100,
+    destination: accountId,
+    ...(paginationId && { starting_after: paginationId })
+  })
+
+  return transfers
+}
+
+exports.retrieveConnectedAccount = async (req, res) => {
+
+  const { id } = req.params
+
+  db
+    .doc(`/listings/${id}`)
+    .get()
+    .then(async doc => {
+      const transferArray = []
+      const { accountId } = doc.data() 
+      let response = await stripeCalls(accountId, '')
+
+      while (response.has_more) {
+        const { data } = response 
+        data.forEach(el => {
+          transferArray.push(el)
+        })
+        response = await stripeCalls(accountId, data[data.length - 1].id)
+      }
+      
+      response.data.forEach(el => transferArray.push(el))
+
+      const balance = await stripe.balance.retrieve({
+        stripeAccount: accountId
+      })
+
+      res.send({ response: {
+        transfers: transferArray,
+        balance
+      } }).status(200)
+    })
+}
 
 exports.createStripePayment = async (req, res) => {
   const { unitPrice, spaces, product, metadata, accountId, stripeId } = req.body
@@ -55,7 +97,7 @@ exports.webhookCourseBooking = (req, res) => {
     case 'payment_intent.succeeded': {
       const paymentIntent = event.data.object
       const { metadata } = paymentIntent
-      
+
       addPlayerToCourse(metadata)
 
       break
