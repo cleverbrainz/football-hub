@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer')
 
 const firebase = require('firebase')
 const { createAwaitingVerification } = require('./adminController')
+const { sendEmailNotificationIndulge, sendEmailNotificationCompany } = require('./notificationController')
 firebase.initializeApp(config)
 
 exports.registerUser = (req, res) => {
@@ -112,9 +113,12 @@ exports.initialRegistrationUserInformation = (req, res) => {
           db.doc(`/users/${newUser.companyLink}`).update({
             coaches: admin.firestore.FieldValue.arrayUnion(req.body.userId)
           })
+          sendEmailNotificationCompany('coachAcceptInvite', { recipientId: newUser.companyLink }, { contentName: userData.name })
         }
       }
       db.doc(`/users/${req.body.userId}`).update({ ...newUser })
+
+      // sendEmailNotificationIndulge()
 
       res.status(201).json({ message: 'Information successfully updated' })
     })

@@ -1,6 +1,8 @@
 const { db, admin, functions } = require('../admin')
 const Stripe = require('stripe')
 const { user } = require('firebase-functions/lib/providers/auth')
+const moment = require('moment')
+const { sendEmailNotificationCompany, sendEmailNotificationPlayer } = require('./notificationController')
 
 // const config = require('../configuration')
 
@@ -179,12 +181,14 @@ exports.handleWebhook = (req, res) => {
   }
   // Handle the event
   switch (event.type) {
-    case 'payment_intent.succeeded':
+    case 'payment_intent.succeeded': {
       const paymentIntent = event.data.object
-      console.log(`PaymentIntent for ${paymentIntent.amount} was successful!`)
-      // Then define and call a method to handle the successful payment intent.
-      // handlePaymentIntentSucceeded(paymentIntent);
+      const { metadata } = paymentIntent
+
+      addPlayerToCourse(metadata)
+
       break
+    }
     case 'payment_method.attached':
       const paymentMethod = event.data.object
       // Then define and call a method to handle the successful attachment of a PaymentMethod.
@@ -206,4 +210,133 @@ exports.handleWebhook = (req, res) => {
   }
   // Return a 200 response to acknowledge receipt of the event
   return res.send()
+}
+
+
+const createRegister = (startDate, endDate, sessionDays, playerList) => {
+  const sessions = []
+  let date = moment(startDate)
+  const endMoment = moment(endDate)
+
+  while (date.isSameOrBefore(endMoment)) {
+    console.log(date.day())
+    if (sessionDays.some((day) => day === date.day())) {
+      // console.log(date.day())
+      sessions.push(date.format('YYYY-MM-DD'))
+    }
+    // console.log(date)
+    date = date.add(1, 'days')
+  }
+  const register = { sessions }
+
+  for (const player of playerList) {
+    register[player.id] = { name: player.name, age: player.dob, id: player.id }
+    for (const date of sessions) {
+      register[player.id][date] = { attendance: false, notes: '' }
+    }
+  }
+
+  console.log(sessions, register)
+  return register
+}
+
+const addUsersToRegister = (register, newAdditions) => {
+  for (const player of newAdditions) {
+    register[player.id] = { name: player.name }
+    for (const date of register.sessions) {
+      register[player.id][date] = { attendance: false, notes: '' }
+    }
+  }
+  return register
+}
+
+const addPlayerToCourse = (metadata) => {
+  const { courseId, playerId, dob, name } = metadata
+  const courseRef = db.doc(`/courses/${courseId}`)
+  const playerRef = db.doc(`users/${playerId}`)
+
+  console.log('step 1')
+
+  return courseRef
+    .update({
+      playerList: admin.firestore.FieldValue.arrayUnion(playerId)
+    })
+    .then(() => {
+      console.log('step 2')
+      courseRef
+        .get()
+        .then((data) => {
+          const courseData = data.data()
+          const { register, courseDetails } = courseData
+          const dayNums =
+            courseDetails.courseType === 'Camp'
+              ? courseDetails.sessions.map((session) =>
+                // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+                moment(session.sessionDate.toDate()).day()
+              )
+              : courseDetails.sessions.map((session) =>
+                // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+                moment().day(session.day).day()
+              )
+          console.log({ dayNums })
+          const newRegister = register
+            ? addUsersToRegister(register, [
+              {
+                name,
+                id: playerId,
+                dob
+              }
+            ])
+            : courseDetails.courseType === 'Camp'
+              ? createRegister(
+                courseDetails.firstDay,
+                courseDetails.lastDay,
+                dayNums,
+                [
+                  {
+                    name,
+                    id: playerId,
+                    dob
+                  }
+                ]
+              )
+              : createRegister(
+                courseDetails.startDate,
+                courseDetails.endDate,
+                dayNums,
+                [
+                  {
+                    name,
+                    id: playerId,
+                    dob
+                  }
+                ]
+              )
+
+          courseRef.update({
+            register: newRegister
+          })
+          return courseData
+        })
+        .then((data) => {
+          console.log('step 3')
+          const { companyId, courseId } = data
+          playerRef.update({
+            [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
+              courseId
+            )
+          })
+          console.log('step 4')
+          db.doc(`/users/${companyId}`)
+            .update({
+              [`players.${playerId}.status`]: 'Active'
+            })
+            .then(() => {
+              console.log('player added to course')
+              sendEmailNotificationCompany('newPlayerCourseSignUp', { recipientId: companyId }, { contentName: name, contentCourse: data.courseDetails.optionalName })
+              sendEmailNotificationPlayer('bookingConfirmation', { recipientId: playerId }, { contentName: name, contentCourse: data.courseDetails.optionalName })
+            })
+        })
+        .catch((err) => console.log(err))
+    })
 }

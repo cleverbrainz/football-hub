@@ -12,7 +12,7 @@ const nodemailer = require('nodemailer')
 // require('firebase/firestore')
 
 const { validateEmailAddressInput } = require('../validators')
-const { Firestore } = require('@google-cloud/firestore')
+const { sendEmailNotificationCoach } = require('./notificationController')
 
 exports.getAllCompanies = (req, res) => {
   db.collection('users')
@@ -397,7 +397,9 @@ exports.sendCoachRequest = (req, res) => {
       })
       console.error(err)
     })
+})
 }
+
 
 exports.deleteCoachRequest = (req, res) => {
   console.log('boo', req.body)
@@ -1146,9 +1148,10 @@ exports.updateCourseCoaches = (req, res) => {
             db.doc(`/users/${addedCoach}`)
               .get()
               .then((data) => {
-                const category = data.data().category
+                const userData = data.data()
+                
 
-                category === 'coach'
+                userData.category === 'coach'
                   ? db.doc(`/users/${addedCoach}`).update({
                       [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
                         updatedCourseId
@@ -1159,6 +1162,7 @@ exports.updateCourseCoaches = (req, res) => {
                         updatedCourseId
                       ),
                     })
+                    sendEmailNotificationCoach('assignedToRegister', { recipientEmail: userData.email, recipientName: userData.name }, { contentId: updatedCourseId, contentType: 'Courses' })
               })
           }
         })

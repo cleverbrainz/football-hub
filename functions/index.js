@@ -151,7 +151,7 @@ app.post('/emailRequestCoach', sendCoachRequestEmail)
 app.post('/retrieveCourse', retrieveCompanyCourses)
 app.post('/create-payment', createStripePayment)
 
-app.post('/webhook-course-booking', webhookCourseBooking)
+// app.post('/webhook-course-booking', webhookCourseBooking)
 
 app.get('/plans', getAllPlans)
 app.post('/subscriptions/new', createNewSubscription)

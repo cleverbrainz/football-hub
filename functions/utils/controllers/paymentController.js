@@ -2,6 +2,7 @@ const stripe = require('stripe')('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
 const YOUR_DOMAIN = 'http://localhost:3000/checkout'
 const { db, admin } = require('../admin')
 const moment = require('moment')
+const { sendEmailNotificationCompany, sendEmailNotificationPlayer } = require('./notificationController')
 
 async function stripeCalls(accountId, paginationId) {
 
@@ -48,7 +49,7 @@ exports.retrieveConnectedAccount = async (req, res) => {
 }
 
 exports.createStripePayment = async (req, res) => {
-  const { unitPrice, spaces, product, metadata, accountId, stripeId } = req.body
+  const { unitPrice, spaces, product, metadata, accountId, stripeId, email } = req.body
   const successDomain = 'http://localhost:3000/checkout'
 
   const session = await stripe.checkout.sessions.create({
@@ -74,7 +75,8 @@ exports.createStripePayment = async (req, res) => {
       transfer_data: {
         destination: accountId
       },
-      metadata
+      metadata,
+      receipt_email: email
     },
     mode: 'payment',
     success_url: `${successDomain}?success=true`,
@@ -227,9 +229,11 @@ const addPlayerToCourse = (metadata) => {
             .update({
               [`players.${playerId}.status`]: 'Active'
             })
-            .then(() =>
+            .then(() => {
               console.log('player added to course')
-            )
+              sendEmailNotificationCompany('newPlayerCourseSignUp', { recipientId: companyId }, { contentName: name, contentCourse: data.courseDetails.optionalName })
+              sendEmailNotificationPlayer('bookingConfirmation', { recipientId: playerId }, { emailId: companyId })
+            })
         })
         .catch((err) => console.log(err))
     })

@@ -1,4 +1,5 @@
 const { db, admin } = require('../admin')
+const { sendEmailNotificationIndulge } = require('./notificationController')
 // const config = require('../configuration')
 
 exports.adminPageEdits = (req, res) => {
@@ -61,7 +62,11 @@ exports.createAwaitingVerification = (req, res) => {
       db.doc(`/users/${req.user}`).update({
         [`verificationId.${req.type}`]: data.id
       })
-      res.status(201).json({ message: 'Document successfully uploaded', data: req.info })
+      const type = req.type === 'companyInfo' ? 'companyDetailsSubmitted' : 'coachDetailsSubmitted'
+      return sendEmailNotificationIndulge(type, { indulgeName: 'Indulge Admin', indulgeEmail: 'admin@indulgefootball.com' }, { contentName: req.info.name, contentEmail: req.info.email }).then(email => {
+        
+        return res.status(201).json({ message: 'Document successfully uploaded', data: req.info, emailInfo: email })
+      })
       // return data
     })
     .catch(error => console.log(error))
