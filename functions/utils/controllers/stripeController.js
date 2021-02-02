@@ -284,32 +284,32 @@ const createRegister = (startDate, endDate, sessionDays, playerList) => {
   return register
 }
 
-const createRegister = (startDate, endDate, sessionDays, playerList) => {
-  const sessions = []
-  let date = moment(startDate)
-  const endMoment = moment(endDate)
+// const createRegister = (startDate, endDate, sessionDays, playerList) => {
+//   const sessions = []
+//   let date = moment(startDate)
+//   const endMoment = moment(endDate)
 
-  while (date.isSameOrBefore(endMoment)) {
-    console.log(date.day())
-    if (sessionDays.some((day) => day === date.day())) {
-      // console.log(date.day())
-      sessions.push(date.format('YYYY-MM-DD'))
-    }
-    // console.log(date)
-    date = date.add(1, 'days')
-  }
-  const register = { sessions }
+//   while (date.isSameOrBefore(endMoment)) {
+//     console.log(date.day())
+//     if (sessionDays.some((day) => day === date.day())) {
+//       // console.log(date.day())
+//       sessions.push(date.format('YYYY-MM-DD'))
+//     }
+//     // console.log(date)
+//     date = date.add(1, 'days')
+//   }
+//   const register = { sessions }
 
-  for (const player of playerList) {
-    register[player.id] = { name: player.name, age: player.dob, id: player.id }
-    for (const date of sessions) {
-      register[player.id][date] = { attendance: false, notes: '' }
-    }
-  }
+//   for (const player of playerList) {
+//     register[player.id] = { name: player.name, age: player.dob, id: player.id }
+//     for (const date of sessions) {
+//       register[player.id][date] = { attendance: false, notes: '' }
+//     }
+//   }
 
-  console.log(sessions, register)
-  return register
-}
+//   console.log(sessions, register)
+//   return register
+// }
 
 const addUsersToRegister = (register, newAdditions) => {
   for (const player of newAdditions) {
