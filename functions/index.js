@@ -39,7 +39,9 @@ const {
   sendCoachRequestEmail,
   addNewListing,
   getSingleListing,
-  updateLiveListings
+  updateLiveListings,
+  createEmptyRegister,
+  deleteCourse
 } = require('./utils/controllers/companyController')
 const { 
   createStripePayment, 
@@ -110,6 +112,7 @@ app.patch(
 )
 // app.patch('/company/:id/document', authMiddleware, uploadCompanyDocument)
 app.delete('/companies/:detail/:id', authMiddleware, dataDeletion)
+app.delete('/courses/:id', authMiddleware, deleteCourse)
 app.post('/filteredCompanies', filterListings)
 app.get('/listings', getAllListings)
 app.get('/listings/:listingId', getSingleListing)
@@ -118,6 +121,7 @@ app.get('/courses/:courseId', getSingleCourse)
 app.patch('/courses/:courseId/players', addPlayerToCourse)
 app.patch('/courses/:courseId/coaches', updateCourseCoaches)
 app.patch('/courses/:courseId', updateRegister)
+app.get('/courses/:courseId/emptyRegister', createEmptyRegister)
 // enquiries
 app.post('/enquiries', newEnquiry)
 app.post('/addNewListing', addNewListing)

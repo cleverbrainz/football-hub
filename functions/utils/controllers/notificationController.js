@@ -75,13 +75,7 @@ exports.sendEmailNotificationIndulge = function(type, recipient, emailContent) {
 `,
   }
 
-  transporter.sendMail(mailOptions, (err, info) => {
-    if (err) {
-      return err
-    }
-    return info
-  })
-
+  return transporter.sendMail(mailOptions)
 }
 
 exports.sendEmailNotificationCompany = async function(type, recipient, emailContent) {

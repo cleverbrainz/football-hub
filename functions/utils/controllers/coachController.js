@@ -342,23 +342,23 @@ exports.uploadCoachDocument = (req, res) => {
             console.log('here')
             return docref.get().then((data) => {
               req.info = data.data()
-              req.type = 'coachInfo'
-              if (
-                req.info.coachInfo.dbsCertificate &&
-                req.info.coachInfo.coachingCertificate &&
-                (!req.info.verificationId || req.info.verificationId.coachInfo === '')
-              ) {
-                console.log('creating')
-                createAwaitingVerification(req, res)
-              } else if (req.info.coachInfo.dbsCertificate &&
-                req.info.coachInfo.coachingCertificate &&
-                req.info.verificationId.coachInfo !== '') {
-                console.log('updating')
-                updateAwaitingVerification(req, res)
-              } else {
-                console.log('non')
-                res.send(req.info)
-              }
+              // req.type = 'coachInfo'
+              // if (
+              //   req.info.coachInfo.dbsCertificate &&
+              //   req.info.coachInfo.coachingCertificate &&
+              //   (!req.info.verificationId || !req.info.verificationId.coachInfo)
+              // ) {
+              //   console.log('creating')
+              //   createAwaitingVerification(req, res)
+              // } else if (req.info.coachInfo.dbsCertificate &&
+              //   req.info.coachInfo.coachingCertificate &&
+              //   req.info.verificationId.coachInfo !== '') {
+              //   console.log('updating')
+              //   updateAwaitingVerification(req, res)
+              // } else {
+              //   console.log('non')
+              res.send(req.info)
+              // }
             })
           })
       })
@@ -383,12 +383,12 @@ exports.searchForCoaches = (req, res) => {
     .catch(err => console.log(err))
 }
 
-    // console.log('changing obj', changingObj)
+// console.log('changing obj', changingObj)
 
-    // changingObj.documents[documentType] = documentURL
+// changingObj.documents[documentType] = documentURL
 
 // db.doc(`coaches/${req.params.id}`)
-          //   .update(changingObj)
+//   .update(changingObj)
 //   .then(() => {
 //     db.doc(`users/${req.user}`)
 //       .update({

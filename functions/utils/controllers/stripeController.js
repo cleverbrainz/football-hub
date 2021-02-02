@@ -19,7 +19,7 @@ exports.getAllPlans = (req, res) => {
         data.prices = {}
         // console.log(item.id)
 
-        if (data.active)
+        if (data.name === 'Standard Membership')
           promises.push(
             db
               .doc(`/products/${item.id}`)
@@ -185,7 +185,9 @@ exports.handleWebhook = (req, res) => {
       const paymentIntent = event.data.object
       const { metadata } = paymentIntent
 
-      addPlayerToCourse(metadata)
+      if (metadata.courseId) {
+        addPlayerToCourse(metadata)
+      }
 
       break
     }
