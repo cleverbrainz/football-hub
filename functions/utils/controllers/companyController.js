@@ -1425,7 +1425,9 @@ exports.createEmptyRegister = (req, res) => {
             dayNums,
             []
           )
-
+          
+      courseData.register = newRegister
+      
       courseRef.update({
         register: newRegister,
       })

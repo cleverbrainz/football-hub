@@ -10,10 +10,10 @@ const moment = require('moment')
 // const firebase = require('firebase/app')
 const nodemailer = require('nodemailer')
 // require('firebase/firestore')
-const adminURL = ''
-const loginURL = ''
-const linkMaker = (url) => { 
-  return `href='${url}' target='_blank' rel='noreferrer noreopener`
+const adminURL = 'https://football-hub-4018a.firebaseapp.com/adminbeta'
+const loginURL = 'https://football-hub-4018a.firebaseapp.com/login'
+const linkMaker = (url, innertext) => { 
+  return `<a href='${url}' target='_blank' rel='noreferrer noreopener>${innertext}</a>`
 }
 
 
@@ -71,7 +71,9 @@ exports.sendEmailNotificationIndulge = function(type, recipient, emailContent) {
   <h2 style='text-align:center'></h2>
   <p> Hello ${indulgeName}, </p>
   <p>${typeContent}</p>
-  <a ${linkMaker(adminURL)}>Login to the admin panel here</a>
+  ${linkMaker(adminURL, 'Login to the admin panel here')}
+  <br>
+  <p>Indulge Football</p>
 `,
   }
 
@@ -158,7 +160,9 @@ exports.sendEmailNotificationCompany = async function(type, recipient, emailCont
   <h2 style='text-align:center'></h2>
   <p> Hello ${companyName}, </p>
   <p>${typeContent}</p>
-  <a ${linkMaker(loginURL)}>please login to see more details</a>
+  ${linkMaker(loginURL, 'please login to see more details')}
+  <br>
+  <p>Indulge Football</p>
 `,
   }
 
@@ -224,7 +228,7 @@ exports.sendEmailNotificationCoach = async function(type, recipient, emailConten
   <h2 style='text-align:center'></h2>
   <p> Hello ${coachName}, </p>
   <p>${typeContent}</p>
-  <a ${linkMaker(loginURL)}>please login to see more details</a>
+  ${linkMaker(loginURL, 'please login to see more details')}
   <br>
   <p>Indulge Football</p>
 `,
@@ -301,7 +305,7 @@ exports.sendEmailNotificationPlayer = async function(type, recipient, emailConte
   <h2 style='text-align:center'></h2>
   <p> Hello ${parentName ? parentName : playerName}, </p>
   <p>${typeContent}</p>
-  <a ${linkMaker(loginURL)}>please login to see more details</a>
+  ${linkMaker(loginURL, 'please login to see more details')}
   <br>
   <p>Indulge Football</p>
 `,
