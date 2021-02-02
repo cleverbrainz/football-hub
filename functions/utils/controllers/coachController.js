@@ -174,7 +174,7 @@ exports.handleCompanyRequest = (req, res) => {
         //   res.status(403).json({ message: 'Company already exists' })
         // } else {
 
-        const target = 'http://localhost:3000'
+        const target = 'https://football-hub-4018a.firebaseapp.com'
           // type === 'localhost'
             // ? 'http://localhost:3000'
             // : 'https://football-hub-4018a.firebaseapp.com'

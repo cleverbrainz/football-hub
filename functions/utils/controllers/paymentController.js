@@ -1,5 +1,5 @@
 const stripe = require('stripe')('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
-const YOUR_DOMAIN = 'http://localhost:3000/checkout'
+const YOUR_DOMAIN = 'https://football-hub-4018a.firebaseapp.com/checkout'
 const { db, admin } = require('../admin')
 const moment = require('moment')
 const { sendEmailNotificationCompany, sendEmailNotificationPlayer } = require('./notificationController')
@@ -63,7 +63,7 @@ exports.retrieveConnectedAccount = async (req, res) => {
 exports.createConnectedAccountProductSubscription = async (req, res) => {
 
   const { customerId, metadata } = req.body
-  const successDomain = 'http://localhost:3000/checkout'
+  const successDomain = 'https://football-hub-4018a.firebaseapp.com/checkout'
 
   // console.log(metadata)
 
@@ -125,7 +125,7 @@ exports.createStripePayment = async (req, res) => {
 
   const { priceId, metadata, connectedAccountId, customerId, type, email } = req.body
 
-  const successDomain = 'http://localhost:3000/checkout'
+  const successDomain = 'https://football-hub-4018a.firebaseapp.com/checkout'
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],

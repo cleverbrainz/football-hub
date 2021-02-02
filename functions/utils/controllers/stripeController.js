@@ -107,8 +107,8 @@ exports.createConnectedAccount = (req, res) => {
               return stripe.accountLinks
                 .create({
                   account: account.id,
-                  refresh_url: 'http://localhost:3000/subscription',
-                  return_url: 'http://localhost:3000/subscription',
+                  refresh_url: 'https://football-hub-4018a.firebaseapp.com/subscription',
+                  return_url: 'https://football-hub-4018a.firebaseapp.com/subscription',
                   type: 'account_onboarding',
                 })
                 .then((accountLink) => {
