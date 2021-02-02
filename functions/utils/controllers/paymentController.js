@@ -4,16 +4,26 @@ const { db, admin } = require('../admin')
 const moment = require('moment')
 const { sendEmailNotificationCompany, sendEmailNotificationPlayer } = require('./notificationController')
 
-async function stripeCalls(accountId, paginationId) {
 
+exports.retrieveProductPrices = async (req, res) => {
+  const { id } = req.params
+  const prices = await stripe.prices.list({
+    product: id,
+    limit: 100
+  })
+  res.send({ prices: prices.data }).status(200)
+}
+
+async function stripeCalls(accountId, paginationId) {
   const transfers = await stripe.transfers.list({
     limit: 100,
     destination: accountId,
     ...(paginationId && { starting_after: paginationId })
   })
-
   return transfers
 }
+
+
 
 exports.retrieveConnectedAccount = async (req, res) => {
 
@@ -24,219 +34,116 @@ exports.retrieveConnectedAccount = async (req, res) => {
     .get()
     .then(async doc => {
       const transferArray = []
-      const { accountId } = doc.data() 
+      const { accountId } = doc.data()
       let response = await stripeCalls(accountId, '')
 
       while (response.has_more) {
-        const { data } = response 
+        const { data } = response
         data.forEach(el => {
           transferArray.push(el)
         })
         response = await stripeCalls(accountId, data[data.length - 1].id)
       }
-      
+
       response.data.forEach(el => transferArray.push(el))
 
       const balance = await stripe.balance.retrieve({
         stripeAccount: accountId
       })
 
-      res.send({ response: {
-        transfers: transferArray,
-        balance
-      } }).status(200)
+      res.send({
+        response: {
+          transfers: transferArray,
+          balance
+        }
+      }).status(200)
     })
 }
 
+exports.createConnectedAccountProductSubscription = async (req, res) => {
+
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ['card'],
+    mode: 'setup',
+    customer: 'cus_IpzDKN7vkp7NH6',
+    success_url: 'https://example.com/success?session_id={CHECKOUT_SESSION_ID}',
+    cancel_url: 'https://example.com/cancel'
+  })
+
+  // const successDomain = 'http://localhost:3000/checkout'
+
+  // const cancellation_date = moment(new Date()).add(14, 'd').toDate()
+
+
+  // const subscription = await stripe.subscriptions.create({
+  //   customer: 'cus_IpzDKN7vkp7NH6',
+  //   // default_payment_method: intent.payment_method,
+  //   default_payment_method: 'pm_1IFR2zIg5fTuA6FVu0rNIY6j',
+  //   application_fee_percent: 10,
+  //   metadata: {
+  //     companyId: 'xPDNFl5ObUcGmx1aaZEyEey2QLa2',
+  //     courseId: '12qQNSYLk6M2BiAPGpLf',
+  //     playerId: 'Hz5BKzTebVWIbwOfkz6uFbxfOk43',
+  //     player_name: 'Kenn Seangpachareonsub'
+  //   },
+  //   cancel_at: moment(cancellation_date).unix(),
+  //   expand: ['latest_invoice.payment_intent'],
+  //   items: [
+  //     { price: 'price_1IEeMoIg5fTuA6FVgrOyNGah' }
+  //   ],
+  //   transfer_data: {
+  //     destination: 'acct_1IBJHgRIXFwnLyyM'
+  //   }
+  // })
+
+
+  // const session = await stripe.checkout.sessions.create({
+
+  //   payment_method_types: ['card'],
+  //   line_items: [
+  //     { price: 'price_1IEeMoIg5fTuA6FVgrOyNGah' }
+  //   ],
+  //   // customer: 'cus_IpzDKN7vkp7NH6',
+  //   payment_intent_data: subscription,
+  //   mode: 'subscription',
+  //   success_url: `${successDomain}?success=true`,
+  //   cancel_url: `${YOUR_DOMAIN}?canceled=true`
+  // })
+
+  
+  res.json({ id: session.id })
+}
+
+
 exports.createStripePayment = async (req, res) => {
-  const { unitPrice, spaces, product, metadata, accountId, stripeId, email } = req.body
+
+  const { priceId, metadata, connectedAccountId, customerId, type } = req.body
+
   const successDomain = 'http://localhost:3000/checkout'
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
-
     line_items: [
       {
-        price_data: {
-          currency: 'gbp',
-          product_data: {
-            name: 'helloo',
-            images: ['https://images.unsplash.com/photo-1556476874-c98062c7027a?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=1490&q=80']
-          },
-          unit_amount: unitPrice * 100
-        },
-        quantity: spaces
+        price: priceId,
+        quantity: 1
       }
     ],
-    customer: stripeId,
+    customer: customerId,
     payment_intent_data: {
-      application_fee_amount: ((unitPrice * 100) * 4) * 0.02,
-      on_behalf_of: accountId,
+      setup_future_usage: 'off_session',
+      application_fee_amount: 200,
+      on_behalf_of: connectedAccountId,
       transfer_data: {
-        destination: accountId
+        destination: connectedAccountId
       },
       metadata,
       receipt_email: email
     },
-    mode: 'payment',
+    mode: type !== 'recurring' && 'payment',
     success_url: `${successDomain}?success=true`,
     cancel_url: `${YOUR_DOMAIN}?canceled=true`
   })
   res.json({ id: session.id })
 }
-
-exports.webhookCourseBooking = (req, res) => {
-
-  let event
-  try {
-    event = req.body
-  } catch (err) {
-    console.log('⚠️  Webhook error while parsing basic request.', err.message)
-    return res.send()
-  }
-
-  switch (event.type) {
-    case 'payment_intent.succeeded': {
-      const paymentIntent = event.data.object
-      const { metadata } = paymentIntent
-
-      addPlayerToCourse(metadata)
-
-      break
-    }
-    default:
-
-      console.log(`Unhandled event type ${event.type}.`)
-  }
-  res.status(200).send()
-}
-
-const createRegister = (startDate, endDate, sessionDays, playerList) => {
-  const sessions = []
-  let date = moment(startDate)
-  const endMoment = moment(endDate)
-
-  while (date.isSameOrBefore(endMoment)) {
-    console.log(date.day())
-    if (sessionDays.some((day) => day === date.day())) {
-      // console.log(date.day())
-      sessions.push(date.format('YYYY-MM-DD'))
-    }
-    // console.log(date)
-    date = date.add(1, 'days')
-  }
-  const register = { sessions }
-
-  for (const player of playerList) {
-    register[player.id] = { name: player.name, age: player.dob, id: player.id }
-    for (const date of sessions) {
-      register[player.id][date] = { attendance: false, notes: '' }
-    }
-  }
-
-  console.log(sessions, register)
-  return register
-}
-
-const addUsersToRegister = (register, newAdditions) => {
-  for (const player of newAdditions) {
-    register[player.id] = { name: player.name }
-    for (const date of register.sessions) {
-      register[player.id][date] = { attendance: false, notes: '' }
-    }
-  }
-  return register
-}
-
-const addPlayerToCourse = (metadata) => {
-  const { courseId, playerId, dob, name } = metadata
-  const courseRef = db.doc(`/courses/${courseId}`)
-  const playerRef = db.doc(`users/${playerId}`)
-
-  console.log('step 1')
-
-  return courseRef
-    .update({
-      playerList: admin.firestore.FieldValue.arrayUnion(playerId)
-    })
-    .then(() => {
-      console.log('step 2')
-      courseRef
-        .get()
-        .then((data) => {
-          const courseData = data.data()
-          const { register, courseDetails } = courseData
-          const dayNums =
-            courseDetails.courseType === 'Camp'
-              ? courseDetails.sessions.map((session) =>
-                // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
-                moment(session.sessionDate.toDate()).day()
-              )
-              : courseDetails.sessions.map((session) =>
-                // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
-                moment().day(session.day).day()
-              )
-          console.log({ dayNums })
-          const newRegister = register
-            ? addUsersToRegister(register, [
-              {
-                name,
-                id: playerId,
-                dob
-              }
-            ])
-            : courseDetails.courseType === 'Camp'
-              ? createRegister(
-                courseDetails.firstDay,
-                courseDetails.lastDay,
-                dayNums,
-                [
-                  {
-                    name,
-                    id: playerId,
-                    dob
-                  }
-                ]
-              )
-              : createRegister(
-                courseDetails.startDate,
-                courseDetails.endDate,
-                dayNums,
-                [
-                  {
-                    name,
-                    id: playerId,
-                    dob
-                  }
-                ]
-              )
-
-          courseRef.update({
-            register: newRegister
-          })
-          return courseData
-        })
-        .then((data) => {
-          console.log('step 3')
-          const { companyId, courseId } = data
-          playerRef.update({
-            [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
-              courseId
-            )
-          })
-          console.log('step 4')
-          db.doc(`/users/${companyId}`)
-            .update({
-              [`players.${playerId}.status`]: 'Active'
-            })
-            .then(() => {
-              console.log('player added to course')
-              sendEmailNotificationCompany('newPlayerCourseSignUp', { recipientId: companyId }, { contentName: name, contentCourse: data.courseDetails.optionalName })
-              sendEmailNotificationPlayer('bookingConfirmation', { recipientId: playerId }, { emailId: companyId })
-            })
-        })
-        .catch((err) => console.log(err))
-    })
-}
-
 
