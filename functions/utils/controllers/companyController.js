@@ -9,6 +9,7 @@ const {
 } = require('./adminController')
 // const firebase = require('firebase/app')
 const nodemailer = require('nodemailer')
+const stripe = require('stripe')('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
 // require('firebase/firestore')
 
 const { validateEmailAddressInput } = require('../validators')
@@ -122,7 +123,7 @@ exports.ageDetails = (req, res) => {
 exports.addNewListing = (req, res) => {
 
   const listingObj = { ...req.body }
-  
+
   return db.collection('listings')
     .add(listingObj)
     .then(data => {
@@ -156,9 +157,57 @@ exports.updateLiveListings = (req, res) => {
     promises.push(db.doc(`/listings/${id}`).update({ status: status }))
   })
   Promise.all(promises).then(() => {
-    res.status(201).json({ message: 'updated'})
+    res.status(201).json({ message: 'updated' })
   })
     .catch(err => res.status(404).json({ err: err }))
+}
+
+
+async function createStripeProduct(course, courseId) {
+  const { companyId, courseDetails } = course
+  const { allow_weekly_payment, cost, startDate, endDate, optionalName, courseType } = courseDetails
+  const prices = []
+  const difference = moment(courseDetails.endDate).diff(courseDetails.startDate, 'weeks')
+
+  prices.push(cost)
+
+  if (allow_weekly_payment) {
+    const weeklyPrice = cost / difference
+    prices.push(weeklyPrice.toFixed(2))
+  }
+
+  const data = await db.doc(`users/${companyId}`).get()
+  const name = await data.data().name
+
+
+  const product = await stripe.products.create({
+    name: `${name} - ${optionalName} ${courseType.toLowerCase()}`,
+    metadata: {
+      companyId,
+      courseId
+    },
+    description: `${startDate} - ${endDate}`
+  })
+
+  prices.forEach(async (el, i) => {
+    console.log(el)
+    await stripe.prices.create({
+      unit_amount: el * 100,
+      currency: 'gbp',
+      ...((prices.length > 1 && i === 1) && {
+        recurring: {
+          interval: 'week'
+        },
+        metadata: {
+          course_duration: `${difference} weeks`
+        }
+      }),
+      nickname: (prices.length > 1 && i === 1) ? 'Subscription Price' : 'One-off Price',
+      product: product.id
+    })
+  })
+
+  return product.id
 }
 
 exports.addNewDetail = (req, res) => {
@@ -185,14 +234,15 @@ exports.addNewDetail = (req, res) => {
       'Friday',
       'Saturday',
     ]
-
     const { sessions, startTime, endTime, spaces } = requestObject.courseDetails
+
     const {
       courseType,
       firstDay,
       lastDay,
       excludeDays,
     } = req.body.courseDetails
+
     if (courseType === 'Camp') {
       getDaysArray(new Date(firstDay), new Date(lastDay)).map((el) => {
         if (!excludeDays.includes(days[el.getDay()])) {
@@ -220,11 +270,11 @@ exports.addNewDetail = (req, res) => {
           error: 'Something went wrong, enquiry could not be added',
         })
       })
-    console.log(requestObject)
+
   } else {
     db.collection(req.params.detail)
       .add(requestObject)
-      .then((data) => {
+      .then(async (data) => {
         let detailId
 
         const idArr = [
@@ -250,6 +300,13 @@ exports.addNewDetail = (req, res) => {
           requestObject.coaches = []
         }
 
+        if (req.params.detail === 'courses') {
+          const product = await createStripeProduct(req.body, data.id)
+          const productId = await product
+          console.log(productId)
+          requestObject.stripe_product_id = productId
+        }
+
         console.log('stepppp1')
 
         return db
@@ -261,7 +318,7 @@ exports.addNewDetail = (req, res) => {
         db.doc(`users/${req.body.companyId}`)
           .get()
           .then((data) => {
-            
+
             let newArr = []
             const previous =
               req.params.detail === 'courses'
@@ -391,11 +448,12 @@ exports.sendCoachRequest = (req, res) => {
             .status(201)
             .json({ message: 'request sent successfully', emailInfo })
         })
-    .catch((err) => {
-      res.status(500).json({
-        error: 'Something went wrong, enquiry could not be added',
-      })
-      console.error(err)
+        .catch((err) => {
+          res.status(500).json({
+            error: 'Something went wrong, enquiry could not be added',
+          })
+          console.error(err)
+        })
     })
 }
 
@@ -504,14 +562,14 @@ exports.editCompanyDetail = (req, res) => {
             db.doc(`users/${req.user}`).update(
               detail === 'courses'
                 ? {
-                    [detail]: {
-                      ...courses,
-                      active: [...nonChangingArr, req.body],
-                    },
-                  }
+                  [detail]: {
+                    ...courses,
+                    active: [...nonChangingArr, req.body],
+                  },
+                }
                 : {
-                    [detail]: [...nonChangingArr, req.body],
-                  }
+                  [detail]: [...nonChangingArr, req.body],
+                }
             )
           })
       })
@@ -873,9 +931,9 @@ exports.filterListings = (req, res) => {
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(deg2rad(lat1)) *
-        Math.cos(deg2rad(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2)
+      Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2)
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     const d = R * c // Distance in km
     return d.toFixed()
@@ -897,9 +955,9 @@ exports.filterListings = (req, res) => {
       const listings = []
       data.forEach((doc) => {
         if (doc.data().status === 'live')
-        listings.push({
-          listingInfo: { ...doc.data() },
-        })
+          listings.push({
+            listingInfo: { ...doc.data() },
+          })
       })
 
       const filteredListings = []
@@ -1150,15 +1208,15 @@ exports.updateCourseCoaches = (req, res) => {
 
                 category === 'coach'
                   ? db.doc(`/users/${addedCoach}`).update({
-                      [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
-                        updatedCourseId
-                      ),
-                    })
+                    [`courses.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
+                      updatedCourseId
+                    ),
+                  })
                   : db.doc(`/users/${addedCoach}`).update({
-                      [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
-                        updatedCourseId
-                      ),
-                    })
+                    [`coursesCoaching.${companyId}.active`]: admin.firestore.FieldValue.arrayUnion(
+                      updatedCourseId
+                    ),
+                  })
               })
           }
         })
@@ -1186,24 +1244,24 @@ exports.addPlayerToCourse = (req, res) => {
           const dayNums =
             courseDetails.courseType === 'Camp'
               ? courseDetails.sessions.map((session) =>
-                  // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
-                  moment(session.sessionDate.toDate()).day()
-                )
+                // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+                moment(session.sessionDate.toDate()).day()
+              )
               : courseDetails.sessions.map((session) =>
-                  // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
-                  moment().day(session.day).day()
-                )
+                // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+                moment().day(session.day).day()
+              )
           console.log({ dayNums })
           const newRegister = register
             ? addUsersToRegister(register, [
-                {
-                  name: req.body.playerName,
-                  id: req.body.playerId,
-                  dob: req.body.playerDob,
-                },
-              ])
+              {
+                name: req.body.playerName,
+                id: req.body.playerId,
+                dob: req.body.playerDob,
+              },
+            ])
             : courseDetails.courseType === 'Camp'
-            ? createRegister(
+              ? createRegister(
                 courseDetails.firstDay,
                 courseDetails.lastDay,
                 dayNums,
@@ -1215,7 +1273,7 @@ exports.addPlayerToCourse = (req, res) => {
                   },
                 ]
               )
-            : createRegister(
+              : createRegister(
                 courseDetails.startDate,
                 courseDetails.endDate,
                 dayNums,

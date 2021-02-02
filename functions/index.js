@@ -44,6 +44,8 @@ const {
 const { 
   createStripePayment, 
   retrieveConnectedAccount,
+  createConnectedAccountProductSubscription,
+  retrieveProductPrices,
   webhookCourseBooking } = require('./utils/controllers/paymentController')
 const {
   newEnquiry,
@@ -150,8 +152,10 @@ app.post('/emailRequest', sendPlayerRequestEmail)
 app.post('/emailRequestCoach', sendCoachRequestEmail)
 app.post('/retrieveCourse', retrieveCompanyCourses)
 app.post('/create-payment', createStripePayment)
-
-app.post('/webhook-course-booking', webhookCourseBooking)
+app.get('/connected-account/:id', retrieveConnectedAccount)
+app.post('/connected-account-subscriptions', createConnectedAccountProductSubscription)
+app.get('/connected-account/:id/product', retrieveProductPrices)
+// app.post('/webhook-course-booking', webhookCourseBooking)
 
 app.get('/plans', getAllPlans)
 app.post('/subscriptions/new', createNewSubscription)
@@ -160,7 +164,7 @@ app.post('/connectAccount/edit', createEditAccountLink)
 
 app.post('/stripewebhook', handleWebhook)
 
-app.get('/connected-account/:id', retrieveConnectedAccount)
+
 // app.get('/subscriptions/portal', getPortal)
 // Configures firebase and lets it know that the app container is serving the functionalities
 exports.api = functions.region('europe-west2').https.onRequest(app)
