@@ -62,11 +62,17 @@ exports.retrieveConnectedAccount = async (req, res) => {
 
 exports.createConnectedAccountProductSubscription = async (req, res) => {
 
+  const { customerId, metadata } = req.body
+  const successDomain = 'http://localhost:3000/checkout'
+
+  // console.log(metadata)
+
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     mode: 'setup',
-    customer: 'cus_IpzDKN7vkp7NH6',
-    success_url: 'https://example.com/success?session_id={CHECKOUT_SESSION_ID}',
+    metadata,
+    customer: customerId,
+    success_url: successDomain,
     cancel_url: 'https://example.com/cancel'
   })
 
@@ -117,7 +123,7 @@ exports.createConnectedAccountProductSubscription = async (req, res) => {
 
 exports.createStripePayment = async (req, res) => {
 
-  const { priceId, metadata, connectedAccountId, customerId, type } = req.body
+  const { priceId, metadata, connectedAccountId, customerId, type, email } = req.body
 
   const successDomain = 'http://localhost:3000/checkout'
 
