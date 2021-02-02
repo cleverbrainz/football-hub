@@ -204,7 +204,9 @@ async function createStripeProduct(course, courseId) {
           interval: 'week'
         },
         metadata: {
-          course_duration: `${difference} weeks`
+          course_duration: `${difference} weeks`,
+          subscription_start_date: startDate,
+          subscription_end_date: endDate
         }
       }),
       nickname: (prices.length > 1 && i === 1) ? 'Subscription Price' : 'One-off Price',
@@ -989,6 +991,8 @@ exports.coachImageUpload = (req, res) => {
 }
 
 exports.filterListings = (req, res) => {
+
+
   const deg2rad = (deg) => {
     return deg * (Math.PI / 180)
   }
@@ -1036,7 +1040,7 @@ exports.filterListings = (req, res) => {
       const times = Object.keys(timing.times).length === 0
       const ages = Object.keys(age).length === 0
 
-      console.log(filteredObject)
+      // console.log(filteredObject)
 
       listings.map((listing) => {
         for (let i = 0; i < listing.listingInfo.courses.length; i++) {
@@ -1128,11 +1132,11 @@ exports.filterListings = (req, res) => {
               }
             }
 
-            console.log(ageRange)
+            // console.log(ageRange)
 
             for (let i = 0; i < ageRange.length; i++) {
               if (age[ageRange[i]]) {
-                console.log(ageRange[i])
+                // console.log(ageRange[i])
                 obj.age = true
                 break
               } else obj.age = false
@@ -1146,7 +1150,7 @@ exports.filterListings = (req, res) => {
               break
             }
           }
-          console.log(obj)
+          // console.log(obj)
           if (result) {
             filteredListings.push(listing)
             return
@@ -1154,7 +1158,7 @@ exports.filterListings = (req, res) => {
         }
       })
 
-      console.log(filteredListings)
+      // console.log(filteredListings)
       return res.status(200).json(filteredListings)
     })
     .catch((err) => {
@@ -1163,6 +1167,8 @@ exports.filterListings = (req, res) => {
 }
 
 exports.getAllListings = (req, res) => {
+ 
+
   db.doc(`/listings/${req.user}`)
     .update({ ...req.body })
     .then(() =>

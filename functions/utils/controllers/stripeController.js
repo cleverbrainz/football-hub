@@ -178,7 +178,7 @@ exports.handleWebhook = async (req, res) => {
     console.log('⚠️  Webhook error while parsing basic request.', err.message)
     return res.send()
   }
-  // Handle the event
+
   switch (event.type) {
 
     case 'payment_intent.succeeded': {
@@ -197,11 +197,13 @@ exports.handleWebhook = async (req, res) => {
       // Then define and call a method to handle the successful attachment of a PaymentMethod.
       // handlePaymentMethodAttached(paymentMethod);
       break
+
     case 'account.updated':
       const account = event.data.object
       console.log('account yep', account)
       handleStripeAccountUpdate(account)
       break
+
     case 'capability.updated':
       const capability = event.data.object
       console.log('capability', capability)
@@ -209,41 +211,53 @@ exports.handleWebhook = async (req, res) => {
 
     case 'checkout.session.completed': {
       const checkout = event.data.object
-      const { setup_intent } = checkout
-      const intent = await Stripe.setupIntents.retrieve(setup_intent)
-      const cancellation_date = moment(new Date()).add(14, 'd').toDate()
 
-      console.log(checkout)
-      // const subscription = await Stripe.subscriptions.create({
-      //   customer: 'cus_IpzDKN7vkp7NH6',
-      //   default_payment_method: intent.payment_method,
-      //   application_fee_percent: 10,
-      //   metadata: {
-      //     companyId: 'xPDNFl5ObUcGmx1aaZEyEey2QLa2',
-      //     courseId: '12qQNSYLk6M2BiAPGpLf',
-      //     playerId: 'Hz5BKzTebVWIbwOfkz6uFbxfOk43',
-      //     player_name: 'Kenn Seangpachareonsub'
-      //   },
-      //   cancel_at: moment(cancellation_date).unix(),
-      //   expand: ['latest_invoice.payment_intent'],
-      //   items: [
-      //     { price: 'price_1IEeMoIg5fTuA6FVgrOyNGah' }
-      //   ],
-      //   transfer_data: {
-      //     metadata: {
-      //       companyId: 'xPDNFl5ObUcGmx1aaZEyEey2QLa2',
-      //       courseId: '12qQNSYLk6M2BiAPGpLf',
-      //       playerId: 'Hz5BKzTebVWIbwOfkz6uFbxfOk43',
-      //       player_name: 'Kenn Seangpachareonsub'
-      //     },
-      //     destination: 'acct_1IBJHgRIXFwnLyyM'
-      //   }
-      // })
+      if (checkout.mode === 'setup') {
+        const {
+          setup_intent,
+          metadata,
+          customer } = checkout
+        const {
+          priceId,
+          connectedAccountId,
+          companyId,
+          courseId,
+          playerName,
+          playerId } = metadata
+        const intent = await Stripe.setupIntents.retrieve(setup_intent)
+        const price = await Stripe.prices.retrieve(priceId)
+        const {
+          subscription_end_date,
+          subscription_start_date } = price.metadata
+        const updatedMetadata = {
+          companyId,
+          courseId,
+          playerName,
+          playerId
+        }
+        const today_is_before_start = moment().isBefore(moment(subscription_start_date))
 
-      // console.log(subscription)
+        const subscription = await Stripe.subscriptions.create({
+          customer,
+          default_payment_method: intent.payment_method,
+          application_fee_percent: 10,
+          metadata: updatedMetadata,
+          ...(today_is_before_start && {
+            billing_cycle_anchor: moment(subscription_start_date).unix()
+          }),
+          cancel_at: moment(subscription_end_date).unix(),
+          expand: ['latest_invoice.payment_intent'],
+          items: [
+            { price: priceId }
+          ],
+          transfer_data: {
+            destination: connectedAccountId
+          }
+        })
 
-
-
+        console.log(subscription)
+        addPlayerToCourse(updatedMetadata)
+      }
       break
     }
 
@@ -283,33 +297,6 @@ const createRegister = (startDate, endDate, sessionDays, playerList) => {
   console.log(sessions, register)
   return register
 }
-
-// const createRegister = (startDate, endDate, sessionDays, playerList) => {
-//   const sessions = []
-//   let date = moment(startDate)
-//   const endMoment = moment(endDate)
-
-//   while (date.isSameOrBefore(endMoment)) {
-//     console.log(date.day())
-//     if (sessionDays.some((day) => day === date.day())) {
-//       // console.log(date.day())
-//       sessions.push(date.format('YYYY-MM-DD'))
-//     }
-//     // console.log(date)
-//     date = date.add(1, 'days')
-//   }
-//   const register = { sessions }
-
-//   for (const player of playerList) {
-//     register[player.id] = { name: player.name, age: player.dob, id: player.id }
-//     for (const date of sessions) {
-//       register[player.id][date] = { attendance: false, notes: '' }
-//     }
-//   }
-
-//   console.log(sessions, register)
-//   return register
-// }
 
 const addUsersToRegister = (register, newAdditions) => {
   for (const player of newAdditions) {

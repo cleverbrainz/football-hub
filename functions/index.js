@@ -157,10 +157,8 @@ app.post('/emailRequestCoach', sendCoachRequestEmail)
 app.post('/retrieveCourse', retrieveCompanyCourses)
 app.post('/create-payment', createStripePayment)
 app.get('/connected-account/:id', retrieveConnectedAccount)
-app.post('/connected-account-subscriptions', createConnectedAccountProductSubscription)
+app.post('/connected-account/subscriptions', createConnectedAccountProductSubscription)
 app.get('/connected-account/:id/product', retrieveProductPrices)
-
-// app.post('/webhook-course-booking', webhookCourseBooking)
 
 app.get('/plans', getAllPlans)
 app.post('/subscriptions/new', createNewSubscription)
