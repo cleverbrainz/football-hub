@@ -4,7 +4,14 @@ const config = require('../configuration')
 const nodemailer = require('nodemailer')
 
 const firebase = require('firebase')
-const { createAwaitingVerification } = require('./adminController')
+const {
+  createAwaitingVerification,
+  updateAwaitingVerification,
+} = require('./adminController')
+const {
+  sendEmailNotificationIndulge,
+  sendEmailNotificationCompany,
+} = require('./notificationController')
 firebase.initializeApp(config)
 
 exports.registerUser = (req, res) => {
@@ -33,8 +40,8 @@ exports.registerUser = (req, res) => {
     .then(() => {
       res.status(201).json({
         message:
-          'We\'ve sent you an email with instructions to verfiy your email address. Please make sure it didn\'t wind up in your Junk Mail.',
-        userId: newUser.userId
+          "We've sent you an email with instructions to verfiy your email address. Please make sure it didn't wind up in your Junk Mail.",
+        userId: newUser.userId,
       })
     })
     .catch((err) => {
@@ -46,6 +53,7 @@ exports.registerUser = (req, res) => {
 
 exports.initialRegistrationUserInformation = (req, res) => {
   // const user = firebase.auth().currentUser
+  console.log(req)
 
   const newUser = { ...req.body }
 
@@ -62,17 +70,17 @@ exports.initialRegistrationUserInformation = (req, res) => {
     if (newUser.category === 'coach') {
       newUser.verification = {
         coachDocumentationCheck: false,
-        paymentCheck: false
+        paymentCheck: false,
       }
       newUser.companies = newUser.companyLink ? [newUser.companyLink] : []
       newUser.coachInfo = {
-        name: newUser.name
+        name: newUser.name,
       }
     } else {
       newUser.verification = {
         coachDocumentationCheck: false,
         companyDetailsCheck: false,
-        paymentCheck: false
+        paymentCheck: false,
       }
       newUser.coaches = []
       newUser.bio = ''
@@ -96,25 +104,30 @@ exports.initialRegistrationUserInformation = (req, res) => {
 
       if (newUser.companyLink) {
         if (newUser.category === 'player') {
-
           const playerInfo = {
             age: newUser.dob,
             id: req.body.userId,
             name: userData.name,
-            status: 'Prospect'
+            status: 'Prospect',
           }
 
           db.doc(`/users/${newUser.companyLink}`).update({
-            [`players.${req.body.userId}`]: playerInfo
+            [`players.${req.body.userId}`]: playerInfo,
           })
-
         } else if (newUser.category === 'coach') {
           db.doc(`/users/${newUser.companyLink}`).update({
-            coaches: admin.firestore.FieldValue.arrayUnion(req.body.userId)
+            coaches: admin.firestore.FieldValue.arrayUnion(req.body.userId),
           })
+          sendEmailNotificationCompany(
+            'coachAcceptInvite',
+            { recipientId: newUser.companyLink },
+            { contentName: userData.name }
+          )
         }
       }
       db.doc(`/users/${req.body.userId}`).update({ ...newUser })
+
+      // sendEmailNotificationIndulge()
 
       res.status(201).json({ message: 'Information successfully updated' })
     })
@@ -151,7 +164,6 @@ exports.getCompaniesAndCoaches = (req, res) => {
 }
 
 exports.loginUser = (req, res) => {
-  
   const { email, password } = req.body
   const { valid } = validateLoginFields(req.body)
   let userId
@@ -185,11 +197,11 @@ exports.loginUser = (req, res) => {
           if (data.data().category) {
             response = {
               token,
-              accountCategory: data.data().category
+              accountCategory: data.data().category,
             }
             status = 201
           } else {
-            (response = { message: 'Invalid credentials' }), (status = 403)
+            ;(response = { message: 'Invalid credentials' }), (status = 403)
           }
           return { response, status }
         })
@@ -262,9 +274,9 @@ exports.customerImageUpload = (req, res) => {
         resumable: false,
         metadata: {
           metadata: {
-            contentType: imageToBeUploaded.mimetype
-          }
-        }
+            contentType: imageToBeUploaded.mimetype,
+          },
+        },
       })
       .then(() => {
         db.collection('users')
@@ -312,10 +324,18 @@ exports.getOneUser = (req, res) => {
         user.push(userData)
         const arr = ['subscriptions', 'stripe_account']
         for (const type of arr) {
-          promises.push(db.doc(`/users/${doc.id}`).collection(`${type}`).get()
-            .then(subItems => {
-              !subItems.empty ? subItems.forEach(subItem => userData[type] = subItem.data()) : delete userData[type]
-            })
+          promises.push(
+            db
+              .doc(`/users/${doc.id}`)
+              .collection(`${type}`)
+              .get()
+              .then((subItems) => {
+                !subItems.empty
+                  ? subItems.forEach(
+                      (subItem) => (userData[type] = subItem.data())
+                    )
+                  : delete userData[type]
+              })
           )
         }
       })
@@ -323,7 +343,6 @@ exports.getOneUser = (req, res) => {
     })
     .catch((err) => console.error(err))
 }
-
 
 exports.forgottenPassword = (req, res) => {
   const { email } = req.body
@@ -340,7 +359,7 @@ exports.forgottenPassword = (req, res) => {
     .then(() => {
       return res.status(200).json({
         message:
-          'We\'ve sent you an email with instructions to reset your password. Please make sure it didn\'t wind up in your Junk Mail.'
+          "We've sent you an email with instructions to reset your password. Please make sure it didn't wind up in your Junk Mail.",
       })
     })
     .catch((err) => {
@@ -382,9 +401,9 @@ exports.userDocumentUpload = (req, res) => {
         resumable: false,
         metadata: {
           metadata: {
-            contentType: documentToBeUploaded.mimetype
-          }
-        }
+            contentType: documentToBeUploaded.mimetype,
+          },
+        },
       })
       .then(() => {
         const documentURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${documentFileName}?alt=media`
@@ -403,7 +422,7 @@ exports.userDocumentUpload = (req, res) => {
             name: coachInfo.name,
             documentation: coachInfo.documentation,
             verification,
-            type: 'coachDocument'
+            type: 'coachDocument',
           }
           createAwaitingVerification(verificationData).then((data) => {
             return db
@@ -427,7 +446,55 @@ exports.updateUserDetails = (req, res) => {
   return userref
     .update(req.body.updates)
     .then(() => {
-      res.status(201).send({ message: 'user successfully updated' })
+      if (req.body.type === 'companyInfo' || req.body.type === 'coachInfo') {
+        userref
+          .get()
+          .then((data) => {
+            req.info = data.data()
+            if (req.body.type === 'companyInfo') {
+              if (
+                req.info.documents.public_liability_insurance &&
+                req.info.documents.professional_indemnity_insurance &&
+                (!req.info.verificationId ||
+                  !req.info.verificationId.companyInfo)
+              ) {
+                return createAwaitingVerification(req, res)
+              } else if (
+                req.info.verificationId &&
+                req.info.verificationId.companyInfo
+              ) {
+                return updateAwaitingVerification(req, res)
+              } else {
+                return res
+                  .status(201)
+                  .json({ message: 'file uploaded', data: req.info })
+              }
+            } else {
+              if (
+                req.info.coachInfo.dbsCertificate &&
+                req.info.coachInfo.coachingCertificate &&
+                (!req.info.verificationId || !req.info.verificationId.coachInfo)
+              ) {
+                console.log('creating')
+                createAwaitingVerification(req, res)
+              } else if (
+                req.info.coachInfo.dbsCertificate &&
+                req.info.coachInfo.coachingCertificate &&
+                req.info.verificationId.coachInfo !== ''
+              ) {
+                console.log('updating')
+                updateAwaitingVerification(req, res)
+              } else {
+                return res
+                  .status(201)
+                  .json({ message: 'file uploaded', data: req.info })
+              }
+            }
+          })
+          .catch((err) => console.log(err))
+      } else {
+        res.status(201).send({ message: 'user successfully updated' })
+      }
     })
     .catch((error) => console.log(error))
 }

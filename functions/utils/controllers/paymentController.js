@@ -2,6 +2,7 @@ const stripe = require('stripe')('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
 const YOUR_DOMAIN = 'http://localhost:3000/checkout'
 const { db, admin } = require('../admin')
 const moment = require('moment')
+const { sendEmailNotificationCompany, sendEmailNotificationPlayer } = require('./notificationController')
 
 
 exports.retrieveProductPrices = async (req, res) => {
@@ -117,6 +118,7 @@ exports.createConnectedAccountProductSubscription = async (req, res) => {
 exports.createStripePayment = async (req, res) => {
 
   const { priceId, metadata, connectedAccountId, customerId, type } = req.body
+
   const successDomain = 'http://localhost:3000/checkout'
 
   const session = await stripe.checkout.sessions.create({
@@ -135,7 +137,8 @@ exports.createStripePayment = async (req, res) => {
       transfer_data: {
         destination: connectedAccountId
       },
-      metadata
+      metadata,
+      receipt_email: email
     },
     mode: type !== 'recurring' && 'payment',
     success_url: `${successDomain}?success=true`,

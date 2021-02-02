@@ -1,4 +1,5 @@
 const { db, admin } = require('../admin')
+const { sendEmailNotificationIndulge } = require('./notificationController')
 // const config = require('../configuration')
 
 exports.adminPageEdits = (req, res) => {
@@ -21,27 +22,27 @@ exports.getAdminPageDetails = (req, res) => {
 
 exports.createAwaitingVerification = (req, res) => {
 
-  // console.log('verify', req)
+  // console.log('verify', req.info)
 
-  const verificationInfo = req.type === 'companyInfo' ? {
+  const verificationInfo = req.body.type === 'companyInfo' ? {
     userId: req.info.userId,
     verification: req.info.verification,
     name: req.info.name,
-    company_registration_number: req.info.company_registration_number,
+    company_registration_number: req.info.company_registration_number ? req.info.company_registration_number : 'Not Applicable',
     accounts_contact_number: req.info.accounts_contact_number,
     accounts_email: req.info.accounts_email,
-    vat_number: req.info.vat_number,
+    vat_number: req.info.vat_number ? req.info.vat_number : 'N/A',
     professional_indemnity_insurance: req.info.professional_indemnity_insurance,
     public_liability_insurance: req.info.public_liability_insurance,
     documents: req.info.documents,
-    type: req.type
+    type: req.body.type
   } :
     { userId: req.info.userId,
       name: req.info.name,
       coachInfo: req.info.coachInfo,
       verification: req.info.verification,
       message: '',
-      type: req.type
+      type: req.body.type
     }
 
   // console.log(verificationInfo)
@@ -57,42 +58,48 @@ exports.createAwaitingVerification = (req, res) => {
     .then(data => {
       db.doc(`/awaitingVerification/${data.id}`).update({
         verificationId: data.id
+      }).then(() => {
+        db.doc(`/users/${req.info.userId}`).update({
+          [`verificationId.${req.body.type}`]: data.id
+        })
       })
-      db.doc(`/users/${req.user}`).update({
-        [`verificationId.${req.type}`]: data.id
+    }).then(() => {
+
+      const type = req.body.type === 'companyInfo' ? 'companyDetailsSubmitted' : 'coachDetailsSubmitted'
+      return sendEmailNotificationIndulge(type, { indulgeName: 'Indulge Admin', indulgeEmail: 'admin@indulgefootball.com' }, { contentName: req.info.name, contentEmail: req.info.email }).then(email => {
+        return res.status(201).json({ message: 'Document successfully uploaded', data: req.info, emailInfo: email })
       })
-      res.status(201).json({ message: 'Document successfully uploaded', data: req.info })
-      // return data
     })
+    // return data
     .catch(error => console.log(error))
 }
 
 exports.updateAwaitingVerification = (req, res) => {
   
-  console.log(req.info.verificationId, req.type)
+  console.log(req.info.verificationId, req.body.type)
 
-  const verificationInfo = req.type === 'companyInfo' ? {
+  const verificationInfo = req.body.type === 'companyInfo' ? {
     userId: req.info.userId,
-    verification: req.info.verification,
+    verification: { ...req.info.verification.companyDetails },
     name: req.info.name,
-    company_registration_number: req.info.company_registration_number,
+    company_registration_number: req.info.company_registration_number ? req.info.company_registration_number : 'Not Applicable',
     accounts_contact_number: req.info.accounts_contact_number,
     accounts_email: req.info.accounts_email,
-    vat_number: req.info.vat_number,
+    vat_number: req.info.vat_number ? req.info.vat_number : 'N/A',
     professional_indemnity_insurance: req.info.professional_indemnity_insurance,
     public_liability_insurance: req.info.public_liability_insurance,
     documents: req.info.documents,
-    type: req.type
+    type: req.body.type
   } :
     { userId: req.info.userId,
       name: req.info.name,
       coachInfo: req.info.coachInfo,
       verification: req.info.verification,
       message: '',
-      type: req.type
+      type: req.body.type
     }
 
-  db.doc(`/awaitingVerification/${req.info.verificationId[req.type]}`).update({
+  db.doc(`/awaitingVerification/${req.info.verificationId[req.body.type]}`).update({
     ...verificationInfo
   })
     .then(() => {
