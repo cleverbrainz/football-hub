@@ -2,6 +2,7 @@ const { db, admin, functions } = require('../admin')
 const Stripe = require('stripe')('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
 const { user } = require('firebase-functions/lib/providers/auth')
 const moment = require('moment')
+const { sendEmailNotificationCompany, sendEmailNotificationPlayer } = require('./notificationController')
 // const config = require('../configuration')
 
 exports.getAllPlans = (req, res) => {
@@ -17,7 +18,7 @@ exports.getAllPlans = (req, res) => {
         data.prices = {}
         // console.log(item.id)
 
-        if (data.active)
+        if (data.name === 'Standard Membership')
           promises.push(
             db
               .doc(`/products/${item.id}`)
@@ -179,6 +180,18 @@ exports.handleWebhook = async (req, res) => {
   }
   // Handle the event
   switch (event.type) {
+
+    case 'payment_intent.succeeded': {
+      const paymentIntent = event.data.object
+      const { metadata } = paymentIntent
+
+      if (metadata.courseId) {
+        addPlayerToCourse(metadata)
+      }
+
+      break
+    }
+
     case 'payment_method.attached':
       const paymentMethod = event.data.object
       // Then define and call a method to handle the successful attachment of a PaymentMethod.
@@ -193,18 +206,6 @@ exports.handleWebhook = async (req, res) => {
       const capability = event.data.object
       console.log('capability', capability)
       break
-
-    // case 'payment_intent.succeeded': {
-    //   const { metadata } = paymentIntent
-    //   const paymentIntent = event.data.object
-
-    //   if (metadata.courseId) {
-    //     console.log(paymentIntent)
-    //     addPlayerToCourse(metadata)
-    //   }
-
-    //   break
-    // }
 
     case 'checkout.session.completed': {
       const checkout = event.data.object
@@ -255,6 +256,33 @@ exports.handleWebhook = async (req, res) => {
 }
 
 
+
+const createRegister = (startDate, endDate, sessionDays, playerList) => {
+  const sessions = []
+  let date = moment(startDate)
+  const endMoment = moment(endDate)
+
+  while (date.isSameOrBefore(endMoment)) {
+    console.log(date.day())
+    if (sessionDays.some((day) => day === date.day())) {
+      // console.log(date.day())
+      sessions.push(date.format('YYYY-MM-DD'))
+    }
+    // console.log(date)
+    date = date.add(1, 'days')
+  }
+  const register = { sessions }
+
+  for (const player of playerList) {
+    register[player.id] = { name: player.name, age: player.dob, id: player.id }
+    for (const date of sessions) {
+      register[player.id][date] = { attendance: false, notes: '' }
+    }
+  }
+
+  console.log(sessions, register)
+  return register
+}
 
 const createRegister = (startDate, endDate, sessionDays, playerList) => {
   const sessions = []
@@ -374,12 +402,13 @@ const addPlayerToCourse = (metadata) => {
             .update({
               [`players.${playerId}.status`]: 'Active'
             })
-            .then(() =>
+            .then(() => {
               console.log('player added to course')
-            )
+              sendEmailNotificationCompany('newPlayerCourseSignUp', { recipientId: companyId }, { contentName: name, contentCourse: data.courseDetails.optionalName })
+              sendEmailNotificationPlayer('bookingConfirmation', { recipientId: playerId }, { contentName: name, contentCourse: data.courseDetails.optionalName })
+            })
         })
         .catch((err) => console.log(err))
     })
 }
-
 
