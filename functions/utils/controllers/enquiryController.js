@@ -65,12 +65,16 @@ exports.newEnquiry = async (req, res) => {
             .update({ messages: newMessagesArr })
             .then(() => {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> db6ab048d5c131705f367d49976d3bf6a7952bf4
               res.status(201).json({ message: 'new message added successfully'})
             })
             .catch(err => res.status(400).json({ error: err }))
 
         }
       })
+<<<<<<< HEAD
 
 
 =======
@@ -90,6 +94,8 @@ exports.newEnquiry = async (req, res) => {
     })
 
 >>>>>>> dfd708ba18dac429d14193a4df4e3ee1ceabc446
+=======
+>>>>>>> db6ab048d5c131705f367d49976d3bf6a7952bf4
   if (!existing) {
     db
       .collection('enquiries')
@@ -114,10 +120,14 @@ exports.newEnquiry = async (req, res) => {
       })
   }
 <<<<<<< HEAD
+<<<<<<< HEAD
 })
 =======
 
 >>>>>>> dfd708ba18dac429d14193a4df4e3ee1ceabc446
+=======
+})
+>>>>>>> db6ab048d5c131705f367d49976d3bf6a7952bf4
 }
 
 exports.getEnquiries = (req, res) => {

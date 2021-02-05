@@ -1,9 +1,14 @@
 const { db, admin, functions } = require('../admin')
 <<<<<<< HEAD
+<<<<<<< HEAD
 const Stripe = require('stripe')
 =======
 const stripe = require('stripe')('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
 >>>>>>> dfd708ba18dac429d14193a4df4e3ee1ceabc446
+=======
+// const Stripe = require('stripe')
+const stripe = require('stripe')('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
+>>>>>>> db6ab048d5c131705f367d49976d3bf6a7952bf4
 const { user } = require('firebase-functions/lib/providers/auth')
 const moment = require('moment')
 const { sendEmailNotificationCompany, sendEmailNotificationPlayer } = require('./notificationController')
@@ -254,10 +259,14 @@ exports.handleWebhook = async (req, res) => {
         const today_is_before_start = moment().isBefore(moment(start_date))
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         const subscription = await stripe.subscriptions.create({
 =======
         const subscriptionSchedule = await stripe.subscriptionSchedules.create({
 >>>>>>> dfd708ba18dac429d14193a4df4e3ee1ceabc446
+=======
+        const subscriptionSchedule = await stripe.subscriptionSchedules.create({
+>>>>>>> db6ab048d5c131705f367d49976d3bf6a7952bf4
           customer,
           metadata: updatedMetadata,
           default_settings: {
