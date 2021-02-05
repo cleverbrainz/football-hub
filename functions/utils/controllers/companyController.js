@@ -203,12 +203,12 @@ async function createStripeProduct(course, courseId) {
         recurring: {
           interval: 'week'
         },
-        metadata: {
-          course_duration: `${difference} weeks`,
-          subscription_start_date: startDate,
-          subscription_end_date: endDate
-        }
       }),
+      metadata: {
+        course_duration: `${difference} weeks`,
+        start_date: startDate,
+        end_date: endDate
+      },
       nickname: (prices.length > 1 && i === 1) ? 'Subscription Price' : 'One-off Price',
       product: product.id
     })
@@ -485,104 +485,213 @@ exports.deleteCoachRequest = (req, res) => {
     })
 }
 
-exports.editCompanyDetail = (req, res) => {
-  console.log(req.body, req.params.detail)
+async function updateCompanyInfo(userId, updatedObject, type, request) {
+  const data = db.doc(`users/${userId}`).get()
+  const promise = await data
 
-  const { detail } = req.params
-  let detailId
+  const updateUser = (type, originalArr, nonChanging) => {
 
-  const idArr = ['coaches', 'services', 'locations', 'courses', 'listings']
-  if (idArr.includes(detail)) {
-    detailId = detail === 'coaches' ? 'coach' : detail.slice(0, -1) + 'Id'
+    db.doc(`/users/${userId}`)
+      .update({
+        [type]: type !== 'courses' ? [...nonChanging, ...request === 'patch' ? [updatedObject] : []] :
+          { ...originalArr, active: [...nonChanging, updatedObject] }
+      })
+      .then(() => {
+        console.log('USER UPDATEDD BITCH')
+      })
   }
 
-  if (detail === 'contact') {
-    delete req.body.companyId
+  switch (type) {
+    case 'courses': {
+      const { courses } = await promise.data()
+      const { active } = courses
 
-    db.doc(`users/${req.user}`)
-      .update({ contactInformation: req.body })
-      .then(() => {
-        res.status(201).json({ message: 'new message updated successfully' })
-      })
-      .catch(() => {
-        res.status(500).json({
-          error: 'Something went wrong, enquiry could not be added',
-        })
-      })
-  } else {
-    db.doc(`${detail}/${req.body[detailId]}`)
-      .update(req.body)
-      .then(() => {
-        db.doc(`users/${req.user}`)
-          .get()
-          .then((data) => {
-            const { listings, courses } = data.data()
-            let courseType = null
-            const courseFilterArr = ['courses', 'camps']
+      active.forEach(async el => {
 
-            courseFilterArr.map((el) => {
-              for (let i = 0; i < listings[0][el].length; i++) {
-                const { courseId } = listings[0][el][i]
-                if (courseId === req.body[detailId]) {
-                  courseType = el
-                  break
-                }
-              }
+        if (el.courseId === updatedObject.courseId) {
+          const { allow_weekly_payment, cost } = el.courseDetails
+          const { startDate, endDate } = updatedObject.courseDetails
+
+          // checks if company has now allowed weekly payments
+          if (allow_weekly_payment !== updatedObject.courseDetails.allow_weekly_payment) {
+
+            // console.log(allow_weekly_payment, updatedObject.courseDetails.allow_weekly_payment)
+
+            const difference = moment(endDate).diff(startDate, 'weeks')
+            const weeklyPrice = (cost / difference).toFixed(2)
+
+            await stripe.prices.create({
+              unit_amount: weeklyPrice * 100,
+              currency: 'gbp',
+              recurring: {
+                interval: 'week'
+              },
+              metadata: {
+                course_duration: `${difference} weeks`,
+                start_date: startDate,
+                end_date: endDate
+              },
+              nickname: 'Subscription Price',
+              product: el.stripe_product_id
             })
+          }
+        }
+      })
 
-            if (courseType || detail === 'services') {
-              detail === 'services' ? (courseType = 'services') : courseType
-              const nonChangingCoursesArr = listings[0][courseType].filter(
-                (el) => el[detailId] !== req.body[detailId]
-              )
+      const nonChanging = active.filter(el => el.courseId !== updatedObject.courseId)
+      updateUser(type, courses, nonChanging)
+    }
 
-              db.doc(`/users/${req.user}`)
-                .update({
-                  listings: [
-                    {
-                      ...listings[0],
-                      [courseType]: [...nonChangingCoursesArr, req.body],
-                    },
-                  ],
-                })
-                .then(() => {
-                  db.doc(`/listings/${listings[0].listingId}`).update({
-                    [courseType]: [...nonChangingCoursesArr, req.body],
-                  })
-                })
+      break
+
+    case 'services': {
+      const { services } = await promise.data()
+      const id = request === 'patch' ? updatedObject.serviceId : updatedObject
+      const nonChanging = services.filter(el => el.serviceId !== id)
+
+      // console.log(updatedObject)
+      console.log('THIS', nonChanging)
+
+      updateUser(type, services, nonChanging)
+    }
+      break
+    default:
+      break
+  }
+
+
+  return promise.data()
+}
+
+async function updateListings(listingArr, updatedObject, type, request) {
+  db.collection('listings')
+    .get()
+    .then(data => {
+      data.forEach(doc => {
+        const el = doc.data()
+        const { listingId, camps, courses, services } = el
+
+        if (listingArr.includes(listingId)) {
+
+          switch (type) {
+            case 'courses': {
+              console.log('EDITTTTT COURSES STEP 2')
+              // either array should be one less with the matching course removed 
+              const isCamp = camps.filter(camp => camp.courseId !== request === 'patch' ? updatedObject.courseId : updatedObject)
+              const isCourse = courses.filter(course => course.courseId !== request === 'patch' ? updatedObject.courseId : updatedObject)
+
+              if (isCamp.length < camps.length) {
+                db.doc(`listings/${el.listingId}`)
+                  .update({ camps: [...isCamp, ...request === 'patch' ? [updatedObject] : []] })
+              }
+
+              if (isCourse.length < courses.length) {
+                db.doc(`listings/${listingId}`)
+                  .update({ courses: [...isCourse, ...request === 'patch' ? [updatedObject] : []] })
+              }
+            }
+              break
+
+            case 'services': {
+              const nonChanging = services.filter(el => el.serviceId !== request === 'patch' ? updatedObject.serviceId : updatedObject)
+
+              if (nonChanging.length < services.length) {
+                db.doc(`listings/${listingId}`)
+                  .update({ services: [...nonChanging, ...request === 'patch' ? [updatedObject] : []] })
+              }
             }
 
-            const arrayToFilter =
-              detail === 'courses'
-                ? data.data()[detail].active
-                : data.data()[detail]
-            const nonChangingArr = arrayToFilter.filter(
-              (el) => el[detailId] !== req.body[detailId]
-            )
+              break
 
-            db.doc(`users/${req.user}`).update(
-              detail === 'courses'
-                ? {
-                  [detail]: {
-                    ...courses,
-                    active: [...nonChangingArr, req.body],
-                  },
-                }
-                : {
-                  [detail]: [...nonChangingArr, req.body],
-                }
-            )
-          })
+
+
+            default:
+              break
+          }
+        }
+
       })
-      .then(() => {
-        res.status(201).json({ message: 'information updated successfully' })
-      })
-      .catch((err) => {
-        console.log(err)
-        res.status(500).json({
-          error: 'Something went wrong, information could not be updated',
+    })
+}
+
+exports.editCompanyDetail = async (req, res) => {
+
+  console.log('EDITTTTT COMPANY DETAILSSSSSSS')
+
+  const { detail } = req.params
+
+  switch (detail) {
+
+    case 'contact':
+      delete req.body.companyId
+      db.doc(`users/${req.user}`)
+        .update({ contactInformation: req.body })
+        .then(() => res.status(201).json({ message: 'new message updated successfully' }))
+        .catch(() => res.status(500).json({ error: 'Something went wrong, enquiry could not be added' }))
+      break
+
+    case 'courses': {
+      console.log('EDITTTTT COURSES STEP 1')
+      const { user, body } = req
+      const { courseId } = body
+
+
+      const data = updateCompanyInfo(user, body, detail, 'patch')
+      const { listings } = await data
+
+      db.doc(`courses/${courseId}`)
+        .update(req.body)
+        .then(() => updateListings(listings, body, detail))
+        .then(() => {
+          res
+            .status(201)
+            .json({ message: 'information updated successfully' })
         })
-      })
+        .catch((err) => {
+          console.log(err)
+          res.status(500).json({
+            error: 'Something went wrong, information could not be updated',
+          })
+        })
+    }
+      break
+
+    case 'services': {
+      console.log(req)
+      const { user, body } = req
+      const { serviceId } = body
+      const data = updateCompanyInfo(user, body, detail, 'patch')
+      const { listings } = await data
+
+      db.doc(`services/${serviceId}`)
+        .update(req.body)
+        .then(() => updateListings(listings, body, detail))
+        .then(() => {
+          res
+            .status(201)
+            .json({ message: 'information updated successfully' })
+        })
+        .catch((err) => {
+          console.log(err)
+          res.status(500).json({
+            error: 'Something went wrong, information could not be updated',
+          })
+        })
+    }
+      break
+
+    case 'listings': {
+      const { body } = req
+      const { listingId } = body
+
+      db.doc(`/listings/${listingId}`)
+        .update(body)
+        .then(() => res.status(200).json({ message: 'Updated listing' }))
+    }
+      break
+
+    default:
+      break
   }
 }
 
@@ -655,90 +764,150 @@ exports.deleteCourse = (req, res) => {
     .catch(err => console.log(err))
 }
 
-exports.dataDeletion = (req, res) => {
+exports.deleteCompanyDetail = async (req, res) => {
   const { id, detail } = req.params
-  console.log(detail)
-  db.collection(detail)
-    .doc(id)
-    .delete()
-    .then(() => {
-      db.doc(`users/${req.user}`)
-        .get()
-        .then((data) => {
-          const { courses } = data.data()
-          const arrayToFilter =
-            detail === 'courses'
-              ? data.data()[detail].active
-              : data.data()[detail]
-          const nonChangingArr = arrayToFilter.filter((el) => {
-            const idArr = [
-              'coaches',
-              'services',
-              'locations',
-              'courses',
-              'listings',
-            ]
-            if (idArr.includes(detail)) {
-              const text = detail === 'coaches' ? 'coach' : detail.slice(0, -1)
-              return el[`${text}Id`] !== id
-            }
+  const { user } = req
+
+  // id = id of object to be deleted
+  // detail = the type of thing that needs to be deleted, course etc..
+
+  switch (detail) {
+    case 'services': {
+      console.log('services')
+      // delete from services collection
+      // delete from user in services array
+      // delete from listing in listing collection
+      const data = updateCompanyInfo(user, id, detail, 'delete')
+      const { listings } = await data
+      db.doc(`services/${id}`)
+        .delete()
+        .then(() => updateListings(listings, id, detail, 'delete'))
+        .then(() => {
+          res
+            .status(201)
+            .json({ message: 'service deleted' })
+        })
+        .catch((err) => {
+          console.log(err)
+          res.status(500).json({
+            error: 'Something went wrong, information could not be updated',
           })
-          const { listings } = data.data()
-          let courseType = null
-          const courseFilterArr = ['courses', 'camps']
+        })
 
-          courseFilterArr.forEach((el) => {
-            for (let i = 0; i < listings[0][el].length; i++) {
-              const { courseId } = listings[0][el][i]
-              if (courseId === id) {
-                courseType = el
-                break
-              }
-            }
-          })
+    }
 
-          if (courseType || detail === 'services') {
-            detail === 'services' ? (courseType = 'services') : courseType
-            const nonChangingCoursesArr = listings[0][courseType].filter(
-              (el) => el[`${detail.slice(0, -1)}Id`] !== id
-            )
+      break
 
-            db.doc(`/users/${req.user}`)
-              .update({
-                listings: [
-                  {
-                    ...listings[0],
-                    [courseType]: nonChangingCoursesArr,
-                  },
-                ],
-              })
-              .then(() => {
-                db.doc(`/listings/${listings[0].listingId}`).update({
-                  [courseType]: nonChangingCoursesArr,
-                })
-              })
-          }
-
-          return db
-            .doc(`/users/${req.user}`)
-            .update(
-              detail === 'courses'
-                ? { [detail]: { ...courses, active: nonChangingArr } }
-                : { [detail]: nonChangingArr }
-            )
+    case 'listings': {
+      // delete from listings collection
+      // delete id from listings arr in user
+      db.doc(`listings/${id}`)
+        .delete()
+        .then(() => {
+          db.doc(`users/${user}`)
+            .update({ listings: admin.firestore.FieldValue.arrayRemove(id) })
             .then(() => {
               res
                 .status(201)
-                .json({ message: 'information deleted successfully' })
+                .json({ message: 'listing deleted' })
             })
-            .catch((err) => {
-              console.log(err)
+            .catch(() => {
               res.status(500).json({
-                error: 'Something went wrong, information could not be deleted',
+                error: 'Something went wrong, lising could not be deleted'
               })
             })
         })
-    })
+
+    }
+
+      break
+
+    default:
+      break
+  }
+
+
+  // db.collection(detail)
+  //   .doc(id)
+  //   .delete()
+  //   .then(() => {
+  //     db.doc(`users/${req.user}`)
+  //       .get()
+  //       .then((data) => {
+  //         const { courses } = data.data()
+  //         const arrayToFilter =
+  //           detail === 'courses'
+  //             ? data.data()[detail].active
+  //             : data.data()[detail]
+  //         const nonChangingArr = arrayToFilter.filter((el) => {
+  //           const idArr = [
+  //             'coaches',
+  //             'services',
+  //             'locations',
+  //             'courses',
+  //             'listings',
+  //           ]
+  //           if (idArr.includes(detail)) {
+  //             const text = detail === 'coaches' ? 'coach' : detail.slice(0, -1)
+  //             return el[`${text}Id`] !== id
+  //           }
+  //         })
+  //         const { listings } = data.data()
+  //         let courseType = null
+  //         const courseFilterArr = ['courses', 'camps']
+
+  //         courseFilterArr.forEach((el) => {
+  //           for (let i = 0; i < listings[0][el].length; i++) {
+  //             const { courseId } = listings[0][el][i]
+  //             if (courseId === id) {
+  //               courseType = el
+  //               break
+  //             }
+  //           }
+  //         })
+
+  //         if (courseType || detail === 'services') {
+  //           detail === 'services' ? (courseType = 'services') : courseType
+  //           const nonChangingCoursesArr = listings[0][courseType].filter(
+  //             (el) => el[`${detail.slice(0, -1)}Id`] !== id
+  //           )
+
+  //           db.doc(`/users/${req.user}`)
+  //             .update({
+  //               listings: [
+  //                 {
+  //                   ...listings[0],
+  //                   [courseType]: nonChangingCoursesArr,
+  //                 },
+  //               ],
+  //             })
+  //             .then(() => {
+  //               db.doc(`/listings/${listings[0].listingId}`).update({
+  //                 [courseType]: nonChangingCoursesArr,
+  //               })
+  //             })
+  //         }
+
+  //         return db
+  //           .doc(`/users/${req.user}`)
+  //           .update(
+  //             detail === 'courses'
+  //               ? { [detail]: { ...courses, active: nonChangingArr } }
+  //               : { [detail]: nonChangingArr }
+  //           )
+  //           .then(() => {
+  //             res
+  //               .status(201)
+  //               .json({ message: 'information deleted successfully' })
+  //           })
+  //           .catch((err) => {
+  //             console.log(err)
+  //             res.status(500).json({
+  //               error: 'Something went wrong, information could not be deleted',
+  //             })
+  //           })
+  //       })
+  //   })
 }
 
 exports.uploadCompanyDocument = (req, res) => {
@@ -1167,7 +1336,7 @@ exports.filterListings = (req, res) => {
 }
 
 exports.getAllListings = (req, res) => {
- 
+
 
   db.doc(`/listings/${req.user}`)
     .update({ ...req.body })
@@ -1328,11 +1497,11 @@ exports.addPlayerToCourse = (req, res) => {
           const dayNums =
             courseDetails.courseType === 'Camp'
               ? courseDetails.sessions.map((session) =>
-              // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+                // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
                 moment(session.sessionDate.toDate()).day()
               )
               : courseDetails.sessions.map((session) =>
-              // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
+                // console.log(session.sessionDate, moment(session.sessionDate.toDate()).day())
                 moment().day(session.day).day()
               )
           console.log({ dayNums })
@@ -1425,9 +1594,9 @@ exports.createEmptyRegister = (req, res) => {
             dayNums,
             []
           )
-          
+
       courseData.register = newRegister
-      
+
       courseRef.update({
         register: newRegister,
       })

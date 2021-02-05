@@ -70,8 +70,6 @@ exports.newEnquiry = async (req, res) => {
 
         }
       })
-
-
   if (!existing) {
     db
       .collection('enquiries')

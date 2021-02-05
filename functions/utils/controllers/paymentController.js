@@ -1,6 +1,6 @@
 const stripe = require('stripe')('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
-const YOUR_DOMAIN = 'https://football-hub-4018a.firebaseapp.com/checkout'
-// const YOUR_DOMAIN = 'http://localhost:3000/checkout'
+// const YOUR_DOMAIN = 'https://football-hub-4018a.firebaseapp.com/checkout'
+const YOUR_DOMAIN = 'http://localhost:3000/checkout'
 // const YOUR_DOMAIN = 'http://localhost:3000/checkout'
 const { db, admin } = require('../admin')
 const moment = require('moment')
@@ -65,8 +65,8 @@ exports.retrieveConnectedAccount = async (req, res) => {
 exports.createConnectedAccountProductSubscription = async (req, res) => {
 
   const { customerId, metadata } = req.body
-  const successDomain = 'https://football-hub-4018a.firebaseapp.com/checkout'
-//   const successDomain = 'https://football-hub-4018a.web.app/checkout'
+  // const successDomain = 'https://football-hub-4018a.firebaseapp.com/checkout'
+  //   const successDomain = 'https://football-hub-4018a.web.app/checkout'
 
   // console.log(metadata)
 
@@ -119,30 +119,63 @@ exports.createConnectedAccountProductSubscription = async (req, res) => {
   //   cancel_url: `${YOUR_DOMAIN}?canceled=true`
   // })
 
-  
+
   res.json({ id: session.id })
+}
+
+function calculateProration(start, end, price) {
+  const courseDuration = moment(end, 'YYYY-MM-DD').diff(moment(start, 'YYYY-MM-DD'), 'weeks')
+  const weeklyPrice = (price.unit_amount / courseDuration).toFixed(2)
+  const remainingDuration = moment(end, 'YYYY-MM-DD').diff(moment(), 'weeks')
+  const prorationAmount = remainingDuration * weeklyPrice
+
+  return prorationAmount
 }
 
 
 exports.createStripePayment = async (req, res) => {
 
-  const { priceId, metadata, connectedAccountId, customerId, type, email } = req.body
+  const { priceId, metadata, connectedAccountId, customerId, email } = req.body
+  const price = await stripe.prices.retrieve(priceId)
+  const product = await stripe.products.retrieve(price.product)
 
-  const successDomain = 'https://football-hub-4018a.firebaseapp.com/checkout'
+  console.log(price)
+  const {
+    end_date,
+    start_date } = price.metadata
+
+  const isTodayBeforeStart = moment().isBefore(moment(start_date, 'YYYY-MM-DD'))
+
   // const successDomain = 'https://football-hub-4018a.web.app/checkout'
+  const prorationAmount = Math.round(calculateProration(start_date, end_date, price))
+
+
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
-    line_items: [
+    ...(isTodayBeforeStart ?
       {
-        price: priceId,
-        quantity: 1
-      }
-    ],
+        line_items: [{
+          price: priceId,
+          quantity: 1
+        }]
+      } :
+      {
+        line_items: [{
+          price_data: {
+            currency: 'gbp',
+            product_data: {
+              name: product.name
+            },
+            unit_amount: prorationAmount
+          },
+          quantity: 1
+        }]
+      }),
     customer: customerId,
     payment_intent_data: {
       setup_future_usage: 'off_session',
-      application_fee_amount: 200,
+      application_fee_amount: Math.round(((isTodayBeforeStart ? price.unit_amount : prorationAmount / 100) * 0.02).toFixed(2)),
       on_behalf_of: connectedAccountId,
       transfer_data: {
         destination: connectedAccountId
@@ -150,7 +183,7 @@ exports.createStripePayment = async (req, res) => {
       metadata,
       receipt_email: email
     },
-    mode: type !== 'recurring' && 'payment',
+    mode: 'payment',
     success_url: `${YOUR_DOMAIN}?success=true`,
     cancel_url: `${YOUR_DOMAIN}?canceled=true`
   })

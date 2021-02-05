@@ -175,9 +175,9 @@ exports.handleCompanyRequest = (req, res) => {
         // } else {
 
         const target = 'https://football-hub-4018a.firebaseapp.com'
-          // type === 'localhost'
-            // ? 'http://localhost:3000'
-            // : 'https://football-hub-4018a.firebaseapp.com'
+        // type === 'localhost'
+        // ? 'http://localhost:3000'
+        // : 'https://football-hub-4018a.firebaseapp.com'
 
         output = `
     <h2 style='text-align:center'> FT Baller! </h2>
