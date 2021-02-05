@@ -1,5 +1,5 @@
 const { db, admin, functions } = require('../admin')
-const Stripe = require('stripe')('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
+const Stripe = require('stripe')
 const { user } = require('firebase-functions/lib/providers/auth')
 const moment = require('moment')
 const { sendEmailNotificationCompany, sendEmailNotificationPlayer } = require('./notificationController')
@@ -69,7 +69,7 @@ exports.createNewSubscription = (req, res) => {
 }
 
 exports.createConnectedAccount = (req, res) => {
-  const stripe = Stripe('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
+  const stripe = Stripe(process.env.REACT_APP_STRIPE_TEST_KEY)
 
   return stripe.accounts
     .create({
@@ -100,6 +100,9 @@ exports.createConnectedAccount = (req, res) => {
             })
             db.doc(`/users/${req.body.userId}`).update({ listings: updated })
           }
+          if (userData.stripeAccount) {
+            db.doc(`/users/${req.body.userId}`).update({ stripeAccount: admin.firestore.FieldValue.delete() })
+          }
           db.doc(`/users/${req.body.userId}`)
             .collection('stripe_account')
             .add({ ...account })
@@ -127,8 +130,12 @@ exports.createEditAccountLink = (req, res) => {
   const stripe = Stripe('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
 
   return stripe.accounts
-    .createLoginLink(req.body.accountId)
+    .createLoginLink(req.body.accountId, {
+      redirect_url: 'https://football-hub-4018a.firebaseapp.com/tester'
+    })
     .then((accountLink) => {
+      console.log('str', accountLink)
+      console.log('json', JSON.stringify(accountLink))
       return res.status(200).json(accountLink)
     })
     .catch((err) => {
@@ -171,6 +178,8 @@ const handleStripeAccountUpdate = (account) => {
 // }
 
 exports.handleWebhook = async (req, res) => {
+  const stripe = Stripe(process.env.REACT_APP_STRIPE_TEST_KEY)
+
   let event
   try {
     event = req.body
@@ -224,8 +233,8 @@ exports.handleWebhook = async (req, res) => {
           courseId,
           playerName,
           playerId } = metadata
-        const intent = await Stripe.setupIntents.retrieve(setup_intent)
-        const price = await Stripe.prices.retrieve(priceId)
+        const intent = await stripe.setupIntents.retrieve(setup_intent)
+        const price = await stripe.prices.retrieve(priceId)
         const {
           subscription_end_date,
           subscription_start_date } = price.metadata
@@ -237,7 +246,7 @@ exports.handleWebhook = async (req, res) => {
         }
         const today_is_before_start = moment().isBefore(moment(subscription_start_date))
 
-        const subscription = await Stripe.subscriptions.create({
+        const subscription = await stripe.subscriptions.create({
           customer,
           default_payment_method: intent.payment_method,
           application_fee_percent: 10,

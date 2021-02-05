@@ -15,7 +15,7 @@ module.exports = (req, res, next) => {
   }
 
   const token = authToken.replace('Bearer ', '')
-  console.log(token)
+  // console.log(token)
 
   admin  
     .auth()
@@ -23,18 +23,14 @@ module.exports = (req, res, next) => {
     // Promise returns a decoded version of the auth token
     // decodedToken contains user information we need to extract to pass onto the cloud function by appending to req.body
     .then(decodedToken => {
-      return db
-        .collection('users')
-        // where function takes in filed to query, query operator and value to match
-        .where('email', '==', decodedToken.email)
-        .limit(1)
-        .get()
-    })
-    .then(data => {
-      // Appending the user data to the req.body
-      req.user = data.docs[0].id
+      console.log('decoded', decodedToken)
+      
+      req.user = decodedToken.user_id
       return next()
     })
-    .catch(() => res.status(500).json({ error: 'Error verifying token' }))
+    .catch((err) => {
+      console.log(err)
+      res.status(500).json({ error: 'Error verifying token' })
+    })
 
 }

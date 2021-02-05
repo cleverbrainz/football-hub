@@ -245,13 +245,13 @@ exports.addNewDetail = (req, res) => {
 
     const {
       courseType,
-      firstDay,
-      lastDay,
+      startDate,
+      endDate,
       excludeDays,
     } = req.body.courseDetails
 
     if (courseType === 'Camp') {
-      getDaysArray(new Date(firstDay), new Date(lastDay)).map((el) => {
+      getDaysArray(new Date(startDate), new Date(endDate)).map((el) => {
         if (!excludeDays.includes(days[el.getDay()])) {
           sessions.push({
             sessionDate: el,
@@ -1346,8 +1346,8 @@ exports.addPlayerToCourse = (req, res) => {
             ])
             : courseDetails.courseType === 'Camp'
               ? createRegister(
-                courseDetails.firstDay,
-                courseDetails.lastDay,
+                courseDetails.startDate,
+                courseDetails.endDate,
                 dayNums,
                 [
                   {
@@ -1414,8 +1414,8 @@ exports.createEmptyRegister = (req, res) => {
       const newRegister =
         courseDetails.courseType === 'Camp'
           ? createRegister(
-            courseDetails.firstDay,
-            courseDetails.lastDay,
+            courseDetails.startDate,
+            courseDetails.endDate,
             dayNums,
             []
           )
@@ -1534,7 +1534,7 @@ exports.sendPlayerRequestEmail = (req, res) => {
         service: 'gmail',
         auth: {
           user: 'indulgefootballemail@gmail.com',
-          pass: 'Indulg3Manchester1',
+          pass: '1ndulgeManchester1',
         },
       })
 
@@ -1565,6 +1565,7 @@ exports.sendPlayerRequestEmail = (req, res) => {
 
       transporter.sendMail(mailOptions, (err, info) => {
         if (err) {
+          console.log(err)
           return res.status(400).send({ error: err })
         }
 
@@ -1603,7 +1604,7 @@ exports.sendCoachRequestEmail = (req, res) => {
         service: 'gmail',
         auth: {
           user: 'indulgefootballemail@gmail.com',
-          pass: 'Indulg3Manchester1',
+          pass: '1ndulgeManchester1',
         },
       })
 
@@ -1634,6 +1635,7 @@ exports.sendCoachRequestEmail = (req, res) => {
 
       transporter.sendMail(mailOptions, (err, info) => {
         if (err) {
+          console.log(err)
           return res.status(400).send({ error: err })
         }
 

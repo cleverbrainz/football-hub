@@ -442,6 +442,7 @@ exports.userDocumentUpload = (req, res) => {
 
 exports.updateUserDetails = (req, res) => {
   const userref = db.doc(`users/${req.body.userId}`)
+  console.log(req.body)
 
   return userref
     .update(req.body.updates)

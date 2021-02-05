@@ -25,8 +25,8 @@ exports.sendEmailNotificationIndulge = function(type, recipient, emailContent) {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'indulgefootballemail@gmail.com',
-      pass: 'Indulg3Manchester1',
+      user: process.env.REACT_APP_MAILER_ADDRESS,
+      pass: process.env.REACT_APP_MAILER_PASSWORD,
     },
   })
 
@@ -64,7 +64,7 @@ exports.sendEmailNotificationIndulge = function(type, recipient, emailContent) {
   }
 
   const mailOptions = {
-    from: 'indulgefootballemail@gmail.com',
+    from: process.env.REACT_APP_MAILER_ADDRESS,
     to: `${indulgeName} <${indulgeEmail}>`,
     subject: `Notification: ${typeHeader} ${contentName}`,
     html: `
@@ -104,8 +104,8 @@ exports.sendEmailNotificationCompany = async function(type, recipient, emailCont
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'indulgefootballemail@gmail.com',
-      pass: 'Indulg3Manchester1',
+      user: process.env.REACT_APP_MAILER_ADDRESS,
+      pass: process.env.REACT_APP_MAILER_PASSWORD,
     },
   })
 
@@ -153,7 +153,7 @@ exports.sendEmailNotificationCompany = async function(type, recipient, emailCont
   }
 
   const mailOptions = {
-    from: 'indulgefootballemail@gmail.com',
+    from: process.env.REACT_APP_MAILER_ADDRESS,
     to: `${companyName} <${companyEmail}>`,
     subject: `Notification: ${typeHeader} ${contentName}`,
     html: `
@@ -192,8 +192,8 @@ exports.sendEmailNotificationCoach = async function(type, recipient, emailConten
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'indulgefootballemail@gmail.com',
-      pass: 'Indulg3Manchester1',
+      user: process.env.REACT_APP_MAILER_ADDRESS,
+      pass: process.env.REACT_APP_MAILER_PASSWORD,
     },
   })
 
@@ -221,7 +221,7 @@ exports.sendEmailNotificationCoach = async function(type, recipient, emailConten
   }
 
   const mailOptions = {
-    from: 'indulgefootballemail@gmail.com',
+    from: process.env.REACT_APP_MAILER_ADDRESS,
     to: `${coachName} <${coachEmail}>`,
     subject: `Notification: ${typeHeader}`,
     html: `
@@ -266,8 +266,8 @@ exports.sendEmailNotificationPlayer = async function(type, recipient, emailConte
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'indulgefootballemail@gmail.com',
-      pass: 'Indulg3Manchester1',
+      user: process.env.REACT_APP_MAILER_ADDRESS,
+      pass: process.env.REACT_APP_MAILER_PASSWORD,
     },
   })
 
@@ -298,7 +298,7 @@ exports.sendEmailNotificationPlayer = async function(type, recipient, emailConte
   }
 
   const mailOptions = {
-    from: 'indulgefootballemail@gmail.com',
+    from: process.env.REACT_APP_MAILER_ADDRESS,
     to: `${parentName ? parentName : playerName} <${contactEmail}>`,
     subject: `FTBaller Notification: ${typeHeader}`,
     html: `
