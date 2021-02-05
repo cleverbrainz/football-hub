@@ -17,7 +17,7 @@ const {
   addNewDetail,
   editCompanyDetail,
   // uploadCoachDocument,
-  dataDeletion,
+  deleteCompanyDetail,
   // uploadCompanyDocument,
   // updateUserInformation,
   // editCompanyLocation,
@@ -113,7 +113,7 @@ app.patch(
   uploadCoachDocument
 )
 // app.patch('/company/:id/document', authMiddleware, uploadCompanyDocument)
-app.delete('/companies/:detail/:id', authMiddleware, dataDeletion)
+app.delete('/companies/:detail/:id', authMiddleware, deleteCompanyDetail)
 app.delete('/courses/:id', authMiddleware, deleteCourse)
 app.post('/filteredCompanies', filterListings)
 app.get('/listings', getAllListings)
@@ -193,7 +193,7 @@ async function getData(activeCourseArray) {
       // console.log(courseInfo)
       const { playerList, companyId, courseDetails } = courseInfo
       courseCompanyId = companyId
-      console.log(companyId, courseInfo.courseId, playerList)
+      // console.log(companyId, courseInfo.courseId, playerList)
       const end =
         courseDetails.courseType === 'Camp'
           ? courseDetails.lastDay
