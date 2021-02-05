@@ -1,5 +1,9 @@
 const { db, admin, functions } = require('../admin')
+<<<<<<< HEAD
 const Stripe = require('stripe')
+=======
+const stripe = require('stripe')('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
+>>>>>>> dfd708ba18dac429d14193a4df4e3ee1ceabc446
 const { user } = require('firebase-functions/lib/providers/auth')
 const moment = require('moment')
 const { sendEmailNotificationCompany, sendEmailNotificationPlayer } = require('./notificationController')
@@ -69,7 +73,7 @@ exports.createNewSubscription = (req, res) => {
 }
 
 exports.createConnectedAccount = (req, res) => {
-  const stripe = Stripe('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
+  // const stripe = stripe('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
 
   return stripe.accounts
     .create({
@@ -127,7 +131,7 @@ exports.createConnectedAccount = (req, res) => {
 }
 
 exports.createEditAccountLink = (req, res) => {
-  const stripe = Stripe('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
+  // const stripe = stripe('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
 
   return stripe.accounts
     .createLoginLink(req.body.accountId, {
@@ -144,7 +148,7 @@ exports.createEditAccountLink = (req, res) => {
     })
 }
 
-const handleStripeAccountUpdate = (account) => {
+const handlestripeAccountUpdate = (account) => {
   const { firebaseUID } = account.metadata
 
   return db
@@ -193,8 +197,10 @@ exports.handleWebhook = async (req, res) => {
     case 'payment_intent.succeeded': {
       const paymentIntent = event.data.object
       const { metadata } = paymentIntent
+      metadata.dob = ''
 
       if (metadata.courseId) {
+        console.log('PAYMENT TO BE ADDED TO REGISTER')
         addPlayerToCourse(metadata)
       }
 
@@ -210,7 +216,7 @@ exports.handleWebhook = async (req, res) => {
     case 'account.updated':
       const account = event.data.object
       console.log('account yep', account)
-      handleStripeAccountUpdate(account)
+      handlestripeAccountUpdate(account)
       break
 
     case 'capability.updated':
@@ -231,40 +237,52 @@ exports.handleWebhook = async (req, res) => {
           connectedAccountId,
           companyId,
           courseId,
-          playerName,
+          name,
+          dob,
           playerId } = metadata
         const intent = await stripe.setupIntents.retrieve(setup_intent)
         const price = await stripe.prices.retrieve(priceId)
         const {
-          subscription_end_date,
-          subscription_start_date } = price.metadata
+          end_date,
+          start_date } = price.metadata
         const updatedMetadata = {
-          companyId,
+          dob,
           courseId,
-          playerName,
+          name,
           playerId
         }
-        const today_is_before_start = moment().isBefore(moment(subscription_start_date))
+        const today_is_before_start = moment().isBefore(moment(start_date))
 
+<<<<<<< HEAD
         const subscription = await stripe.subscriptions.create({
+=======
+        const subscriptionSchedule = await stripe.subscriptionSchedules.create({
+>>>>>>> dfd708ba18dac429d14193a4df4e3ee1ceabc446
           customer,
-          default_payment_method: intent.payment_method,
-          application_fee_percent: 10,
           metadata: updatedMetadata,
-          ...(today_is_before_start && {
-            billing_cycle_anchor: moment(subscription_start_date).unix()
-          }),
-          cancel_at: moment(subscription_end_date).unix(),
-          expand: ['latest_invoice.payment_intent'],
-          items: [
-            { price: priceId }
-          ],
-          transfer_data: {
-            destination: connectedAccountId
-          }
+          default_settings: {
+            default_payment_method: intent.payment_method,
+            application_fee_percent: 10,
+            transfer_data: {
+              destination: connectedAccountId
+            }
+          },
+          start_date: today_is_before_start ? moment(start_date).unix() : 'now',
+          end_behavior: 'cancel',
+          phases: [
+            {
+              items: [
+                {
+                  price: priceId,
+                  quantity: 1
+                }
+              ],
+              end_date: moment(end_date).unix()
+            }
+          ]
         })
 
-        console.log(subscription)
+        console.log('HELLOOOO')
         addPlayerToCourse(updatedMetadata)
       }
       break

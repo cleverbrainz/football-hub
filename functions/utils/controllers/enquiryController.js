@@ -64,6 +64,7 @@ exports.newEnquiry = async (req, res) => {
             .doc(`enquiries/${existingEnquiryId}`)
             .update({ messages: newMessagesArr })
             .then(() => {
+<<<<<<< HEAD
               res.status(201).json({ message: 'new message added successfully'})
             })
             .catch(err => res.status(400).json({ error: err }))
@@ -72,6 +73,23 @@ exports.newEnquiry = async (req, res) => {
       })
 
 
+=======
+              res
+                .status(201)
+                .json({ message: 'new message added successfully' })
+            })
+            .catch(err => {
+              res
+                .status(500)
+                .json({ error: 'Something went wrong, enquiry could not be added' })
+              console.error(err)
+            })
+      
+        }
+      })
+    })
+
+>>>>>>> dfd708ba18dac429d14193a4df4e3ee1ceabc446
   if (!existing) {
     db
       .collection('enquiries')
@@ -95,7 +113,11 @@ exports.newEnquiry = async (req, res) => {
         console.error(err)
       })
   }
+<<<<<<< HEAD
 })
+=======
+
+>>>>>>> dfd708ba18dac429d14193a4df4e3ee1ceabc446
 }
 
 exports.getEnquiries = (req, res) => {
