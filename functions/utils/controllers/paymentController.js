@@ -1,4 +1,4 @@
-const stripe = require('stripe')(process.env.REACT_APP_STRIPE_TEST_KEY)
+const stripe = require('stripe')('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
 const YOUR_DOMAIN = 'https://football-hub-4018a.firebaseapp.com/checkout'
 // const YOUR_DOMAIN = 'http://localhost:3000/checkout'
 // const YOUR_DOMAIN = 'http://localhost:3000/checkout'

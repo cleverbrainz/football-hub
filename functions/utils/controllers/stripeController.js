@@ -69,7 +69,7 @@ exports.createNewSubscription = (req, res) => {
 }
 
 exports.createConnectedAccount = (req, res) => {
-  const stripe = Stripe(process.env.REACT_APP_STRIPE_TEST_KEY)
+  const stripe = Stripe('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
 
   return stripe.accounts
     .create({
@@ -178,7 +178,7 @@ const handleStripeAccountUpdate = (account) => {
 // }
 
 exports.handleWebhook = async (req, res) => {
-  const stripe = Stripe(process.env.REACT_APP_STRIPE_TEST_KEY)
+  const stripe = Stripe('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
 
   let event
   try {
