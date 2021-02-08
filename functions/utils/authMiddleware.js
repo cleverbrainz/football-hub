@@ -5,26 +5,23 @@ const { db, admin } = require('./admin')
 // OAuth 2.0 is a protocol that allows a user to grant a third-party web site or application access to the user's protected resources
 module.exports = (req, res, next) => {
   // console.log('middleware req')
-  
+
   const authToken = req.headers.authorization
   // console.log(authToken)
 
   if (!authToken || !authToken.startsWith('Bearer')) {
-    console.log('nope')
     return res.status(401).json({ message: 'Unauthorized, no token' })
   }
 
   const token = authToken.replace('Bearer ', '')
   // console.log(token)
 
-  admin  
+  admin
     .auth()
     .verifyIdToken(token)
     // Promise returns a decoded version of the auth token
     // decodedToken contains user information we need to extract to pass onto the cloud function by appending to req.body
     .then(decodedToken => {
-      console.log('decoded', decodedToken)
-      
       req.user = decodedToken.user_id
       return next()
     })

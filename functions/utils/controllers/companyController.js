@@ -865,25 +865,31 @@ exports.deleteCompanyDetail = async (req, res) => {
 
       break
 
-    case 'listings':
-      {
-        // delete from listings collection
-        // delete id from listings arr in user
+    case 'listings': {
+      // delete from listings collection
+      // delete id from listings arr in user
+      const promises = []
+
+      promises.push(db.doc(`users/${user}`)
+        .update({ listings: admin.firestore.FieldValue.arrayRemove(id) }))
+
+      promises.push(
         db.doc(`listings/${id}`)
-          .delete()
-          .then(() => {
-            db.doc(`users/${user}`)
-              .update({ listings: admin.firestore.FieldValue.arrayRemove(id) })
-              .then(() => {
-                res.status(201).json({ message: 'listing deleted' })
-              })
-              .catch(() => {
-                res.status(500).json({
-                  error: 'Something went wrong, lising could not be deleted',
-                })
-              })
+          .delete())
+
+      Promise.all(promises)
+        .then(() => {
+          res
+            .status(201)
+            .json({ message: 'listing deleted' })
+        })
+        .catch(() => {
+          res.status(500).json({
+            error: 'Something went wrong, lising could not be deleted'
           })
-      }
+        })
+
+    }
 
       break
 
@@ -1701,9 +1707,9 @@ const addUsersToRegister = (register, newAdditions) => {
   return register
 }
 
+
 exports.sendPlayerRequestEmail = (req, res) => {
   console.log(req.body, req.params)
-
   const { email, companyName, companyId, type } = req.body
   const code = companyId
   let username = ''
@@ -1715,49 +1721,35 @@ exports.sendPlayerRequestEmail = (req, res) => {
   const output = `
     <h2 style='text-align:center'> Welcome to Baller Hub from ${companyName}! </h2>
     <p> Hello! </p>
-    <p> ${companyName} wants to connect with you on Baller Hub for football training in the future.</p>
+    <p> ${companyName}wants to connect with you on Baller Hub for football training in the future.</p>
     <p> click the link below to create an account with Baller Hub and learn more.</p>
     <a href='${target}/register/player/${code}' target='_blank'>Click here to sign up!</a>
   `
-
   const valid = validateEmailAddressInput(email)
   if (!valid) return res.status(400).json({ message: 'Invalid email address' })
-
   db.collection('users')
     .where('email', '==', email)
     .get()
-    .then((dataUser) => {
+    .then((data) => {
       const transporter = nodemailer.createTransport({
-        // host: 'smtp.office365.com',
-        // port: 587,
-        // auth: {
-        //   user: 'kenn@indulgefootball.com',
-        //   pass: 'Welcome342!',
-        // },
-        // secureConnection: false,
-        // tls: {
-        //   ciphers: 'SSLv3',
-        // },
-
         service: 'gmail',
         auth: {
           user: 'indulgefootballemail@gmail.com',
           pass: '1ndulgeManchester1',
         },
       })
-
       const mailOptions = {
         from: 'indulgefootballemail@gmail.com',
         to: email,
         subject: `Welcome to Baller Hub from ${companyName}!`,
         html: output,
       }
-
-      if (dataUser.exists) {
-        username = dataUser.data().name
-        console.log('username', username)
-
-        mailOptions.html = `
+      
+      data.forEach((dataUser) => {
+        if (dataUser.exists) {
+          username = dataUser.data().name
+          console.log('username', username)
+          mailOptions.html = `
         <h2 style='text-align:center'>Greetings from ${companyName}! </h2>
         <p> Hello ${username}! </p>
         <p> ${companyName} wants to connect with you on Baller Hub for football training in the future.</p>
@@ -1781,7 +1773,7 @@ exports.sendPlayerRequestEmail = (req, res) => {
       })
     })
 }
-
+          
 exports.sendCoachRequestEmail = (req, res) => {
   console.log(req.body, req.params)
   const { email, companyName, name, companyId, type } = req.body
@@ -1790,15 +1782,13 @@ exports.sendCoachRequestEmail = (req, res) => {
     type === 'localhost'
       ? 'http://localhost:3000'
       : 'https://football-hub-4018a.firebaseapp.com'
-
   const output = `
     <h2 style='text-align:center'> Welcome to Baller Hub from ${companyName}! </h2>
-    <p> Hello! ${name}</p>
+    <p> Hello! ${name} </p>
     <p> ${companyName} wants to connect with you on Baller Hub and become a member of their training team.</p>
     <p> click the link below to create an account with Baller Hub and learn more.</p>
-    <a href='${target}/register/trainer/${code}' target='_blank'>Click here to sign up!</a>
+    <a href='${target} /register/trainer/${code}' target='_blank'>Click here to sign up!</a>
   `
-
   db.collection('users')
     .where('email', '==', email)
     .get()
@@ -1813,21 +1803,18 @@ exports.sendCoachRequestEmail = (req, res) => {
           pass: '1ndulgeManchester1',
         },
       })
-
       const mailOptions = {
         from: 'indulgefootballemail@gmail.com',
         to: `${name} <${email}>`,
         subject: `Welcome to Baller Hub from ${companyName}!`,
         html: output,
       }
-
       data.forEach((dataUser) => {
         if (dataUser.exists) {
           const userData = dataUser.data()
           const username = userData.name
           const userId = userData.userId
           console.log('username', username)
-
           mailOptions.html = `
     <h2 style='text-align:center'>Greetings from ${companyName}! </h2>
     <p> Hello ${username}! </p>
@@ -1835,7 +1822,6 @@ exports.sendCoachRequestEmail = (req, res) => {
     <p> click the link below to head to Baller Hub and connect with ${companyName}.</p>
     <a href='${target}/login' target="_blank">Log in and confirm the request!</a>
   `
-
           mailOptions.to = `${username} <${email}>`
           mailOptions.subject = `Baller Hub connection request from ${companyName}!`
           db.doc(`users/${userId}`)
@@ -1860,3 +1846,10 @@ exports.sendCoachRequestEmail = (req, res) => {
       })
     })
 }
+
+
+
+
+
+
+
