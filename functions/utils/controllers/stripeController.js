@@ -181,7 +181,7 @@ const handlestripeAccountUpdate = (account) => {
 // }
 
 exports.handleWebhook = async (req, res) => {
-  // const stripe = Stripe('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
+
 
   let event
   try {
