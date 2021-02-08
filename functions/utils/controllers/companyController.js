@@ -1774,6 +1774,7 @@ exports.sendPlayerRequestEmail = (req, res) => {
           })
         })
     })
+  })
 }
 
 exports.sendCoachRequestEmail = (req, res) => {
