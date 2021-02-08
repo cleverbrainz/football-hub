@@ -1774,8 +1774,8 @@ exports.sendPlayerRequestEmail = (req, res) => {
           })
         })
     })
-  })
 }
+
 
 exports.sendCoachRequestEmail = (req, res) => {
   console.log(req.body, req.params)
