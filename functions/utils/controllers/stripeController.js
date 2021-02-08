@@ -181,7 +181,7 @@ const handlestripeAccountUpdate = (account) => {
 // }
 
 exports.handleWebhook = async (req, res) => {
-  // const stripe = stripe('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
+
 
   let event
   try {
@@ -347,7 +347,7 @@ const addPlayerToCourse = (metadata) => {
         .get()
         .then((data) => {
           const courseData = data.data()
-          const { register, courseDetails } = courseData
+          const { register, courseDetails, companyName } = courseData
           const dayNums =
             courseDetails.courseType === 'Camp'
               ? courseDetails.sessions.map((session) =>
@@ -414,7 +414,7 @@ const addPlayerToCourse = (metadata) => {
             .then(() => {
               console.log('player added to course')
               sendEmailNotificationCompany('newPlayerCourseSignUp', { recipientId: companyId }, { contentName: name, contentCourse: data.courseDetails.optionalName })
-              sendEmailNotificationPlayer('bookingConfirmation', { recipientId: playerId }, { contentName: name, contentCourse: data.courseDetails.optionalName })
+              sendEmailNotificationPlayer('bookingConfirmation', { recipientId: playerId }, { emailId: data.companyId, contentCourse: data.courseDetails.optionalName })
             })
         })
         .catch((err) => console.log(err))
