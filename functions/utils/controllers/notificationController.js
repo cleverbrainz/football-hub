@@ -26,7 +26,7 @@ exports.sendEmailNotificationIndulge = function(type, recipient, emailContent) {
     service: 'gmail',
     auth: {
       user: 'indulgefootballemail@gmail.com',
-      pass: 'Indulg3Manchester1',
+      pass: '1nduldgeManchester1',
     },
   })
 
@@ -105,7 +105,7 @@ exports.sendEmailNotificationCompany = async function(type, recipient, emailCont
     service: 'gmail',
     auth: {
       user: 'indulgefootballemail@gmail.com',
-      pass: 'Indulg3Manchester1',
+      pass: '1nduldgeManchester1',
     },
   })
 
@@ -193,7 +193,7 @@ exports.sendEmailNotificationCoach = async function(type, recipient, emailConten
     service: 'gmail',
     auth: {
       user: 'indulgefootballemail@gmail.com',
-      pass: 'Indulg3Manchester1',
+      pass: '1nduldgeManchester1',
     },
   })
 
@@ -267,7 +267,7 @@ exports.sendEmailNotificationPlayer = async function(type, recipient, emailConte
     service: 'gmail',
     auth: {
       user: 'indulgefootballemail@gmail.com',
-      pass: 'Indulg3Manchester1',
+      pass: '1nduldgeManchester1',
     },
   })
 

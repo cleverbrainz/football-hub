@@ -37,7 +37,8 @@ exports.createAwaitingVerification = (req, res) => {
     documents: req.info.documents,
     type: req.body.type
   } :
-    { userId: req.info.userId,
+    {
+      userId: req.info.userId,
       name: req.info.name,
       coachInfo: req.info.coachInfo,
       verification: req.info.verification,
@@ -75,7 +76,7 @@ exports.createAwaitingVerification = (req, res) => {
 }
 
 exports.updateAwaitingVerification = (req, res) => {
-  
+
   console.log(req.info.verificationId, req.body.type)
 
   const verificationInfo = req.body.type === 'companyInfo' ? {
@@ -91,7 +92,8 @@ exports.updateAwaitingVerification = (req, res) => {
     documents: req.info.documents,
     type: req.body.type
   } :
-    { userId: req.info.userId,
+    {
+      userId: req.info.userId,
       name: req.info.name,
       coachInfo: req.info.coachInfo,
       verification: req.info.verification,
@@ -99,11 +101,13 @@ exports.updateAwaitingVerification = (req, res) => {
       type: req.body.type
     }
 
-  db.doc(`/awaitingVerification/${req.info.verificationId[req.body.type]}`).update({
-    ...verificationInfo
-  })
+  // console.log(`/awaitingVerification/${req.info.verificationId[req.body.type]}`)
+
+  db.doc(`/awaitingVerification/${req.info.verificationId[req.body.type]}`)
+    .update({ ...verificationInfo })
     .then(() => {
-      res.status(201).json({ message: 'document updated!', data: req.info })
+      console.log('VERIFICATION SENT AND UPDATED')
+      res.json({ message: 'document updated!', data: req.info }).status(201)
     })
     .catch(err => res.status(401).send(err))
 }
@@ -129,7 +133,7 @@ exports.acceptAwaitingVerification = (req, res) => {
   const updatedV = { ...req.body.updatedVerification }
   console.log('updated', updatedV)
   db.collection('awaitingVerification').doc(`${req.body.verificationId}`).delete()
-    .then(() =>{
+    .then(() => {
       db.doc(`/users/${req.body.userId}`).update({
         verification: { ...updatedV },
         [`verificationId.${req.body.type}`]: '',
