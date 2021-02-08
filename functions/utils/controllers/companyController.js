@@ -1772,6 +1772,7 @@ exports.sendPlayerRequestEmail = (req, res) => {
         preview: nodemailer.getTestMessageUrl(info),
       })
     })
+  })
 }
           
 exports.sendCoachRequestEmail = (req, res) => {
