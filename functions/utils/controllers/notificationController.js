@@ -26,7 +26,7 @@ exports.sendEmailNotificationIndulge = function(type, recipient, emailContent) {
     service: 'gmail',
     auth: {
       user: 'indulgefootballemail@gmail.com',
-      pass: '1nduldgeManchester1',
+      pass: '1ndulgeManchester1',
     },
   })
 
@@ -71,7 +71,7 @@ exports.sendEmailNotificationIndulge = function(type, recipient, emailContent) {
   <h2 style='text-align:center'></h2>
   <p> Hello ${indulgeName}, </p>
   <p>${typeContent}</p>
-  ${linkMaker(adminURL, 'Login to the admin panel here')}
+  <a href=${adminURL} target='_blank' rel='noreferrer noreopener>Login to the admin panel here</a>
   <br>
   <p>Indulge Football</p>
 `,
@@ -105,7 +105,7 @@ exports.sendEmailNotificationCompany = async function(type, recipient, emailCont
     service: 'gmail',
     auth: {
       user: 'indulgefootballemail@gmail.com',
-      pass: '1nduldgeManchester1',
+      pass: '1ndulgeManchester1',
     },
   })
 
@@ -160,7 +160,7 @@ exports.sendEmailNotificationCompany = async function(type, recipient, emailCont
   <h2 style='text-align:center'></h2>
   <p> Hello ${companyName}, </p>
   <p>${typeContent}</p>
-  ${linkMaker(loginURL, 'please login to see more details')}
+  <a href=${loginURL} target='_blank' rel='noreferrer noreopener>Please login to see more details</a>
   <br>
   <p>Indulge Football</p>
 `,
@@ -193,7 +193,7 @@ exports.sendEmailNotificationCoach = async function(type, recipient, emailConten
     service: 'gmail',
     auth: {
       user: 'indulgefootballemail@gmail.com',
-      pass: '1nduldgeManchester1',
+      pass: '1ndulgeManchester1',
     },
   })
 
@@ -228,7 +228,7 @@ exports.sendEmailNotificationCoach = async function(type, recipient, emailConten
   <h2 style='text-align:center'></h2>
   <p> Hello ${coachName}, </p>
   <p>${typeContent}</p>
-  ${linkMaker(loginURL, 'please login to see more details')}
+  <a href=${loginURL} target='_blank' rel='noreferrer noreopener>Please login to see more details</a>
   <br>
   <p>Indulge Football</p>
 `,
@@ -267,7 +267,7 @@ exports.sendEmailNotificationPlayer = async function(type, recipient, emailConte
     service: 'gmail',
     auth: {
       user: 'indulgefootballemail@gmail.com',
-      pass: '1nduldgeManchester1',
+      pass: '1ndulgeManchester1',
     },
   })
 
@@ -305,7 +305,7 @@ exports.sendEmailNotificationPlayer = async function(type, recipient, emailConte
   <h2 style='text-align:center'></h2>
   <p> Hello ${parentName ? parentName : playerName}, </p>
   <p>${typeContent}</p>
-  ${linkMaker(loginURL, 'please login to see more details')}
+  <a href=${loginURL} target='_blank' rel='noreferrer noreopener>Please login to see more details</a>
   <br>
   <p>Indulge Football</p>
 `,

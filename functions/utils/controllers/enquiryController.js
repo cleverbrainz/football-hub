@@ -49,9 +49,9 @@ exports.newEnquiry = async (req, res) => {
   await db
     .collection('enquiries')
     .get()
-    .then(async data => {
+    .then( data => {
 
-      await data.forEach((doc) => {
+      data.forEach((doc) => {
         const query = doc.data()
 
         if (query.companyId === companyId && query.userId === userId) {
@@ -64,46 +64,38 @@ exports.newEnquiry = async (req, res) => {
             .doc(`enquiries/${existingEnquiryId}`)
             .update({ messages: newMessagesArr })
             .then(() => {
-              res
-                .status(201)
-                .json({ message: 'new message added successfully' })
+              res.status(201).json({ message: 'new message added successfully'})
             })
-            .catch(err => {
-              res
-                .status(500)
-                .json({ error: 'Something went wrong, enquiry could not be added' })
-              console.error(err)
-            })
-      
+            .catch(err => res.status(400).json({ error: err }))
+
         }
       })
-    })
-
-  if (!existing) {
-    db
-      .collection('enquiries')
-      .add(newEnquiry)
-      .then(data => {
-        console.log(messageBody)
+      if (!existing) {
         db
           .collection('enquiries')
-          .doc(data.id)
-          .update({ enquiryId: data.id, messages: [{ ...messageBody }] })
-      })
-      .then(() => {
-        res
-          .status(201)
-          .json({ message: 'new message added successfully' })
-      })
-      .catch(err => {
-        res
-          .status(500)
-          .json({ error: 'Something went wrong, enquiry could not be added' })
-        console.error(err)
-      })
-  }
-
+          .add(newEnquiry)
+          .then(data => {
+            console.log(messageBody)
+            db
+              .collection('enquiries')
+              .doc(data.id)
+              .update({ enquiryId: data.id, messages: [{ ...messageBody }] })
+          })
+          .then(() => {
+            res
+              .status(201)
+              .json({ message: 'new message added successfully' })
+          })
+          .catch(err => {
+            res
+              .status(500)
+              .json({ error: 'Something went wrong, enquiry could not be added' })
+            console.error(err)
+          })
+      }
+    })
 }
+
 
 exports.getEnquiries = (req, res) => {
   console.log(req.params.category)

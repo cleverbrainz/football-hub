@@ -1,5 +1,8 @@
 const { db, admin, functions } = require('../admin')
+
 const stripe = require('stripe')('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
+
+// const Stripe = require('stripe')
 const { user } = require('firebase-functions/lib/providers/auth')
 const moment = require('moment')
 const { sendEmailNotificationCompany, sendEmailNotificationPlayer } = require('./notificationController')
@@ -53,7 +56,7 @@ exports.createNewSubscription = (req, res) => {
     .add({
       price: price,
       success_url: url,
-      cancel_url: url,
+      cancel_url: url
     })
     .then((docRef) => {
       docRef.onSnapshot((snap) => {
@@ -77,15 +80,15 @@ exports.createConnectedAccount = (req, res) => {
       type: 'express',
       capabilities: {
         card_payments: {
-          requested: true,
+          requested: true
         },
         transfers: {
-          requested: true,
-        },
+          requested: true
+        }
       },
       metadata: {
-        firebaseUID: req.body.userId,
-      },
+        firebaseUID: req.body.userId
+      }
     })
     .then((account) => {
       console.log('account', account)
@@ -100,6 +103,9 @@ exports.createConnectedAccount = (req, res) => {
             })
             db.doc(`/users/${req.body.userId}`).update({ listings: updated })
           }
+          if (userData.stripeAccount) {
+            db.doc(`/users/${req.body.userId}`).update({ stripeAccount: admin.firestore.FieldValue.delete() })
+          }
           db.doc(`/users/${req.body.userId}`)
             .collection('stripe_account')
             .add({ ...account })
@@ -109,7 +115,7 @@ exports.createConnectedAccount = (req, res) => {
                   account: account.id,
                   refresh_url: 'https://football-hub-4018a.firebaseapp.com/subscription',
                   return_url: 'https://football-hub-4018a.firebaseapp.com/subscription',
-                  type: 'account_onboarding',
+                  type: 'account_onboarding'
                 })
                 .then((accountLink) => {
                   return res.status(200).json(accountLink)
@@ -127,8 +133,12 @@ exports.createEditAccountLink = (req, res) => {
   // const stripe = stripe('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
 
   return stripe.accounts
-    .createLoginLink(req.body.accountId)
+    .createLoginLink(req.body.accountId, {
+      redirect_url: 'https://football-hub-4018a.firebaseapp.com/tester'
+    })
     .then((accountLink) => {
+      console.log('str', accountLink)
+      console.log('json', JSON.stringify(accountLink))
       return res.status(200).json(accountLink)
     })
     .catch((err) => {
@@ -171,6 +181,8 @@ const handlestripeAccountUpdate = (account) => {
 // }
 
 exports.handleWebhook = async (req, res) => {
+  const stripe = Stripe('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
+
   let event
   try {
     event = req.body

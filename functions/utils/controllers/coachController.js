@@ -191,14 +191,14 @@ exports.handleCompanyRequest = (req, res) => {
           service: 'gmail',
           auth: {
             user: 'indulgefootballemail@gmail.com',
-            pass: 'Indulg3Manchester1'
+            pass: '1ndulgeManchester1'
           }
         })
 
 
         const mailOptions = {
           from: 'indulgefootballemail@gmail.com',
-          to: 'patrick.cf.white@gmail.com',
+          to: companyEmail,
           subject: `Coach invitation acceptance from ${coachName}!`,
           html: output
         }

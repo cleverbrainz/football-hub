@@ -10,7 +10,6 @@ module.exports = (req, res, next) => {
   // console.log(authToken)
 
   if (!authToken || !authToken.startsWith('Bearer')) {
-    console.log('nope')
     return res.status(401).json({ message: 'Unauthorized, no token' })
   }
 
@@ -23,19 +22,12 @@ module.exports = (req, res, next) => {
     // Promise returns a decoded version of the auth token
     // decodedToken contains user information we need to extract to pass onto the cloud function by appending to req.body
     .then(decodedToken => {
-      return db
-        .collection('users')
-        // where function takes in filed to query, query operator and value to match
-        .where('email', '==', decodedToken.email)
-        .limit(1)
-        .get()
-    })
-    .then(data => {
-      // Appending the user data to the req.body
-      console.log(data.docs[0].id)
-      req.user = data.docs[0].id
+      req.user = decodedToken.user_id
       return next()
     })
-    .catch(() => res.status(500).json({ error: 'Error verifying token' }))
+    .catch((err) => {
+      console.log(err)
+      res.status(500).json({ error: 'Error verifying token' })
+    })
 
 }
