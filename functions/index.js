@@ -5,8 +5,8 @@ const app = express()
 const { db, admin } = require('./utils/admin')
 const moment = require('moment')
 const cors = require('cors')
-const stripe = require('stripe')('sk_test_4eC39HqLyjWDarjtT1zdp7dc')
-const bodyParser = require('body-parser');
+// const stripe = require('stripe')('sk_test_4eC39HqLyjWDarjtT1zdp7dc')
+// const bodyParser = require('body-parser');
 app.use(cors())
 app.use(express.static('.'))
 // Middleware for authentication
@@ -47,8 +47,9 @@ const {
   createStripePayment, 
   retrieveConnectedAccount,
   createConnectedAccountProductSubscription,
-  retrieveProductPrices,
-  webhookCourseBooking } = require('./utils/controllers/paymentController')
+  retrieveProductPrices
+  // webhookCourseBooking
+} = require('./utils/controllers/paymentController')
 const {
   newEnquiry,
   getEnquiries,

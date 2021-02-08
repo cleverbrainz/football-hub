@@ -130,11 +130,17 @@ exports.acceptAwaitingVerification = (req, res) => {
   console.log('updated', updatedV)
   db.collection('awaitingVerification').doc(`${req.body.verificationId}`).delete()
     .then(() =>{
-      db.doc(`/users/${req.body.userId}`).update({
-        verification: { ...updatedV },
-        [`verificationId.${req.body.type}`]: '',
-        message: req.body.message
+      db.doc(`/users/${req.body.userId}`).get().then(data => {
+        const userData = data.data()
+        const newV = { ...userData.verification, ...updatedV }
+        console.log(newV)
+        db.doc(`/users/${req.body.userId}`).update({
+          verification: { ...newV },
+          [`verificationId.${req.body.type}`]: '',
+          message: req.body.message
+        })
       })
-      return res.status(201).json({ message: 'Documents successfully verified!' })
     })
+    .then(() => res.status(201).json({ message: 'Documents successfully verified!' }))
+    .catch(err => res.status(400).json({ error: err }))
 }
