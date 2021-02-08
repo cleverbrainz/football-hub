@@ -1788,7 +1788,7 @@ exports.sendCoachRequestEmail = (req, res) => {
     <p> Hello! ${name} </p>
     <p> ${companyName} wants to connect with you on Baller Hub and become a member of their training team.</p>
     <p> click the link below to create an account with Baller Hub and learn more.</p>
-    <a href='${target} /register/trainer/${code}' target='_blank'>Click here to sign up!</a>
+    <a href='${target}/register/trainer/${code}' target='_blank'>Click here to sign up!</a>
   `
   db.collection('users')
     .where('email', '==', email)
