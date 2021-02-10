@@ -103,7 +103,7 @@ exports.initialRegistrationUserInformation = (req, res) => {
       const userData = data.data()
 
       if (newUser.companyLink) {
-        if (newUser.category === 'player') {
+        if (newUser.category === 'player' || newUser.category === 'parent') {
           const playerInfo = {
             age: newUser.dob,
             id: req.body.userId,
