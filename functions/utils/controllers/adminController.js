@@ -1,5 +1,5 @@
 const { db, admin } = require('../admin')
-const { sendEmailNotificationIndulge } = require('./notificationController')
+const { sendEmailNotificationIndulge, verificationEmailer } = require('./notificationController')
 // const config = require('../configuration')
 
 exports.adminPageEdits = (req, res) => {
@@ -103,8 +103,14 @@ exports.updateAwaitingVerification = (req, res) => {
 
   // console.log(`/awaitingVerification/${req.info.verificationId[req.body.type]}`)
 
-  db.doc(`/awaitingVerification/${req.info.verificationId[req.body.type]}`)
-    .update({ ...verificationInfo })
+  db.doc(`/awaitingVerification/${req.info.verificationId[req.body.type]}`).get()
+    .then(snapShot => {
+      if (snapShot.exists) {
+        db.doc(`/awaitingVerification/${req.info.verificationId[req.body.type]}`).update({ ...verificationInfo })
+      } else {
+        db.doc(`/awaitingVerification/${req.info.verificationId[req.body.type]}`).set({ ...verificationInfo })
+      }
+    })
     .then(() => {
       console.log('VERIFICATION SENT AND UPDATED')
       res.json({ message: 'document updated!', data: req.info }).status(201)
@@ -130,12 +136,21 @@ exports.getVerifications = (req, res) => {
 
 exports.acceptAwaitingVerification = (req, res) => {
   // console.log(req.body)
+  let toEmail
+  let userEmail
+  let userName
+  let type
   const updatedV = { ...req.body.updatedVerification }
   console.log('updated', updatedV)
   db.collection('awaitingVerification').doc(`${req.body.verificationId}`).delete()
     .then(() =>{
       db.doc(`/users/${req.body.userId}`).get().then(data => {
         const userData = data.data()
+        type = userData.category === 'coach' ? 'coachInfo' : 'companyInfo'
+        toEmail = [...userData.companies]
+        console.log('toEmail', toEmail)
+        userEmail = userData.email
+        userName = userData.name
         const newV = { ...userData.verification, ...updatedV }
         console.log(newV)
         db.doc(`/users/${req.body.userId}`).update({
@@ -143,8 +158,9 @@ exports.acceptAwaitingVerification = (req, res) => {
           [`verificationId.${req.body.type}`]: '',
           message: req.body.message
         })
+          .then(() => verificationEmailer(type, userEmail, userName, updatedV, toEmail))
+          .then((emails) => res.status(201).json({ message: 'Documents successfully verified!', emails }))
       })
     })
-    .then(() => res.status(201).json({ message: 'Documents successfully verified!' }))
     .catch(err => res.status(400).json({ error: err }))
 }

@@ -1244,10 +1244,12 @@ exports.filterListings = (req, res) => {
     .then((data) => {
       const listings = []
       data.forEach((doc) => {
-        if (doc.data().status === 'live')
+        if (doc.data().status === 'live') {
+          // console.log(doc.data().listingId)
           listings.push({
             listingInfo: { ...doc.data() },
           })
+        }
       })
 
       const filteredListings = []
@@ -1375,7 +1377,7 @@ exports.filterListings = (req, res) => {
         }
       })
 
-      // console.log(filteredListings)
+      // console.log(filteredListings.map(listing => listing.listingInfo.listingId))
       return res.status(200).json(filteredListings)
     })
     .catch((err) => {

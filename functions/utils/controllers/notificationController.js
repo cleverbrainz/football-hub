@@ -12,13 +12,15 @@ const nodemailer = require('nodemailer')
 // require('firebase/firestore')
 const adminURL = 'https://football-hub-4018a.firebaseapp.com/adminbeta'
 const loginURL = 'https://football-hub-4018a.firebaseapp.com/login'
-const linkMaker = (url, innertext) => { 
-  return `<a href='${url}' target='_blank' rel='noreferrer noreopener>${innertext}</a>`
+const linkMaker = (url, innertext) => {
+  return `<a href='${url}' target='_blank' rel='noreferrer noreopener'>${innertext}</a>`
 }
 
-
-exports.sendEmailNotificationIndulge = function(type, recipient, emailContent) {
-
+exports.sendEmailNotificationIndulge = function (
+  type,
+  recipient,
+  emailContent
+) {
   const { indulgeName, indulgeEmail } = recipient
   const { contentName, contentEmail } = emailContent
 
@@ -36,17 +38,20 @@ exports.sendEmailNotificationIndulge = function(type, recipient, emailContent) {
   switch (type) {
     case 'newCompany':
       typeHeader = 'New Company has joined ftballer.com'
-      typeContent = 'A new company has signed up with ftballer.com, you can check their information on the admin panel.\n Nothing further is required at this point'
+      typeContent =
+        'A new company has signed up with ftballer.com, you can check their information on the admin panel.\n Nothing further is required at this point'
       break
     // adminController.js 66
     case 'companyDetailsSubmitted':
       typeHeader = 'A company has submitted documents for verification'
-      typeContent = 'Please login to the admin panel and approve or deny the submitted documents and details.'
+      typeContent =
+        'Please login to the admin panel and approve or deny the submitted documents and details.'
       break
     // adminController.js 66
     case 'coachDetailsSubmitted':
       typeHeader = 'A coach has submitted documents for verification'
-      typeContent = 'Please login to the admin panel and approve or deny the submitted documents and details.'
+      typeContent =
+        'Please login to the admin panel and approve or deny the submitted documents and details.'
       break
     case 'newMembershipPayments':
       typeHeader = 'A new membership payment has been made'
@@ -56,7 +61,7 @@ exports.sendEmailNotificationIndulge = function(type, recipient, emailContent) {
       typeHeader = 'A company is overdue with their payments'
       typeContent = ''
       break
-      //Done elsewhere EnquiryController
+    //Done elsewhere EnquiryController
     case 'newEnquiries':
       typeHeader = 'FTBaller has a new enquiry'
       typeContent = ''
@@ -71,7 +76,7 @@ exports.sendEmailNotificationIndulge = function(type, recipient, emailContent) {
   <h2 style='text-align:center'></h2>
   <p> Hello ${indulgeName}, </p>
   <p>${typeContent}</p>
-  <a href=${adminURL} target='_blank' rel='noreferrer noreopener>Login to the admin panel here</a>
+  <a href=${adminURL} target='_blank' rel='noreferrer noreopener'>Login to the admin panel here</a>
   <br>
   <p>Indulge Football</p>
 `,
@@ -80,7 +85,11 @@ exports.sendEmailNotificationIndulge = function(type, recipient, emailContent) {
   return transporter.sendMail(mailOptions)
 }
 
-exports.sendEmailNotificationCompany = async function(type, recipient, emailContent) {
+exports.sendEmailNotificationCompany = async function (
+  type,
+  recipient,
+  emailContent
+) {
   console.log('emailing company!')
 
   if (recipient.recipientId) {
@@ -96,7 +105,6 @@ exports.sendEmailNotificationCompany = async function(type, recipient, emailCont
     emailContent.contentName = res.name
     emailContent.contentEmail = res.email
   }
-
 
   const { companyName, companyEmail } = recipient
   const { contentName, contentEmail, contentCourse } = emailContent
@@ -121,7 +129,7 @@ exports.sendEmailNotificationCompany = async function(type, recipient, emailCont
       typeHeader = '?'
       typeContent = '?'
       break
-      //paymentController 234
+    //paymentController 234
     case 'newPlayerCourseSignUp':
       typeHeader = 'A Player has been registered onto your course'
       typeContent = `${contentName} has been placed on the register for ${contentCourse}`
@@ -140,11 +148,12 @@ exports.sendEmailNotificationCompany = async function(type, recipient, emailCont
       break
     case 'coachSetUp':
       typeHeader = 'A new coach on your team'
-      typeContent = `${contentName} has verified thier coaching account and can now be assigned to your courses and listings.`
+      typeContent = `${contentName} has verified their coaching account and can now be assigned to your courses and listings.`
       break
     case 'accountSetUpConfirmation':
       typeHeader = 'You have finished setting up your account'
-      typeContent = 'Congratulations you have finished setting up your account.\n You can now publish your listings.'
+      typeContent =
+        'Congratulations you have finished setting up your account.\n You can now publish your listings.'
       break
     case 'indulgePaymentConfirmation':
       typeHeader = '?'
@@ -160,7 +169,7 @@ exports.sendEmailNotificationCompany = async function(type, recipient, emailCont
   <h2 style='text-align:center'></h2>
   <p> Hello ${companyName}, </p>
   <p>${typeContent}</p>
-  <a href=${loginURL} target='_blank' rel='noreferrer noreopener>Please login to see more details</a>
+  <a href=${loginURL} target='_blank' rel='noreferrer noreopener' >Please login to see more details</a>
   <br>
   <p>Indulge Football</p>
 `,
@@ -172,18 +181,19 @@ exports.sendEmailNotificationCompany = async function(type, recipient, emailCont
     }
     return info
   })
-
-
 }
 
-exports.sendEmailNotificationCoach = async function(type, recipient, emailContent) {
+exports.sendEmailNotificationCoach = async function (
+  type,
+  recipient,
+  emailContent
+) {
   console.log('emailing coach')
 
   if (emailContent.contentId) {
     const { contentType, contentId } = emailContent
     let res = (await db.doc(`/${contentType}/${contentId}`).get()).data()
     emailContent.contentCourse = res.optionalName
-    
   }
 
   const { coachName, coachEmail } = recipient
@@ -212,7 +222,8 @@ exports.sendEmailNotificationCoach = async function(type, recipient, emailConten
       break
     case 'accountSetUpConfirmation':
       typeHeader = 'You have finished setting up your account'
-      typeContent = 'Congratulations you have finished setting up and verifying your account.\n You can now be assigned to courses by your coaching companies.'
+      typeContent =
+        'Congratulations you have finished setting up and verifying your account.\n You can now be assigned to courses by your coaching companies.'
       break
     case 'registerReminder':
       typeHeader = 'One of your registers is unfinished'
@@ -228,7 +239,7 @@ exports.sendEmailNotificationCoach = async function(type, recipient, emailConten
   <h2 style='text-align:center'></h2>
   <p> Hello ${coachName}, </p>
   <p>${typeContent}</p>
-  <a href=${loginURL} target='_blank' rel='noreferrer noreopener>Please login to see more details</a>
+  <a href=${loginURL} target='_blank' rel='noreferrer noreopener'>Please login to see more details</a>
   <br>
   <p>Indulge Football</p>
 `,
@@ -240,10 +251,13 @@ exports.sendEmailNotificationCoach = async function(type, recipient, emailConten
     }
     return info
   })
-
 }
 
-exports.sendEmailNotificationPlayer = async function(type, recipient, emailContent) {
+exports.sendEmailNotificationPlayer = async function (
+  type,
+  recipient,
+  emailContent
+) {
   console.log('emailing player!')
 
   if (recipient.recipientId) {
@@ -305,7 +319,7 @@ exports.sendEmailNotificationPlayer = async function(type, recipient, emailConte
   <h2 style='text-align:center'></h2>
   <p> Hello ${parentName ? parentName : playerName}, </p>
   <p>${typeContent}</p>
-  <a href=${loginURL} target='_blank' rel='noreferrer noreopener>Please login to see more details</a>
+  <a href=${loginURL} target='_blank' rel='noreferrer noreopener'>Please login to see more details</a>
   <br>
   <p>Indulge Football</p>
 `,
@@ -318,5 +332,115 @@ exports.sendEmailNotificationPlayer = async function(type, recipient, emailConte
     }
     return info
   })
+}
 
+exports.verificationEmailer = function (
+  type,
+  userEmail,
+  userName,
+  verification,
+  toEmail = []
+) {
+
+
+  console.log('toEmailGeneric', toEmail)
+
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'indulgefootballemail@gmail.com',
+      pass: '1ndulgeManchester1',
+    },
+  })
+
+  if (type === 'coachInfo') {
+    const stillNeed = []
+
+    if (Object.values(verification).reduce((pre, curr) => pre && curr, true)) {
+      console.log('all good!')
+    } else {
+      if (verification.coachCertificateCheck) {
+        stillNeed.push('Coach Certification')
+      }
+      if (verification.dbsCertificateCheck) {
+        stillNeed.push('DBS Certification')
+      }
+    }
+
+    const coachEmailContent = [
+      '<h2 style=\'text-align:center\'></h2>',
+      `<p> Hello ${userName}, </p>`,
+      ... stillNeed.length === 0 ? '<p>Good news! We have verified all your submitted documents and you don\'t need to provide anything further at this point.</p>' : '<p>Unfortunately we couldn\'t verify all of your documentation. Please see below the rejected documents.</p>',
+      ... stillNeed.length > 0 ? `<p>Documents that require attention</p><li>${stillNeed.map((item) => '<ul>' + item + '/ul>').join('')}</li>` : [],
+      '<br>',
+      `<a href=${loginURL} target='_blank' rel='noreferrer noreopener'>Please login to see more details</a>`,
+      '<br>',
+      '<p>Indulge Football</p>'
+    ]
+
+    const coachMailOptions = {
+      from: 'indulgefootballemail@gmail.com',
+      to: `${userName} <${userEmail}>`,
+      subject: 'FTBaller Notification: Document verification update',
+      html: coachEmailContent.join('')
+    }
+
+    const promises = []
+    toEmail.forEach((id) => {
+      promises.push(db.doc(`/users/${id}`).get())
+    })
+
+    return Promise.all(promises).then((promises) => {
+      const companyInfoArray = promises.map((company) => {
+        const container = {}
+        container.email = company.data().email
+        container.name = company.data().name
+
+        return container
+      })
+      const emailPromises = []
+
+      companyInfoArray.forEach((company) => {
+        const emailContent = [
+          '<h2 style=\'text-align:center\'></h2>',
+          `<p> Hello ${company.name} </p>`,
+          ... stillNeed.length === 0
+            ? `<p>Good news! We have verified all your coach ${userName}'s submitted documents. You can now include then on your live listings.</p>`
+            : `<p>Unfortunately we couldn't verify all of your coach ${userName}'s documentation. Please see below the rejected documents.</p>`,
+          ... stillNeed.length > 0
+            ? `<p>Documents that require attention</p><li>${stillNeed.map((item) => '<ul>' + item + '</ul>').join('')}</li>`
+            : [],
+          '<br>',
+          `<p>We have informed the coach that there are ${
+            stillNeed.length === 0
+              ? 'no actions to take.'
+              : 'actions to take and need to resolve them.'
+          }</p>`,
+          '<p>You do not need to do anything further at this point</p>',
+          `<a href=${loginURL} target='_blank' rel='noreferrer noreopener' >Please login to see more details</a>`,
+          '<br>',
+          '<p>Indulge Football</p>',
+        ]
+        const companyMailOptions = {
+          from: 'indulgefootballemail@gmail.com',
+          to: `${company.name} <${company.email}>`,
+          subject: `FTBaller Notification: Document verification update for your coach ${userName}`,
+          html: emailContent.join(''),
+        }
+
+        emailPromises.push(transporter.sendMail(companyMailOptions))
+        
+      })
+
+      emailPromises.push(transporter.sendMail(coachMailOptions))
+
+      Promise.all(emailPromises).then(() => {
+        console.log(emailPromises)
+        return emailPromises
+      })
+    })
+  } else {
+    console.log('do this')
+  }
 }
