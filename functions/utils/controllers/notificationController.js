@@ -360,10 +360,10 @@ exports.verificationEmailer = function (
     if (Object.values(verification).reduce((pre, curr) => pre && curr, true)) {
       console.log('all good!')
     } else {
-      if (verification.coachCertificateCheck) {
+      if (!verification.coachCertificateCheck) {
         stillNeed.push('Coach Certification')
       }
-      if (verification.dbsCertificateCheck) {
+      if (!verification.dbsCertificateCheck) {
         stillNeed.push('DBS Certification')
       }
     }
@@ -441,6 +441,42 @@ exports.verificationEmailer = function (
       })
     })
   } else {
-    console.log('do this')
+
+    const stillNeed = []
+
+    if (Object.values(verification).reduce((pre, curr) => pre && curr, true)) {
+      console.log('all good!')
+    } else {
+      if (!verification.companyDetailsCheck) {
+        stillNeed.push('Company Details')
+      }
+      if (!verification.indemnityDocumentationCheck) {
+        stillNeed.push('Public Indemnity Insurance Documentation')
+      }
+      if (!verification.liabilityDocumentationCheck) {
+        stillNeed.push('Public Liability Insurance Documentation')
+      }
+    }
+
+    const companyEmailContent = [
+      '<h2 style=\'text-align:center\'></h2>',
+      `<p> Hello ${userName}, </p>`,
+      ... stillNeed.length === 0 ? '<p>Good news! We have verified all your submitted documents and you don\'t need to provide anything further at this point.</p>' : '<p>Unfortunately we couldn\'t verify all of your documentation. Please see below the rejected documents.</p>',
+      ... stillNeed.length > 0 ? `<p>Documents that require attention</p><li>${stillNeed.map((item) => '<ul>' + item + '/ul>').join('')}</li>` : [],
+      '<br>',
+      `<a href=${loginURL} target='_blank' rel='noreferrer noreopener'>Please login to see more details</a>`,
+      '<br>',
+      '<p>Indulge Football</p>'
+    ]
+
+    const companyMailOptions = {
+      from: 'indulgefootballemail@gmail.com',
+      to: `${userName} <${userEmail}>`,
+      subject: 'FTBaller Notification: Document verification update',
+      html: companyEmailContent.join('')
+    }
+
+    return transporter.sendMail(companyMailOptions)
+
   }
 }

@@ -409,7 +409,10 @@ const addPlayerToCourse = (metadata) => {
           console.log('step 4')
           db.doc(`/users/${companyId}`)
             .update({
-              [`players.${playerId}.status`]: 'Active'
+              [`players.${playerId}.status`]: 'Active',
+              [`players.${playerId}.name`]: name,
+              [`players.${playerId}.id`]: playerId,
+              [`players.${playerId}.dob`]: dob
             })
             .then(() => {
               console.log('player added to course')
