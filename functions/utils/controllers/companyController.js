@@ -1244,12 +1244,15 @@ exports.filterListings = (req, res) => {
     .then((data) => {
       const listings = []
       data.forEach((doc) => {
-        if (doc.data().status === 'live')
+        if (doc.data().status === 'live') {
           listings.push({
             listingInfo: { ...doc.data() },
           })
+        }
       })
 
+      console.log(listings)
+    
       const filteredListings = []
       // fitler specifications
       const { timing, location, age } = filteredObject
@@ -1367,8 +1370,9 @@ exports.filterListings = (req, res) => {
               break
             }
           }
-          // console.log(obj)
+          console.log(obj)
           if (result) {
+            // console.log(listing.listingInfo.listingId)
             filteredListings.push(listing)
             return
           }
