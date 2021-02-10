@@ -334,9 +334,11 @@ exports.uploadCoachDocument = (req, res) => {
       .then(() => {
         const documentURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${documentFileName}?alt=media`
         const docref = db.doc(`users/${req.user}`)
+        const verificationToChange = documentType === 'coachingCertificate' ? 'coachDocumentationCheck' : 'dbsDocumentationCheck'
         return docref
           .update({
-            [`coachInfo.${documentType}`]: documentURL
+            [`coachInfo.${documentType}`]: documentURL,
+            [`verification.${verificationToChange}`]: false
           })
           .then(() => {
             console.log('here')

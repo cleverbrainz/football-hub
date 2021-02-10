@@ -1379,7 +1379,7 @@ exports.filterListings = (req, res) => {
         }
       })
 
-      // console.log(filteredListings)
+      // console.log(filteredListings.map(listing => listing.listingInfo.listingId))
       return res.status(200).json(filteredListings)
     })
     .catch((err) => {
