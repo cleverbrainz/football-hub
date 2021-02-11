@@ -141,19 +141,17 @@ exports.getVerifications = (req, res) => {
 
 exports.acceptAwaitingVerification = (req, res) => {
   // console.log(req.body)
-  let toEmail
   let userEmail
   let userName
-  let type
   const updatedV = { ...req.body.updatedVerification }
   console.log('updated', updatedV)
   db.collection('awaitingVerification').doc(`${req.body.verificationId}`).delete()
     .then(() =>{
       db.doc(`/users/${req.body.userId}`).get().then(data => {
         const userData = data.data()
-        type = userData.category === 'coach' ? 'coachInfo' : 'companyInfo'
-        toEmail = userData.category ===  userData.companies ? [...userData.companies] : []
+        const toEmail = req.body.type === 'coachInfo' ? [...userData.companies] : []
         console.log('toEmail', toEmail)
+        console.log(userData.companies)
         userEmail = userData.email
         userName = userData.name
         const newV = { ...userData.verification, ...updatedV }
@@ -163,7 +161,7 @@ exports.acceptAwaitingVerification = (req, res) => {
           [`verificationId.${req.body.type}`]: '',
           message: req.body.message
         })
-          .then(() => verificationEmailer(type, userEmail, userName, updatedV, toEmail))
+          .then(() => verificationEmailer(req.body.type, userEmail, userName, updatedV, toEmail))
           .then((emails) => res.status(201).json({ message: 'Documents successfully verified!', emails }))
       })
     })

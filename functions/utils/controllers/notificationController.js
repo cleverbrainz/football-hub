@@ -359,24 +359,24 @@ exports.verificationEmailer = function (
   if (type === 'coachInfo') {
     const stillNeed = []
 
-    if ([verification.coachCertificateCheck, verification.coachCertificateCheck].reduce((pre, curr) => pre && curr, true)) {
+    if ([verification.coachDocumentationCheck, verification.dbsDocumentationCheck].reduce((pre, curr) => pre && curr, true)) {
       console.log('all good!')
     } else {
-      if (!verification.coachCertificateCheck) {
+      if (!verification.coachDocumentationCheck) {
         stillNeed.push('Coach Certification')
       }
-      if (!verification.dbsCertificateCheck) {
+      if (!verification.dbsDocumentationCheck) {
         stillNeed.push('DBS Certification')
       }
     }
 
-    console.log('stillNeed', stillNeed)
+    console.log('stillNeedCoach', stillNeed)
 
     const coachEmailContent = [
       '<h2 style=\'text-align:center\'></h2>',
       `<p> Hello ${userName}, </p>`,
       ... stillNeed.length === 0 ? '<p>Good news! We have verified all your submitted documents and you don\'t need to provide anything further at this point.</p>' : '<p>Unfortunately we couldn\'t verify all of your documentation. Please see below the rejected documents.</p>',
-      ... stillNeed.length > 0 ? `<p>Documents that require attention</p><li>${stillNeed.map((item) => '<ul>' + item + '/ul>').join('')}</li>` : [],
+      ... stillNeed.length > 0 ? `<p>Documents that require attention</p><li>${stillNeed.map((item) => '<ul>' + item + '</ul>').join('')}</li>` : [],
       '<br>',
       `<a href=${loginURL} target='_blank' rel='noreferrer noreopener'>Please login to see more details</a>`,
       '<br>',
@@ -410,12 +410,11 @@ exports.verificationEmailer = function (
           '<h2 style=\'text-align:center\'></h2>',
           `<p> Hello ${company.name} </p>`,
           ... stillNeed.length === 0
-            ? `<p>Good news! We have verified all your coach ${userName}'s submitted documents. You can now include then on your live listings.</p>`
+            ? `<p>Good news! We have verified all your coach ${userName}'s submitted documents.</p><br><p>You can now include then on your live listings.</p>`
             : `<p>Unfortunately we couldn't verify all of your coach ${userName}'s documentation. Please see below the rejected documents.</p>`,
           ... stillNeed.length > 0
             ? `<p>Documents that require attention</p><li>${stillNeed.map((item) => '<ul>' + item + '</ul>').join('')}</li>`
             : [],
-          '<br>',
           `<p>We have informed the coach that there are ${
             stillNeed.length === 0
               ? 'no actions to take.'
@@ -435,9 +434,9 @@ exports.verificationEmailer = function (
 
         emailPromises.push(transporter.sendMail(companyMailOptions))
         
+        if (companyInfoArray.indexOf(company === 0)) emailPromises.push(transporter.sendMail(coachMailOptions))
       })
 
-      emailPromises.push(transporter.sendMail(coachMailOptions))
 
       Promise.all(emailPromises).then(() => {
         console.log(emailPromises)
@@ -448,16 +447,16 @@ exports.verificationEmailer = function (
 
     const stillNeed = []
 
-    if ([verification.companyDetailsCheck, verification.indemnityDocumentationCheck, verification.liabilityDocumentationCheck].reduce((pre, curr) => pre && curr, true)) {
+    if ([verification.companyDetailsCheck, verification.indemnityDocumentCheck, verification.liabilityDocumentCheck].reduce((pre, curr) => pre && curr, true)) {
       console.log('all good!')
     } else {
       if (!verification.companyDetailsCheck) {
         stillNeed.push('Company Details')
       }
-      if (!verification.indemnityDocumentationCheck) {
+      if (!verification.indemnityDocumentCheck) {
         stillNeed.push('Public Indemnity Insurance Documentation')
       }
-      if (!verification.liabilityDocumentationCheck) {
+      if (!verification.liabilityDocumentCheck) {
         stillNeed.push('Public Liability Insurance Documentation')
       }
     }
