@@ -23,14 +23,15 @@ exports.getAdminPageDetails = (req, res) => {
 exports.createAwaitingVerification = (req, res) => {
 
   // console.log('verify', req.info)
+  let undefinedFound = false
 
   const verificationInfo = req.body.type === 'companyInfo' ? {
     userId: req.info.userId,
     verification: req.info.verification,
     name: req.info.name,
     company_registration_number: req.info.company_registration_number ? req.info.company_registration_number : 'Not Applicable',
-    accounts_contact_number: req.info.accounts_contact_number,
-    accounts_email: req.info.accounts_email,
+    accounts_contact_number: req.info.accounts_contact_number ? req.info.accounts_contact_number : 'N/A',
+    accounts_email: req.info.accounts_email ? req.info.accounts_email : 'N/A',
     vat_number: req.info.vat_number ? req.info.vat_number : 'N/A',
     professional_indemnity_insurance: req.info.professional_indemnity_insurance,
     public_liability_insurance: req.info.public_liability_insurance,
@@ -46,33 +47,37 @@ exports.createAwaitingVerification = (req, res) => {
       type: req.body.type
     }
 
-  // console.log(verificationInfo)
 
-  // db.collection('awaitingVerification').add({
-  //   userId: req.userId,
-  //   name: req.name,
-  //   documents: req.documents,
-  //   verification: req.verification,
-  //   message: ''
-  // })
-  return db.collection('/awaitingVerification').add(verificationInfo)
-    .then(data => {
-      db.doc(`/awaitingVerification/${data.id}`).update({
-        verificationId: data.id
+  for (const value of Object.values(verificationInfo)) {
+    if (typeof value === 'undefined') {
+      undefinedFound = true
+    }
+  }
+
+  if (!undefinedFound) {
+
+    
+    return db.collection('/awaitingVerification').add(verificationInfo)
+      .then(data => {
+        db.doc(`/awaitingVerification/${data.id}`).update({
+          verificationId: data.id
+        }).then(() => {
+          db.doc(`/users/${req.info.userId}`).update({
+            [`verificationId.${req.body.type}`]: data.id
+          })
+        })
       }).then(() => {
-        db.doc(`/users/${req.info.userId}`).update({
-          [`verificationId.${req.body.type}`]: data.id
+      
+        const type = req.body.type === 'companyInfo' ? 'companyDetailsSubmitted' : 'coachDetailsSubmitted'
+        return sendEmailNotificationIndulge(type, { indulgeName: 'Indulge Admin', indulgeEmail: 'admin@indulgefootball.com' }, { contentName: req.info.name, contentEmail: req.info.email }).then(email => {
+          return res.status(201).json({ message: 'Document successfully uploaded', data: req.info, emailInfo: email })
         })
       })
-    }).then(() => {
-
-      const type = req.body.type === 'companyInfo' ? 'companyDetailsSubmitted' : 'coachDetailsSubmitted'
-      return sendEmailNotificationIndulge(type, { indulgeName: 'Indulge Admin', indulgeEmail: 'admin@indulgefootball.com' }, { contentName: req.info.name, contentEmail: req.info.email }).then(email => {
-        return res.status(201).json({ message: 'Document successfully uploaded', data: req.info, emailInfo: email })
-      })
-    })
     // return data
-    .catch(error => console.log(error))
+      .catch(error => console.log(error))
+  } else {
+    return res.status(201).json({ message: 'documents uploaded not enough for verification', data: req.info })
+  }
 }
 
 exports.updateAwaitingVerification = (req, res) => {
@@ -136,19 +141,17 @@ exports.getVerifications = (req, res) => {
 
 exports.acceptAwaitingVerification = (req, res) => {
   // console.log(req.body)
-  let toEmail
   let userEmail
   let userName
-  let type
   const updatedV = { ...req.body.updatedVerification }
   console.log('updated', updatedV)
   db.collection('awaitingVerification').doc(`${req.body.verificationId}`).delete()
     .then(() =>{
       db.doc(`/users/${req.body.userId}`).get().then(data => {
         const userData = data.data()
-        type = userData.category === 'coach' ? 'coachInfo' : 'companyInfo'
-        toEmail = [...userData.companies]
+        const toEmail = req.body.type === 'coachInfo' ? [...userData.companies] : []
         console.log('toEmail', toEmail)
+        console.log(userData.companies)
         userEmail = userData.email
         userName = userData.name
         const newV = { ...userData.verification, ...updatedV }
@@ -158,7 +161,7 @@ exports.acceptAwaitingVerification = (req, res) => {
           [`verificationId.${req.body.type}`]: '',
           message: req.body.message
         })
-          .then(() => verificationEmailer(type, userEmail, userName, updatedV, toEmail))
+          .then(() => verificationEmailer(req.body.type, userEmail, userName, updatedV, toEmail))
           .then((emails) => res.status(201).json({ message: 'Documents successfully verified!', emails }))
       })
     })
