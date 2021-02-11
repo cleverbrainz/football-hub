@@ -343,6 +343,8 @@ exports.verificationEmailer = function (
 ) {
 
 
+  console.log(verification)
+
   console.log('toEmailGeneric', toEmail)
 
 
@@ -357,7 +359,7 @@ exports.verificationEmailer = function (
   if (type === 'coachInfo') {
     const stillNeed = []
 
-    if (Object.values(verification).reduce((pre, curr) => pre && curr, true)) {
+    if ([verification.coachCertificateCheck, verification.coachCertificateCheck].reduce((pre, curr) => pre && curr, true)) {
       console.log('all good!')
     } else {
       if (!verification.coachCertificateCheck) {
@@ -367,6 +369,8 @@ exports.verificationEmailer = function (
         stillNeed.push('DBS Certification')
       }
     }
+
+    console.log('stillNeed', stillNeed)
 
     const coachEmailContent = [
       '<h2 style=\'text-align:center\'></h2>',
@@ -444,7 +448,7 @@ exports.verificationEmailer = function (
 
     const stillNeed = []
 
-    if (Object.values(verification).reduce((pre, curr) => pre && curr, true)) {
+    if ([verification.companyDetailsCheck, verification.indemnityDocumentationCheck, verification.liabilityDocumentationCheck].reduce((pre, curr) => pre && curr, true)) {
       console.log('all good!')
     } else {
       if (!verification.companyDetailsCheck) {
@@ -458,11 +462,13 @@ exports.verificationEmailer = function (
       }
     }
 
+    console.log('stillNeed', stillNeed)
+
     const companyEmailContent = [
       '<h2 style=\'text-align:center\'></h2>',
       `<p> Hello ${userName}, </p>`,
       ... stillNeed.length === 0 ? '<p>Good news! We have verified all your submitted documents and you don\'t need to provide anything further at this point.</p>' : '<p>Unfortunately we couldn\'t verify all of your documentation. Please see below the rejected documents.</p>',
-      ... stillNeed.length > 0 ? `<p>Documents that require attention</p><li>${stillNeed.map((item) => '<ul>' + item + '/ul>').join('')}</li>` : [],
+      ... stillNeed.length > 0 ? `<p>Documents that require attention</p><li>${stillNeed.map((item) => '<ul>' + item + '</ul>').join('')}</li>` : [],
       '<br>',
       `<a href=${loginURL} target='_blank' rel='noreferrer noreopener'>Please login to see more details</a>`,
       '<br>',
