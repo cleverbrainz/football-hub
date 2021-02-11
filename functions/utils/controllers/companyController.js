@@ -124,7 +124,6 @@ exports.addNewListing = (req, res) => {
 
   return db
     .collection('listings')
-
     .add(listingObj)
     .then((data) => {
       listingObj.id = data.id
