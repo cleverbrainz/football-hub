@@ -179,11 +179,24 @@ async function createStripeProduct(course, courseId) {
     'weeks'
   )
 
-  prices.push(cost)
+  
+  let costInteger = cost.split('')
+  let removedDecimal = false
+  
+  for (const char of costInteger) {
+    if (char === '.') {
+      costInteger.splice(costInteger.indexOf(char), 1)
+      removedDecimal = true
+    }
+  }
+  
+  costInteger = removedDecimal ? Number(costInteger.join('')) : Number(costInteger.push('00').join(''))
+  prices.push(costInteger)
+              
 
   if (allow_weekly_payment) {
-    const weeklyPrice = cost / difference
-    prices.push(weeklyPrice.toFixed(2))
+    const weeklyPrice = Math.ceil(costInteger / difference)
+    prices.push(Math.ceil(weeklyPrice))
   }
 
   const data = await db.doc(`users/${companyId}`).get()
@@ -201,7 +214,7 @@ async function createStripeProduct(course, courseId) {
   prices.forEach(async (el, i) => {
     console.log(el)
     await stripe.prices.create({
-      unit_amount: el * 100,
+      unit_amount: el,
       currency: 'gbp',
       ...(prices.length > 1 &&
         i === 1 && {
@@ -524,11 +537,23 @@ async function updateCompanyInfo(userId, updatedObject, type, request) {
             ) {
               // console.log(allow_weekly_payment, updatedObject.courseDetails.allow_weekly_payment)
 
+              let costInteger = cost.split('')
+              let removedDecimal = false
+
+              for (const char of costInteger) {
+                if (char === '.') {
+                  costInteger.splice(costInteger.indexOf(char), 1)
+                  removedDecimal = true
+                }
+              }
+
+              costInteger = removedDecimal ? Number(costInteger.join('')) : Number(costInteger.push('00').join(''))
+
               const difference = moment(endDate).diff(startDate, 'weeks')
-              const weeklyPrice = (cost / difference).toFixed(2)
+              const weeklyPrice = Math.ceil(costInteger / difference)
 
               await stripe.prices.create({
-                unit_amount: weeklyPrice * 100,
+                unit_amount: weeklyPrice,
                 currency: 'gbp',
                 recurring: {
                   interval: 'week',
