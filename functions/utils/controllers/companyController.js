@@ -208,7 +208,7 @@ async function createStripeProduct(course, courseId) {
         recurring: {
           interval: 'week',
         },
-      }),
+      }),              
       metadata: {
         course_duration: `${difference} weeks`,
         start_date: startDate,
