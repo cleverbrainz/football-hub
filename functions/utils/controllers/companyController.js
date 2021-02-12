@@ -189,8 +189,8 @@ async function createStripeProduct(course, courseId) {
       removedDecimal = true
     }
   }
-  
-  costInteger = removedDecimal ? Number(costInteger.join('')) : Number(costInteger.push('00').join(''))
+  console.log('1', costInteger)
+  costInteger = removedDecimal ? Number(costInteger.join('')) : Number([...costInteger, '00'].join(''))
   prices.push(costInteger)
               
 
@@ -546,8 +546,8 @@ async function updateCompanyInfo(userId, updatedObject, type, request) {
                   removedDecimal = true
                 }
               }
-
-              costInteger = removedDecimal ? Number(costInteger.join('')) : Number(costInteger.push('00').join(''))
+              console.log('2', costInteger)
+              costInteger = removedDecimal ? Number(costInteger.join('')) : Number([...costInteger, '00'].join(''))
 
               const difference = moment(endDate).diff(startDate, 'weeks')
               const weeklyPrice = Math.ceil(costInteger / difference)
