@@ -75,7 +75,8 @@ const {
   userDocumentUpload,
   initialRegistrationUserInformation,
   updateUserDetails,
-  searchForPlayers
+  searchForPlayers,
+  registerUserViaApplication
 } = require('./utils/controllers/userController')
 const {
   // acceptCompanyRequest,
@@ -143,6 +144,7 @@ app.get('/players/search/:query', searchForPlayers)
 app.patch('/users/:id', authMiddleware, updateUserDetails)
 // app.post('/user/:id', authMiddleware, updateCompanyListingInformation)
 app.post('/signup', registerUser)
+app.post('/registerUserViaApplication', registerUserViaApplication)
 app.post('/login', loginUser)
 // app.get('/allCoaches', getAllAppCoaches)
 app.post('/user/:id/request', sendCoachRequest)

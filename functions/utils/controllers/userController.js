@@ -15,7 +15,7 @@ const {
 firebase.initializeApp(config)
 
 exports.registerUser = (req, res) => {
-  const { name, email, password } = req.body
+  const { name, email, password, category } = req.body
   const newUser = { name, email }
   const { valid, error } = validateSignupFields(req.body)
 
@@ -33,6 +33,51 @@ exports.registerUser = (req, res) => {
     })
     .then((user) => {
       user.sendEmailVerification()
+      //TODO Different language email...
+    })
+    .then(() => {
+      db.collection('users').doc(`${newUser.userId}`).set(newUser)
+    })
+    .then(() => {
+      res.status(201).json({
+        message:
+          'We\'ve sent you an email with instructions to verfiy your email address. Please make sure it didn\'t wind up in your Junk Mail.',
+        userId: newUser.userId
+      })
+    })
+    .catch((err) => {
+      if (err.code === 'auth/email-already-in-use') {
+        res.status(400).json({ error: 'This email is already in use' })
+      }
+    })
+}
+
+exports.registerUserViaApplication = (req, res) => {
+  const { player_name, parent_name, email, password, category } = req.body
+  const newUser = { name: player_name, ...(parent_name && { parent_name }), email, category }
+  const { valid, error } = validateSignupFields(req.body)
+
+  if (!valid) return res.status(400).json(error)
+
+  firebase
+    .auth()
+    .createUserWithEmailAndPassword(email, password)
+    .then((data) => {
+      newUser.userId = data.user.uid
+      newUser.joined = admin.firestore.Timestamp.fromDate(new Date())
+      newUser.account_validation_check = false
+      newUser.dob = ''
+      newUser.bio = ''
+      const noImg = 'no-img.jpeg'
+      newUser.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`
+      newUser.courses = {}
+      newUser.applications = {}
+      data.user.getIdToken()
+      return data.user
+    })
+    .then((user) => {
+      user.sendEmailVerification()
+      //TODO Different language email...
     })
     .then(() => {
       db.collection('users').doc(`${newUser.userId}`).set(newUser)
