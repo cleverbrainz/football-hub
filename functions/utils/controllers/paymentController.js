@@ -190,3 +190,31 @@ exports.createStripePayment = async (req, res) => {
   res.json({ id: session.id })
 }
 
+
+exports.koreanCampApplicationFee = async (req, res) => {
+
+  const { customerId, email, metadata } = req.body
+
+
+
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ['card'],
+    line_items: [{
+      price: 'price_1INPKBIg5fTuA6FVMK3BB5hp',
+      quantity: 1
+    }],
+    customer: 'cus_IvbquzUDRyMG6j',
+    payment_intent_data: {
+      setup_future_usage: 'off_session'
+      // metadata: {
+      //   player_name: '',
+      //   player_email: '',
+      // },
+      // receipt_email: email
+    },
+    mode: 'payment',
+    success_url: 'https://football-hub-4018a.firebaseapp.com/application?success=true',
+    cancel_url: `${YOUR_DOMAIN}?canceled=true`
+  })
+  res.json({ id: session.id })
+}

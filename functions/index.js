@@ -47,7 +47,8 @@ const {
   createStripePayment, 
   retrieveConnectedAccount,
   createConnectedAccountProductSubscription,
-  retrieveProductPrices
+  retrieveProductPrices,
+  koreanCampApplicationFee
   // webhookCourseBooking
 } = require('./utils/controllers/paymentController')
 const {
@@ -165,6 +166,7 @@ app.get('/plans', getAllPlans)
 app.post('/subscriptions/new', createNewSubscription)
 app.post('/connectAccount/new', createConnectedAccount)
 app.post('/connectAccount/edit', createEditAccountLink)
+app.post('/korean-application-fee', koreanCampApplicationFee)
 
 app.post('/stripewebhook', handleWebhook)
 
