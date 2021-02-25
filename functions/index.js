@@ -92,6 +92,10 @@ const {
   createConnectedAccount, 
   handleWebhook, 
   createEditAccountLink } = require('./utils/controllers/stripeController')
+
+const {
+  sendEmailNotificationPlayer, applicationResponse
+} = require('./utils/controllers/notificationController')
 // const { checkPubSub } = require('./utils/cloudfunctions')
 // Cloud functios and routes for companies collection
 app.get('/masterlists', getCompaniesAndCoaches)
@@ -164,6 +168,7 @@ app.post('/create-payment', createStripePayment)
 app.get('/connected-account/:id', retrieveConnectedAccount)
 app.post('/connected-account/subscriptions', createConnectedAccountProductSubscription)
 app.get('/connected-account/:id/product', retrieveProductPrices)
+app.post('/contactPlayer', applicationResponse)
 
 app.get('/plans', getAllPlans)
 app.post('/subscriptions/new', createNewSubscription)

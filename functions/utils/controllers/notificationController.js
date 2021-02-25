@@ -259,6 +259,7 @@ exports.sendEmailNotificationPlayer = async function (
   emailContent
 ) {
   console.log('emailing player!')
+  console.log(recipient)
 
   if (recipient.recipientId) {
     let res = await db.doc(`/users/${recipient.recipientId}`).get()
@@ -273,6 +274,8 @@ exports.sendEmailNotificationPlayer = async function (
     emailContent.contentName = res.name
     emailContent.contentEmail = res.email
   }
+
+  console.log(recipient)
 
   const { playerName, parentName, contactEmail } = recipient
   const { contentName, contentEmail, contentCourse } = emailContent
@@ -309,6 +312,14 @@ exports.sendEmailNotificationPlayer = async function (
       typeHeader = '?'
       typeContent = '?'
       break
+    case 'applicationSuccessful':
+      typeHeader = 'Your recent application was successful!'
+      typeContent = `Congratulations, your application for the upcoming ${contentCourse} was successful. You will recieve more information soon.`
+      break
+    case 'applicationUnsuccesful':
+      typeHeader = 'Your recent application was unsuccessful'
+      typeContent = `Unfortunately your application for the upcoming ${contentCourse} was unsuccessful. We wish you luck in the future.`
+      break
   }
 
   const mailOptions = {
@@ -331,6 +342,76 @@ exports.sendEmailNotificationPlayer = async function (
       return err
     }
     return info
+  })
+}
+
+exports.applicationResponse = async (req, res) => {
+  console.log('emailing player!')
+  const { type, recipient, emailContent } = req.body
+  console.log(recipient)
+
+  if (recipient.recipientId) {
+    let res = await db.doc(`/users/${recipient.recipientId}`).get()
+    res = res.data()
+    recipient.playerName = res.name
+    recipient.contactEmail = res.email
+  }
+
+  if (emailContent.emailId) {
+    let res = await db.doc(`/users/${recipient.company}`).get()
+    res = res.data()
+    emailContent.contentName = res.name
+    emailContent.contentEmail = res.email
+  }
+
+  console.log(recipient)
+
+  const { playerName, parentName, contactEmail } = recipient
+  const { contentName, contentEmail, contentCourse } = emailContent
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'indulgefootballemail@gmail.com',
+      pass: '1ndulgeManchester1',
+    },
+  })
+
+  let typeHeader
+  let typeContent
+
+  switch (type) {
+    case 'applicationSuccessful':
+      typeHeader = 'Your recent application was successful!'
+      typeContent = `Congratulations, your application for the upcoming ${contentCourse} was successful. You will recieve more information soon.`
+      break
+    case 'applicationUnsuccesful':
+      typeHeader = 'Your recent application was unsuccessful'
+      typeContent = `Unfortunately your application for the upcoming ${contentCourse} was unsuccessful. We wish you luck in the future.`
+      break
+  }
+
+  const mailOptions = {
+    from: 'indulgefootballemail@gmail.com',
+    to: `${parentName ? parentName : playerName} <${contactEmail}>`,
+    subject: `FTBaller Notification: ${typeHeader}`,
+    html: `
+  <h2 style='text-align:center'></h2>
+  <p> Hello ${parentName ? parentName : playerName}, </p>
+  <p>${typeContent}</p>
+  <a href=${loginURL} target='_blank' rel='noreferrer noreopener'>Please login to see more details</a>
+  <br>
+  <p>Indulge Football</p>
+`,
+  }
+
+  transporter.sendMail(mailOptions, (err, info) => {
+    if (err) {
+      console.log(err)
+      return res.status(401).json({ error: err })
+    }
+    console.log(info)
+    return res.status(201).json({ info })
   })
 }
 
