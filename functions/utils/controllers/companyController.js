@@ -422,6 +422,15 @@ exports.sendCoachRequest = (req, res) => {
   const coachRef = db.doc(`/users/${req.body.coachId}`)
   const userRef = db.doc(`/users/${req.body.companyId}`)
 
+  coachRef
+  .update({
+    requests: admin.firestore.FieldValue.arrayUnion(req.body.companyId),
+  })
+  .then(() => {
+    userRef.update({
+      sentRequests: admin.firestore.FieldValue.arrayUnion(req.body.coachId),
+    })
+  }).then(() => {
   userRef.get().then((data) => {
     const userCompany = data.data().name
 
@@ -429,7 +438,7 @@ exports.sendCoachRequest = (req, res) => {
       service: 'gmail',
       auth: {
         user: 'indulgefootballemail@gmail.com',
-        pass: 'Indulg3Manchester1',
+        pass: '1ndulgeManchester1',
       },
     })
 
@@ -446,24 +455,9 @@ exports.sendCoachRequest = (req, res) => {
     `,
     }
 
-    let emailInfo
-    transporter.sendMail(mailOptions, (err, info) => {
-      if (err) {
-        return res.status(400).send({ error: err })
-      }
-      emailInfo = info
-    })
-
-    coachRef
-      .update({
-        requests: admin.firestore.FieldValue.arrayUnion(req.body.companyId),
-      })
-      .then(() => {
-        userRef.update({
-          sentRequests: admin.firestore.FieldValue.arrayUnion(req.body.coachId),
-        })
-      })
-      .then(() => {
+    return transporter.sendMail(mailOptions)
+  })
+      .then(emailInfo => {
         res
           .status(201)
           .json({ message: 'request sent successfully', emailInfo })
@@ -1046,9 +1040,11 @@ exports.uploadCompanyDocument = (req, res) => {
       .then(() => {
         const documentURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${documentFileName}?alt=media`
         const docref = db.doc(`users/${req.user}`)
+        const documentChanged = documentType === 'professional_indemnity_insurance' ? 'indemnityDocumentCheck' : 'liabilityDocumentCheck'
         docref
           .update({
             [`documents.${documentType}`]: documentURL,
+            [`verification.${documentChanged}`]: false
           })
           .then(() => {
             console.log('just upload not verify')
@@ -1694,6 +1690,29 @@ exports.addSelfToCoaches = (req, res) => {
       })
     })
     .then(() => {
+      userref.get().then(data => {
+        req.info = data.data()
+        if (
+          req.info.coachInfo.dbsCertificate &&
+          req.info.coachInfo.coachingCertificate &&
+          (!req.info.verificationId || !req.info.verificationId.coachInfo)
+        ) {
+          console.log('creating')
+          createAwaitingVerification(req, res)
+        } else if (
+          req.info.coachInfo.dbsCertificate &&
+          req.info.coachInfo.coachingCertificate &&
+          req.info.verificationId.coachInfo !== ''
+        ) {
+          console.log('updating')
+          updateAwaitingVerification(req, res)
+        } else {
+          return res
+            .status(201)
+            .json({ message: 'file uploaded', data: req.info })
+        }
+
+      })
       res.status(201).send({ message: 'coach details successfully added' })
     })
     .catch((error) => console.log(error))
@@ -1750,12 +1769,13 @@ exports.sendPlayerRequestEmail = (req, res) => {
   const output = `
     <h2 style='text-align:center'> Welcome to Baller Hub from ${companyName}! </h2>
     <p> Hello! </p>
-    <p> ${companyName}wants to connect with you on Baller Hub for football training in the future.</p>
+    <p> ${companyName} wants to connect with you on Baller Hub for football training in the future.</p>
     <p> click the link below to create an account with Baller Hub and learn more.</p>
     <a href='${target}/register/player/${code}' target='_blank'>Click here to sign up!</a>
   `
   const valid = validateEmailAddressInput(email)
   if (!valid) return res.status(400).json({ message: 'Invalid email address' })
+  
   db.collection('users')
     .where('email', '==', email)
     .get()
@@ -1773,9 +1793,12 @@ exports.sendPlayerRequestEmail = (req, res) => {
         subject: `Welcome to Baller Hub from ${companyName}!`,
         html: output,
       }
-
-      data.forEach((dataUser) => {
+      console.log(data.docs.length)
+      
+      for (const dataUser of data.docs) {
+        console.log('datauser')
         if (dataUser.exists) {
+          console.log('exists')
           username = dataUser.data().name
           console.log('username', username)
           mailOptions.html = `
@@ -1788,19 +1811,17 @@ exports.sendPlayerRequestEmail = (req, res) => {
 
           mailOptions.to = `${username} <${email}>`
           mailOptions.subject = `Baller Hub connection request from ${companyName}!`
-        }
 
-        const info = transporter.sendMail(mailOptions)
-        return info
-      })
-        .then((info) => {
-          res.send({
+          
+        } 
+      }
+      const info = transporter.sendMail(mailOptions)
+        res.send({
             message: 'Message sent: %s',
             messageId: info.messageId,
             previewUrl: 'Preview URL: %s',
             preview: nodemailer.getTestMessageUrl(info),
-          })
-        })
+          })  
     })
 }
 
