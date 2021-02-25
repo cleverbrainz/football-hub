@@ -53,9 +53,14 @@ exports.registerUser = (req, res) => {
 }
 
 exports.registerUserViaApplication = (req, res) => {
-  const { player_name, parent_name, email, password, category } = req.body
+  const { player_name, parent_name, email, password, category, confirm_password } = req.body
   const newUser = { name: player_name, ...(parent_name && { parent_name }), email, category }
-  const { valid, error } = validateSignupFields(req.body)
+  const { valid, error } = validateSignupFields({
+    name: player_name,
+    email,
+    password,
+    confirmPassword: confirm_password
+  })
 
   if (!valid) return res.status(400).json(error)
 
@@ -72,6 +77,7 @@ exports.registerUserViaApplication = (req, res) => {
       newUser.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`
       newUser.courses = {}
       newUser.applications = {}
+      newUser.application_fee_paid = 'unpaid'
       data.user.getIdToken()
       return data.user
     })
@@ -227,20 +233,16 @@ exports.loginUser = (req, res) => {
       db.doc(`/users/${userId}`)
         .get()
         .then((data) => {
-          // console.log(data.data())
-          // await data.forEach((doc) => user.push(doc.data()))
-          // return {
-          //   token,
-          //   accountCategory: user[0].category
-          // }
-          // return {
-          //   token,
-          //   accountCategory: data.data()[0].category
-          // }
+          const { category, application_fee_paid, stripeId } = data.data()
+
           let response
           let status
-          if (data.data().category) {
+          if (category) {
             response = {
+              ...(application_fee_paid && {
+                application_fee_paid,
+                stripeId
+              }),
               token,
               accountCategory: data.data().category
             }
@@ -562,4 +564,74 @@ exports.searchForPlayers = (req, res) => {
       res.status(201).json(coachArray)
     })
     .catch((err) => console.log(err))
+}
+
+exports.koreanResidencyDocumentUpload = (req, res) => {
+  // console.log(req.body)
+
+  // HTML form data parser for Nodejs
+  const BusBoy = require('busboy')
+  const path = require('path')
+  const os = require('os')
+  const fs = require('fs')
+  const busboy = new BusBoy({ headers: req.headers })
+
+  let imageFileName
+  let imageToBeUploaded = {}
+
+  busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
+    // Grabbing the file extension
+    const fileSplit = filename.split('.')
+    const imageExtension = fileSplit[fileSplit.length - 1]
+
+    // Generating new file name with random numbers
+    imageFileName = `${Math.round(
+      Math.random() * 10000000000
+    )}.${imageExtension}`
+    // Creating a filepath for the image and storing it in a temporary directory
+    const filePath = path.join(os.tmpdir(), imageFileName)
+    imageToBeUploaded = { filePath, mimetype }
+
+    // Using file system library to create the file
+    file.pipe(fs.createWriteStream(filePath))
+  })
+  // Function to upload image file on finish
+  busboy.on('finish', () => {
+    admin
+      .storage()
+      .bucket()
+      .upload(imageToBeUploaded.filePath, {
+        resumable: false,
+        metadata: {
+          metadata: {
+            contentType: imageToBeUploaded.mimetype
+          }
+        }
+      })
+      .then(() => {
+        db.doc(`/users/${req.user}`)
+          .get()
+          .then(data => {
+            const { benfica_application } = data.data().applications
+            const { personal_details } = benfica_application
+            const residency_certificate = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imageFileName}?alt=media`
+
+            const applications = {
+              benfica_application: {
+                ...benfica_application,
+                personal_details: {
+                  ...personal_details,
+                  residency_certificate
+                }
+              }
+            }
+
+            db.doc(`/users/${req.user}`)
+              .update({ applications })
+              .then(() => res.status(200).json({ message: 'successful upload' }))
+              .catch((err) => res.status(400).json(err))
+          })
+      })
+  })
+  busboy.end(req.rawBody)
 }

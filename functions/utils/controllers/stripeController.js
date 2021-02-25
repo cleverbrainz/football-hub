@@ -225,8 +225,10 @@ exports.handleWebhook = async (req, res) => {
 
     case 'checkout.session.completed': {
       const checkout = event.data.object
+      console.log(checkout)
+      const { mode, metadata, customer } = checkout
 
-      if (checkout.mode === 'setup') {
+      if (mode === 'setup') {
         const {
           setup_intent,
           metadata,
@@ -277,9 +279,19 @@ exports.handleWebhook = async (req, res) => {
           ]
         })
 
-        console.log('HELLOOOO')
         addPlayerToCourse(updatedMetadata)
       }
+
+      if (metadata.description === 'Korean application fee') {
+
+        const payee = await stripe.customers.retrieve(customer)
+        console.log('THISSS ISSS', payee)
+        const userref = db.doc(`users/${payee.metadata.firebaseUID}`)
+
+        return userref
+          .update({ application_fee_paid: 'paid' })
+      }
+
       break
     }
 
