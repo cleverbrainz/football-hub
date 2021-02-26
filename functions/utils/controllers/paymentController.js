@@ -211,7 +211,7 @@ exports.koreanCampApplicationFee = async (req, res) => {
       receipt_email: email
     },
     mode: 'payment',
-    success_url: 'http://localhost:3000/application',
+    success_url: 'https://football-hub-4018a.firebaseapp.com/application',
     cancel_url: `${YOUR_DOMAIN}?canceled=true`
   })
   res.json({ id: session.id })

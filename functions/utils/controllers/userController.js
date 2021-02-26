@@ -233,13 +233,14 @@ exports.loginUser = (req, res) => {
       db.doc(`/users/${userId}`)
         .get()
         .then((data) => {
-          const { category, application_fee_paid, stripeId } = data.data()
+          const { category, application_fee_paid, stripeId, applications } = data.data()
 
           let response
           let status
           if (category) {
             response = {
               ...(application_fee_paid && {
+                applications,
                 application_fee_paid,
                 stripeId
               }),
@@ -625,6 +626,7 @@ exports.koreanResidencyDocumentUpload = (req, res) => {
                 }
               }
             }
+
 
             db.doc(`/users/${req.user}`)
               .update({ applications })
