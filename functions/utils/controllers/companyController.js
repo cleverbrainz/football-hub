@@ -1815,6 +1815,7 @@ exports.sendPlayerRequestEmail = (req, res) => {
 
         }
       }
+      
       const info = transporter.sendMail(mailOptions)
       res.send({
         message: 'Message sent: %s',
