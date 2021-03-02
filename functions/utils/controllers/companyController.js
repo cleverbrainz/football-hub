@@ -179,10 +179,10 @@ async function createStripeProduct(course, courseId) {
     'weeks'
   )
 
-  
+
   let costInteger = cost.split('')
   let removedDecimal = false
-  
+
   for (const char of costInteger) {
     if (char === '.') {
       costInteger.splice(costInteger.indexOf(char), 1)
@@ -192,7 +192,7 @@ async function createStripeProduct(course, courseId) {
   console.log('1', costInteger)
   costInteger = removedDecimal ? Number(costInteger.join('')) : Number([...costInteger, '00'].join(''))
   prices.push(costInteger)
-              
+
 
   if (allow_weekly_payment) {
     const weeklyPrice = Math.ceil(costInteger / difference)
@@ -221,7 +221,7 @@ async function createStripeProduct(course, courseId) {
         recurring: {
           interval: 'week',
         },
-      }),              
+      }),
       metadata: {
         course_duration: `${difference} weeks`,
         start_date: startDate,
@@ -423,52 +423,52 @@ exports.sendCoachRequest = (req, res) => {
   const userRef = db.doc(`/users/${req.body.companyId}`)
 
   coachRef
-  .update({
-    requests: admin.firestore.FieldValue.arrayUnion(req.body.companyId),
-  })
-  .then(() => {
-    userRef.update({
-      sentRequests: admin.firestore.FieldValue.arrayUnion(req.body.coachId),
+    .update({
+      requests: admin.firestore.FieldValue.arrayUnion(req.body.companyId),
     })
-  }).then(() => {
-  userRef.get().then((data) => {
-    const userCompany = data.data().name
+    .then(() => {
+      userRef.update({
+        sentRequests: admin.firestore.FieldValue.arrayUnion(req.body.coachId),
+      })
+    }).then(() => {
+      userRef.get().then((data) => {
+        const userCompany = data.data().name
 
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: 'indulgefootballemail@gmail.com',
-        pass: '1ndulgeManchester1',
-      },
-    })
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: 'indulgefootballemail@gmail.com',
+            pass: '1ndulgeManchester1',
+          },
+        })
 
-    const mailOptions = {
-      from: 'indulgefootballemail@gmail.com',
-      to: `${coachName} <${coachEmail}>`,
-      subject: `Baller Hub connection request from ${userCompany}!`,
-      html: `
+        const mailOptions = {
+          from: 'indulgefootballemail@gmail.com',
+          to: `${coachName} <${coachEmail}>`,
+          subject: `Baller Hub connection request from ${userCompany}!`,
+          html: `
       <h2 style='text-align:center'>Greetings from ${userCompany}! </h2>
       <p> Hello ${firstName}! </p>
       <p> ${userCompany} wants to connect with you on Baller Hub for football training in the future.</p>
       <p> click the link below to head to Baller Hub and connect with ${userCompany}.</p>
       <a href='${target}/login' target="_blank">Log in and confirm the request!</a>
     `,
-    }
+        }
 
-    return transporter.sendMail(mailOptions)
-  })
-      .then(emailInfo => {
-        res
-          .status(201)
-          .json({ message: 'request sent successfully', emailInfo })
+        return transporter.sendMail(mailOptions)
       })
-      .catch((err) => {
-        res.status(500).json({
-          error: 'Something went wrong, enquiry could not be added',
+        .then(emailInfo => {
+          res
+            .status(201)
+            .json({ message: 'request sent successfully', emailInfo })
         })
-        console.error(err)
-      })
-  })
+        .catch((err) => {
+          res.status(500).json({
+            error: 'Something went wrong, enquiry could not be added',
+          })
+          console.error(err)
+        })
+    })
 }
 
 exports.deleteCoachRequest = (req, res) => {
@@ -1272,7 +1272,7 @@ exports.filterListings = (req, res) => {
       })
 
       console.log(listings)
-    
+
       const filteredListings = []
       // fitler specifications
       const { timing, location, age } = filteredObject
@@ -1775,7 +1775,7 @@ exports.sendPlayerRequestEmail = (req, res) => {
   `
   const valid = validateEmailAddressInput(email)
   if (!valid) return res.status(400).json({ message: 'Invalid email address' })
-  
+
   db.collection('users')
     .where('email', '==', email)
     .get()
@@ -1794,7 +1794,7 @@ exports.sendPlayerRequestEmail = (req, res) => {
         html: output,
       }
       console.log(data.docs.length)
-      
+
       for (const dataUser of data.docs) {
         console.log('datauser')
         if (dataUser.exists) {
@@ -1812,16 +1812,16 @@ exports.sendPlayerRequestEmail = (req, res) => {
           mailOptions.to = `${username} <${email}>`
           mailOptions.subject = `Baller Hub connection request from ${companyName}!`
 
-          
-        } 
+
+        }
       }
       const info = transporter.sendMail(mailOptions)
-        res.send({
-            message: 'Message sent: %s',
-            messageId: info.messageId,
-            previewUrl: 'Preview URL: %s',
-            preview: nodemailer.getTestMessageUrl(info),
-          })  
+      res.send({
+        message: 'Message sent: %s',
+        messageId: info.messageId,
+        previewUrl: 'Preview URL: %s',
+        preview: nodemailer.getTestMessageUrl(info),
+      })
     })
 }
 
