@@ -347,13 +347,14 @@ exports.sendEmailNotificationPlayer = async function (
 
 exports.applicationResponse = async (req, res) => {
   console.log('emailing player!')
-  const { type, recipient, emailContent } = req.body
+  const { type, recipient, emailContent, locale } = req.body
   console.log(recipient)
 
   if (recipient.recipientId) {
     let res = await db.doc(`/users/${recipient.recipientId}`).get()
     res = res.data()
     recipient.playerName = res.name
+    recipient.parentName = res.parent_name
     recipient.contactEmail = res.email
   }
 
@@ -381,6 +382,10 @@ exports.applicationResponse = async (req, res) => {
   let typeContent
 
   switch (type) {
+    case 'applicationReceived':
+      typeHeader = 'Your recent application was submitted!'
+      typeContent = `We have recieved your application for the upcoming ${contentCourse}. It will now be judged by our panel and you will recieve a further update once our decision has been made.`
+      break
     case 'applicationSuccessful':
       typeHeader = 'Your recent application was successful!'
       typeContent = `Congratulations, your application for the upcoming ${contentCourse} was successful. You will recieve more information soon.`
@@ -397,6 +402,7 @@ exports.applicationResponse = async (req, res) => {
     subject: `FTBaller Notification: ${typeHeader}`,
     html: `
   <h2 style='text-align:center'></h2>
+  ${locale === 'ko' ? '<p>EMAIL IN KOREAN</p>' : ''}
   <p> Hello ${parentName ? parentName : playerName}, </p>
   <p>${typeContent}</p>
   <a href=${loginURL} target='_blank' rel='noreferrer noreopener'>Please login to see more details</a>
