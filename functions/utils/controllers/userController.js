@@ -195,6 +195,23 @@ exports.initialRegistrationUserInformation = (req, res) => {
 //     );
 // };
 
+exports.getApplicationIds = (req, res) => {
+  db.collection('users').where('applications', '==', '')
+    .get()
+    .then(data => {
+      const promises = []
+      data.forEach(user => {
+        const userData = user.data()
+        if (userData.applications) {
+          promises.push(user.id)
+        }
+      })
+      Promise.all(promises).then(() => {
+        res.json(promises)
+      })
+    })
+}
+
 exports.getCompaniesAndCoaches = (req, res) => {
   console.log('HELLOOO')
   db.collection('users')
