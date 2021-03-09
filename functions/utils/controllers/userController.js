@@ -196,20 +196,23 @@ exports.initialRegistrationUserInformation = (req, res) => {
 // };
 
 exports.getApplicationIds = (req, res) => {
-  db.collection('users').where('applications', '==', '')
+  const promises = []
+  db.collection('users').where('category', 'in', ['player', 'parent'])
     .get()
     .then(data => {
-      const promises = []
-      data.forEach(user => {
+      // console.log(data)
+      for (const user of data.docs) {
         const userData = user.data()
+        console.log('hello')
+        console.log(userData.userId)
         if (userData.applications) {
+          console.log(userData.userId)
           promises.push(user.id)
         }
-      })
-      Promise.all(promises).then(() => {
+      }
+    }).then(() => {
         res.json(promises)
       })
-    })
 }
 
 exports.getCompaniesAndCoaches = (req, res) => {
