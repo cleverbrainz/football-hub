@@ -53,10 +53,20 @@ exports.registerUser = (req, res) => {
 }
 
 exports.registerUserViaApplication = (req, res) => {
-  const { player_name, parent_name, email, password, category, confirm_password } = req.body
-  const newUser = { name: player_name, ...(parent_name && { parent_name }), email, category }
+  const { player_first_name, player_last_name, guardian_first_name, guardian_last_name, email, password, category, confirm_password } = req.body
+  const newUser = {
+    name: `${player_first_name} ${player_last_name}`,
+    player_first_name,
+    player_last_name,
+    ...(guardian_first_name && {
+      guardian_first_name,
+      guardian_last_name
+    }),
+    email,
+    category
+  }
   const { valid, error } = validateSignupFields({
-    name: player_name,
+    name: player_first_name,
     email,
     password,
     confirmPassword: confirm_password
