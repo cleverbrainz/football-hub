@@ -15,14 +15,16 @@ const {
 firebase.initializeApp(config)
 
 exports.registerUser = (req, res) => {
-  const { name, email, password, category } = req.body
+  const { name, email, password, category, language } = req.body
   const newUser = { name, email }
   const { valid, error } = validateSignupFields(req.body)
 
   if (!valid) return res.status(400).json(error)
 
-  firebase
-    .auth()
+  const firebaseInstance = firebase.auth()
+  firebaseInstance.languageCode = language || null
+
+  firebaseInstance
     .createUserWithEmailAndPassword(email, password)
     .then((data) => {
       newUser.userId = data.user.uid
@@ -53,7 +55,7 @@ exports.registerUser = (req, res) => {
 }
 
 exports.registerUserViaApplication = (req, res) => {
-  const { player_first_name, player_last_name, guardian_first_name, guardian_last_name, email, password, category, confirm_password } = req.body
+  const { player_first_name, player_last_name, guardian_first_name, guardian_last_name, email, password, category, confirm_password, language } = req.body
   const newUser = {
     name: `${player_first_name} ${player_last_name}`,
     player_first_name,
@@ -74,8 +76,12 @@ exports.registerUserViaApplication = (req, res) => {
 
   if (!valid) return res.status(400).json(error)
 
-  firebase
-    .auth()
+  console.log('language', language)
+
+  const firebaseInstance = firebase.auth()
+  firebaseInstance.languageCode = language
+
+  firebaseInstance
     .createUserWithEmailAndPassword(email, password)
     .then((data) => {
       newUser.userId = data.user.uid
@@ -88,7 +94,7 @@ exports.registerUserViaApplication = (req, res) => {
       newUser.courses = {}
       newUser.applications = {}
       newUser.application_fee_paid = 'unpaid'
-      data.user.getIdToken()
+      // data.user.getIdToken()
       return data.user
     })
     .then((user) => {
