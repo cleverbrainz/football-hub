@@ -206,7 +206,8 @@ exports.initialRegistrationUserInformation = (req, res) => {
 // };
 
 exports.getApplicationIds = (req, res) => {
-  db.collection('users').where('applications', '==', '')
+  db.collection('users')
+    .where('applications', '==', '')
     .get()
     .then(data => {
       const promises = []
@@ -596,8 +597,6 @@ exports.searchForPlayers = (req, res) => {
 }
 
 exports.koreanResidencyDocumentUpload = (req, res) => {
-  // console.log(req.body)
-  const { type } = req.params
   // HTML form data parser for Nodejs
   const BusBoy = require('busboy')
   const path = require('path')
@@ -643,7 +642,6 @@ exports.koreanResidencyDocumentUpload = (req, res) => {
           .then(data => {
             const { benfica_application } = data.data().applications
             const { personal_details } = benfica_application
-            const name = type === 'passport' ? 'passport' : 'residency_certificate'
             const doc = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imageFileName}?alt=media`
 
             const applications = {
@@ -651,7 +649,7 @@ exports.koreanResidencyDocumentUpload = (req, res) => {
                 ...benfica_application,
                 personal_details: {
                   ...personal_details,
-                  [name]: doc
+                  residency_certificate: doc
                 }
               }
             }
