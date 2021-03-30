@@ -15,14 +15,16 @@ const {
 firebase.initializeApp(config)
 
 exports.registerUser = (req, res) => {
-  const { name, email, password, category } = req.body
+  const { name, email, password, category, language } = req.body
   const newUser = { name, email }
   const { valid, error } = validateSignupFields(req.body)
 
   if (!valid) return res.status(400).json(error)
 
-  firebase
-    .auth()
+  const firebaseInstance = firebase.auth()
+  firebaseInstance.languageCode = language || null
+
+  firebaseInstance
     .createUserWithEmailAndPassword(email, password)
     .then((data) => {
       newUser.userId = data.user.uid
@@ -53,7 +55,7 @@ exports.registerUser = (req, res) => {
 }
 
 exports.registerUserViaApplication = (req, res) => {
-  const { player_first_name, player_last_name, guardian_first_name, guardian_last_name, email, password, category, confirm_password } = req.body
+  const { player_first_name, player_last_name, guardian_first_name, guardian_last_name, email, password, category, confirm_password, language } = req.body
   const newUser = {
     name: `${player_first_name} ${player_last_name}`,
     player_first_name,
@@ -74,8 +76,12 @@ exports.registerUserViaApplication = (req, res) => {
 
   if (!valid) return res.status(400).json(error)
 
-  firebase
-    .auth()
+  console.log('language', language)
+
+  const firebaseInstance = firebase.auth()
+  firebaseInstance.languageCode = language
+
+  firebaseInstance
     .createUserWithEmailAndPassword(email, password)
     .then((data) => {
       newUser.userId = data.user.uid
@@ -88,7 +94,7 @@ exports.registerUserViaApplication = (req, res) => {
       newUser.courses = {}
       newUser.applications = {}
       newUser.application_fee_paid = 'unpaid'
-      data.user.getIdToken()
+      // data.user.getIdToken()
       return data.user
     })
     .then((user) => {
@@ -96,7 +102,7 @@ exports.registerUserViaApplication = (req, res) => {
       //TODO Different language email...
     })
     .then(() => {
-      db.collection('users').doc(`${newUser.userId}`).set(newUser)
+      db.collection('users').doc(`${newUser.userId}`).set({ ...newUser }, { merge: true })
     })
     .then(() => {
       res.status(201).json({
@@ -210,17 +216,19 @@ exports.getApplicationIds = (req, res) => {
     .where('applications', '==', '')
     .get()
     .then(data => {
-      const promises = []
-      data.forEach(user => {
+      // console.log(data)
+      for (const user of data.docs) {
         const userData = user.data()
+        console.log('hello')
+        console.log(userData.userId)
         if (userData.applications) {
+          console.log(userData.userId)
           promises.push(user.id)
         }
-      })
-      Promise.all(promises).then(() => {
+      }
+    }).then(() => {
         res.json(promises)
       })
-    })
 }
 
 exports.getCompaniesAndCoaches = (req, res) => {
@@ -253,7 +261,7 @@ exports.loginUser = (req, res) => {
     .auth()
     .signInWithEmailAndPassword(email, password)
     .then((data) => {
-      console.log(data.user)
+      // console.log(data.user)
       userId = data.user.uid
       return data.user.getIdToken()
     })
@@ -265,6 +273,7 @@ exports.loginUser = (req, res) => {
 
           let response
           let status
+          console.log(category)
           if (category) {
             response = {
               ...(application_fee_paid && {
@@ -278,7 +287,7 @@ exports.loginUser = (req, res) => {
             }
             status = 201
           } else {
-            (response = { message: 'Invalid credentials' }), (status = 403)
+            (response = { message: 'Invalid credentials res' }), (status = 403)
           }
           return { response, status }
         })
@@ -287,7 +296,7 @@ exports.loginUser = (req, res) => {
     .catch((err) => {
       return res
         .status(403)
-        .json({ message: 'Invalid credentials', error: err })
+        .json({ message: 'Invalid credentials catch', error: err })
     })
 }
 
