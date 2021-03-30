@@ -102,7 +102,7 @@ exports.registerUserViaApplication = (req, res) => {
       //TODO Different language email...
     })
     .then(() => {
-      db.collection('users').doc(`${newUser.userId}`).set(newUser)
+      db.collection('users').doc(`${newUser.userId}`).set({ ...newUser }, { merge: true })
     })
     .then(() => {
       res.status(201).json({
@@ -261,7 +261,7 @@ exports.loginUser = (req, res) => {
     .auth()
     .signInWithEmailAndPassword(email, password)
     .then((data) => {
-      console.log(data.user)
+      // console.log(data.user)
       userId = data.user.uid
       return data.user.getIdToken()
     })
@@ -273,6 +273,7 @@ exports.loginUser = (req, res) => {
 
           let response
           let status
+          console.log(category)
           if (category) {
             response = {
               ...(application_fee_paid && {
@@ -285,7 +286,7 @@ exports.loginUser = (req, res) => {
             }
             status = 201
           } else {
-            (response = { message: 'Invalid credentials' }), (status = 403)
+            (response = { message: 'Invalid credentials res' }), (status = 403)
           }
           return { response, status }
         })
@@ -294,7 +295,7 @@ exports.loginUser = (req, res) => {
     .catch((err) => {
       return res
         .status(403)
-        .json({ message: 'Invalid credentials', error: err })
+        .json({ message: 'Invalid credentials catch', error: err })
     })
 }
 
