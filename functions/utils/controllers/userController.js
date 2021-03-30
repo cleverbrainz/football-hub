@@ -212,8 +212,8 @@ exports.initialRegistrationUserInformation = (req, res) => {
 // };
 
 exports.getApplicationIds = (req, res) => {
-  const promises = []
-  db.collection('users').where('category', 'in', ['player', 'parent'])
+  db.collection('users')
+    .where('applications', '==', '')
     .get()
     .then(data => {
       // console.log(data)
@@ -269,7 +269,7 @@ exports.loginUser = (req, res) => {
       db.doc(`/users/${userId}`)
         .get()
         .then((data) => {
-          const { category, application_fee_paid, stripeId, applications } = data.data()
+          const { category, application_fee_paid, stripeId, applications, userId } = data.data()
 
           let response
           let status
@@ -279,7 +279,8 @@ exports.loginUser = (req, res) => {
               ...(application_fee_paid && {
                 applications,
                 application_fee_paid,
-                stripeId
+                stripeId,
+                userId
               }),
               token,
               accountCategory: data.data().category
@@ -605,8 +606,6 @@ exports.searchForPlayers = (req, res) => {
 }
 
 exports.koreanResidencyDocumentUpload = (req, res) => {
-  // console.log(req.body)
-
   // HTML form data parser for Nodejs
   const BusBoy = require('busboy')
   const path = require('path')
@@ -652,14 +651,14 @@ exports.koreanResidencyDocumentUpload = (req, res) => {
           .then(data => {
             const { benfica_application } = data.data().applications
             const { personal_details } = benfica_application
-            const residency_certificate = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imageFileName}?alt=media`
+            const doc = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imageFileName}?alt=media`
 
             const applications = {
               benfica_application: {
                 ...benfica_application,
                 personal_details: {
                   ...personal_details,
-                  residency_certificate
+                  residency_certificate: doc
                 }
               }
             }
