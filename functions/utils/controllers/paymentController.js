@@ -193,7 +193,7 @@ exports.createStripePayment = async (req, res) => {
 
 exports.koreanCampApplicationFee = async (req, res) => {
 
-  const { stripeId, email, player_name } = req.body
+  const { stripeId, email, player_name, locale } = req.body
 
   console.log('CUSTOMER IDDDD')
   console.log(stripeId)
@@ -214,7 +214,8 @@ exports.koreanCampApplicationFee = async (req, res) => {
       receipt_email: email
     },
     mode: 'payment',
-    success_url: 'https://football-hub-4018a.firebaseapp.com/application',
+    success_url: `https://football-hub-4018a.firebaseapp.com/application/${locale}`,
+    // success_url: `localhost:3000/application/${locale}`,
     cancel_url: `${YOUR_DOMAIN}?canceled=true`
   })
   res.json({ id: session.id })
