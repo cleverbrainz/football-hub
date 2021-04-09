@@ -649,13 +649,13 @@ exports.koreanResidencyDocumentUpload = (req, res) => {
         db.doc(`/users/${req.user}`)
           .get()
           .then(data => {
-            const { benfica_application } = data.data().applications
-            const { personal_details } = benfica_application
+            const { ajax_application } = data.data().applications
+            const { personal_details } = ajax_application
             const doc = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imageFileName}?alt=media`
 
             const applications = {
-              benfica_application: {
-                ...benfica_application,
+              ajax_application: {
+                ...ajax_application,
                 personal_details: {
                   ...personal_details,
                   residency_certificate: doc
