@@ -213,10 +213,11 @@ exports.initialRegistrationUserInformation = (req, res) => {
 
 exports.getApplicationIds = (req, res) => {
   db.collection('users')
-    .where('applications', '==', '')
+    .where('category', 'in', ['player', 'parent'])
     .get()
     .then(data => {
       // console.log(data)
+      const promises = []
       for (const user of data.docs) {
         const userData = user.data()
         console.log('hello')
@@ -226,9 +227,11 @@ exports.getApplicationIds = (req, res) => {
           promises.push(user.id)
         }
       }
-    }).then(() => {
-        res.json(promises)
+      Promise.all(promises).then(data => {
+        console.log(data)
+        res.json(data)
       })
+    })
 }
 
 exports.getCompaniesAndCoaches = (req, res) => {
