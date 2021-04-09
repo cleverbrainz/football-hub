@@ -78,7 +78,8 @@ const {
   searchForPlayers,
   registerUserViaApplication,
   koreanResidencyDocumentUpload,
-  getApplicationIds
+  getApplicationIds,
+  fixUserImages
 } = require('./utils/controllers/userController')
 const {
   // acceptCompanyRequest,
