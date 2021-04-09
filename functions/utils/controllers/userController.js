@@ -6,11 +6,11 @@ const nodemailer = require('nodemailer')
 const firebase = require('firebase')
 const {
   createAwaitingVerification,
-  updateAwaitingVerification
+  updateAwaitingVerification,
 } = require('./adminController')
 const {
   sendEmailNotificationIndulge,
-  sendEmailNotificationCompany
+  sendEmailNotificationCompany,
 } = require('./notificationController')
 firebase.initializeApp(config)
 
@@ -43,8 +43,8 @@ exports.registerUser = (req, res) => {
     .then(() => {
       res.status(201).json({
         message:
-          'We\'ve sent you an email with instructions to verfiy your email address. Please make sure it didn\'t wind up in your Junk Mail.',
-        userId: newUser.userId
+          "We've sent you an email with instructions to verfiy your email address. Please make sure it didn't wind up in your Junk Mail.",
+        userId: newUser.userId,
       })
     })
     .catch((err) => {
@@ -55,23 +55,33 @@ exports.registerUser = (req, res) => {
 }
 
 exports.registerUserViaApplication = (req, res) => {
-  const { player_first_name, player_last_name, guardian_first_name, guardian_last_name, email, password, category, confirm_password, language } = req.body
+  const {
+    player_first_name,
+    player_last_name,
+    guardian_first_name,
+    guardian_last_name,
+    email,
+    password,
+    category,
+    confirm_password,
+    language,
+  } = req.body
   const newUser = {
     name: `${player_first_name} ${player_last_name}`,
     player_first_name,
     player_last_name,
     ...(guardian_first_name && {
       guardian_first_name,
-      guardian_last_name
+      guardian_last_name,
     }),
     email,
-    category
+    category,
   }
   const { valid, error } = validateSignupFields({
     name: player_first_name,
     email,
     password,
-    confirmPassword: confirm_password
+    confirmPassword: confirm_password,
   })
 
   if (!valid) return res.status(400).json(error)
@@ -102,13 +112,15 @@ exports.registerUserViaApplication = (req, res) => {
       //TODO Different language email...
     })
     .then(() => {
-      db.collection('users').doc(`${newUser.userId}`).set({ ...newUser }, { merge: true })
+      db.collection('users')
+        .doc(`${newUser.userId}`)
+        .set({ ...newUser }, { merge: true })
     })
     .then(() => {
       res.status(201).json({
         message:
-          'We\'ve sent you an email with instructions to verfiy your email address. Please make sure it didn\'t wind up in your Junk Mail.',
-        userId: newUser.userId
+          "We've sent you an email with instructions to verfiy your email address. Please make sure it didn't wind up in your Junk Mail.",
+        userId: newUser.userId,
       })
     })
     .catch((err) => {
@@ -137,17 +149,17 @@ exports.initialRegistrationUserInformation = (req, res) => {
     if (newUser.category === 'coach') {
       newUser.verification = {
         coachDocumentationCheck: false,
-        paymentCheck: false
+        paymentCheck: false,
       }
       newUser.companies = newUser.companyLink ? [newUser.companyLink] : []
       newUser.coachInfo = {
-        name: newUser.name
+        name: newUser.name,
       }
     } else {
       newUser.verification = {
         coachDocumentationCheck: false,
         companyDetailsCheck: false,
-        paymentCheck: false
+        paymentCheck: false,
       }
       newUser.coaches = []
       newUser.bio = ''
@@ -175,15 +187,15 @@ exports.initialRegistrationUserInformation = (req, res) => {
             age: newUser.dob,
             id: req.body.userId,
             name: userData.name,
-            status: 'Prospect'
+            status: 'Prospect',
           }
 
           db.doc(`/users/${newUser.companyLink}`).update({
-            [`players.${req.body.userId}`]: playerInfo
+            [`players.${req.body.userId}`]: playerInfo,
           })
         } else if (newUser.category === 'coach') {
           db.doc(`/users/${newUser.companyLink}`).update({
-            coaches: admin.firestore.FieldValue.arrayUnion(req.body.userId)
+            coaches: admin.firestore.FieldValue.arrayUnion(req.body.userId),
           })
           sendEmailNotificationCompany(
             'coachAcceptInvite',
@@ -215,7 +227,7 @@ exports.getApplicationIds = (req, res) => {
   db.collection('users')
     .where('category', 'in', ['player', 'parent'])
     .get()
-    .then(data => {
+    .then((data) => {
       // console.log(data)
       const promises = []
       for (const user of data.docs) {
@@ -227,7 +239,7 @@ exports.getApplicationIds = (req, res) => {
           promises.push(user.id)
         }
       }
-      Promise.all(promises).then(data => {
+      Promise.all(promises).then((data) => {
         console.log(data)
         res.json(data)
       })
@@ -272,7 +284,13 @@ exports.loginUser = (req, res) => {
       db.doc(`/users/${userId}`)
         .get()
         .then((data) => {
-          const { category, application_fee_paid, stripeId, applications, userId } = data.data()
+          const {
+            category,
+            application_fee_paid,
+            stripeId,
+            applications,
+            userId,
+          } = data.data()
 
           let response
           let status
@@ -283,14 +301,14 @@ exports.loginUser = (req, res) => {
                 applications,
                 application_fee_paid,
                 stripeId,
-                userId
+                userId,
               }),
               token,
-              accountCategory: data.data().category
+              accountCategory: data.data().category,
             }
             status = 201
           } else {
-            (response = { message: 'Invalid credentials res' }), (status = 403)
+            ;(response = { message: 'Invalid credentials res' }), (status = 403)
           }
           return { response, status }
         })
@@ -363,9 +381,9 @@ exports.customerImageUpload = (req, res) => {
         resumable: false,
         metadata: {
           metadata: {
-            contentType: imageToBeUploaded.mimetype
-          }
-        }
+            contentType: imageToBeUploaded.mimetype,
+          },
+        },
       })
       .then(() => {
         db.collection('users')
@@ -421,8 +439,8 @@ exports.getOneUser = (req, res) => {
               .then((subItems) => {
                 !subItems.empty
                   ? subItems.forEach(
-                    (subItem) => (userData[type] = subItem.data())
-                  )
+                      (subItem) => (userData[type] = subItem.data())
+                    )
                   : delete userData[type]
               })
           )
@@ -448,7 +466,7 @@ exports.forgottenPassword = (req, res) => {
     .then(() => {
       return res.status(200).json({
         message:
-          'We\'ve sent you an email with instructions to reset your password. Please make sure it didn\'t wind up in your Junk Mail.'
+          "We've sent you an email with instructions to reset your password. Please make sure it didn't wind up in your Junk Mail.",
       })
     })
     .catch((err) => {
@@ -490,9 +508,9 @@ exports.userDocumentUpload = (req, res) => {
         resumable: false,
         metadata: {
           metadata: {
-            contentType: documentToBeUploaded.mimetype
-          }
-        }
+            contentType: documentToBeUploaded.mimetype,
+          },
+        },
       })
       .then(() => {
         const documentURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${documentFileName}?alt=media`
@@ -511,7 +529,7 @@ exports.userDocumentUpload = (req, res) => {
             name: coachInfo.name,
             documentation: coachInfo.documentation,
             verification,
-            type: 'coachDocument'
+            type: 'coachDocument',
           }
           createAwaitingVerification(verificationData).then((data) => {
             return db
@@ -644,14 +662,14 @@ exports.koreanResidencyDocumentUpload = (req, res) => {
         resumable: false,
         metadata: {
           metadata: {
-            contentType: imageToBeUploaded.mimetype
-          }
-        }
+            contentType: imageToBeUploaded.mimetype,
+          },
+        },
       })
       .then(() => {
         db.doc(`/users/${req.user}`)
           .get()
-          .then(data => {
+          .then((data) => {
             const { ajax_application } = data.data().applications
             const { personal_details } = ajax_application
             const doc = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imageFileName}?alt=media`
@@ -661,15 +679,16 @@ exports.koreanResidencyDocumentUpload = (req, res) => {
                 ...ajax_application,
                 personal_details: {
                   ...personal_details,
-                  residency_certificate: doc
-                }
-              }
+                  residency_certificate: doc,
+                },
+              },
             }
-
 
             db.doc(`/users/${req.user}`)
               .update({ applications })
-              .then(() => res.status(200).json({ message: 'successful upload' }))
+              .then(() =>
+                res.status(200).json({ message: 'successful upload' })
+              )
               .catch((err) => res.status(400).json(err))
           })
       })
