@@ -99,7 +99,7 @@ exports.registerUserViaApplication = (req, res) => {
       newUser.account_validation_check = false
       newUser.dob = ''
       newUser.bio = ''
-      const noImg = 'no-img.jpeg'
+      const noImg = 'no-img.png'
       newUser.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`
       newUser.courses = {}
       newUser.applications = {}
