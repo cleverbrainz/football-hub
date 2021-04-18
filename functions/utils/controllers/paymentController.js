@@ -201,7 +201,7 @@ exports.koreanCampApplicationFee = async (req, res) => {
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: [{
-      price: 'price_1INPKBIg5fTuA6FVMK3BB5hp',
+      price: 'price_1If6kTIg5fTuA6FVUB126GMx',
       quantity: 1
     }],
     customer: stripeId,
