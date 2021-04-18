@@ -288,7 +288,7 @@ exports.handleWebhook = async (req, res) => {
         console.log('THISSS ISSS', payee)
         const userref = db.doc(`users/${payee.metadata.firebaseUID}`)
 
-        return userref
+        await userref
           .update({ application_fee_paid: 'paid' })
       }
 

@@ -109,20 +109,22 @@ exports.registerUserViaApplication = (req, res) => {
       return data.user
     })
     .then((user) => {
-      user.sendEmailVerification()
-      //TODO Different language email...
-    })
-    .then(() => {
       db.collection('users')
         .doc(`${newUser.userId}`)
         .set({ ...newUser }, { merge: true })
+
+      return user
     })
-    .then(() => {
-      res.status(201).json({
-        message:
-          "We've sent you an email with instructions to verfiy your email address. Please make sure it didn't wind up in your Junk Mail.",
-        userId: newUser.userId,
-      })
+    .then((user) => {
+      user.sendEmailVerification()
+        .then(() => {
+          res.status(201).json({
+            message:
+              "We've sent you an email with instructions to verfiy your email address. Please make sure it didn't wind up in your Junk Mail.",
+            userId: newUser.userId
+          })
+        })
+      //TODO Different language email...
     })
     .catch((err) => {
       if (err.code === 'auth/email-already-in-use') {
