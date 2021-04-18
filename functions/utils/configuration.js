@@ -1,12 +1,16 @@
 // Firebase library used to have access to authentication function
+// const { functions } = require('../admin')
+const functions = require('firebase-functions')
+
+const { api_key, auth_domain, database_url, project_id, storage_bucket, messaging_sender_id, app_id, measurement_id } = functions.config().config_params
 
 module.exports = {
-  apiKey: 'AIzaSyBQvA7TWls9pSSZKL0aKdBt4cabvGPl0zI',
-  authDomain: 'football-hub-4018a.firebaseapp.com',
-  databaseURL: 'https://football-hub-4018a.firebaseio.com',
-  projectId: 'football-hub-4018a',
-  storageBucket: 'football-hub-4018a.appspot.com',
-  messagingSenderId: '951962857390',
-  appId: '1:951962857390:web:92915655bcab77d509a23f',
-  measurementId: 'G-KTH71G6ZTM'
+  apiKey: api_key,
+  authDomain: auth_domain,
+  databaseURL: database_url,
+  projectId: project_id,
+  storageBucket: storage_bucket,
+  messagingSenderId: messaging_sender_id,
+  appId: app_id,
+  measurementId: measurement_id
 }

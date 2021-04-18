@@ -1,6 +1,6 @@
 const { db, admin, functions } = require('../admin')
 
-const stripe = require('stripe')('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
+const stripe = require('stripe')(functions.config().stripe.api_key)
 
 // const Stripe = require('stripe')
 const { user } = require('firebase-functions/lib/providers/auth')
@@ -72,7 +72,7 @@ exports.createNewSubscription = (req, res) => {
 }
 
 exports.createConnectedAccount = (req, res) => {
-  // const stripe = stripe('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
+  // const stripe = stripe(functions.config().stripe.api_key)
 
   return stripe.accounts
     .create({
@@ -113,8 +113,8 @@ exports.createConnectedAccount = (req, res) => {
               return stripe.accountLinks
                 .create({
                   account: account.id,
-                  refresh_url: 'https://football-hub-4018a.firebaseapp.com/subscription',
-                  return_url: 'https://football-hub-4018a.firebaseapp.com/subscription',
+                  refresh_url: `${functions.config().site.main_url}/subscription`,
+                  return_url: `${functions.config().site.main_url}/subscription`,
                   type: 'account_onboarding'
                 })
                 .then((accountLink) => {
@@ -130,11 +130,11 @@ exports.createConnectedAccount = (req, res) => {
 }
 
 exports.createEditAccountLink = (req, res) => {
-  // const stripe = stripe('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
+  // const stripe = stripe(functions.config().stripe.api_key)
 
   return stripe.accounts
     .createLoginLink(req.body.accountId, {
-      redirect_url: 'https://football-hub-4018a.firebaseapp.com/tester'
+      redirect_url: `${functions.config().site.main_url}/tester`
     })
     .then((accountLink) => {
       console.log('str', accountLink)

@@ -1,6 +1,6 @@
 /* eslint-disable comma-dangle */
 // const { report } = require('process')
-const { db, admin } = require('../admin')
+const { db, admin, functions } = require('../admin')
 const config = require('../configuration')
 const moment = require('moment')
 const {
@@ -9,7 +9,7 @@ const {
 } = require('./adminController')
 // const firebase = require('firebase/app')
 const nodemailer = require('nodemailer')
-const stripe = require('stripe')('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
+const stripe = require('stripe')(functions.config().stripe.api_key)
 // require('firebase/firestore')
 
 const { validateEmailAddressInput } = require('../validators')
@@ -319,7 +319,7 @@ exports.addNewDetail = (req, res) => {
         requestObject[detailId] = data.id
 
         if (detailId === 'coachId') {
-          const noImg = 'no-img.jpeg'
+          const noImg = 'no-img.png'
           requestObject.imageURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`
         } else if (detailId === 'courseId') {
           requestObject.coaches = []
@@ -417,7 +417,7 @@ exports.sendCoachRequest = (req, res) => {
   const target =
     type === 'localhost'
       ? 'http://localhost:3000'
-      : 'https://football-hub-4018a.firebaseapp.com'
+      : `${functions.config().site.main_url}`
   const firstName = coachName.split(' ')[0]
   const coachRef = db.doc(`/users/${req.body.coachId}`)
   const userRef = db.doc(`/users/${req.body.companyId}`)
@@ -437,13 +437,13 @@ exports.sendCoachRequest = (req, res) => {
         const transporter = nodemailer.createTransport({
           service: 'gmail',
           auth: {
-            user: 'indulgefootballemail@gmail.com',
-            pass: '1ndulgeManchester1',
+            user: functions.config().email.address,
+            pass: functions.config().email.password,
           },
         })
 
         const mailOptions = {
-          from: 'indulgefootballemail@gmail.com',
+          from: functions.config().email.address,
           to: `${coachName} <${coachEmail}>`,
           subject: `Baller Hub connection request from ${userCompany}!`,
           html: `
@@ -1764,7 +1764,7 @@ exports.sendPlayerRequestEmail = (req, res) => {
   const target =
     type === 'localhost'
       ? 'http://localhost:3000'
-      : 'https://football-hub-4018a.firebaseapp.com'
+      : `${functions.config().site.main_url}`
 
   const output = `
     <h2 style='text-align:center'> Welcome to Baller Hub from ${companyName}! </h2>
@@ -1783,12 +1783,12 @@ exports.sendPlayerRequestEmail = (req, res) => {
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-          user: 'indulgefootballemail@gmail.com',
-          pass: '1ndulgeManchester1',
+          user: functions.config().email.address,
+          pass: functions.config().email.password,
         },
       })
       const mailOptions = {
-        from: 'indulgefootballemail@gmail.com',
+        from: functions.config().email.address,
         to: email,
         subject: `Welcome to Baller Hub from ${companyName}!`,
         html: output,
@@ -1834,7 +1834,7 @@ exports.sendCoachRequestEmail = (req, res) => {
   const target =
     type === 'localhost'
       ? 'http://localhost:3000'
-      : 'https://football-hub-4018a.firebaseapp.com'
+      : `${functions.config().site.main_url}`
   const output = `
     <h2 style='text-align:center'> Welcome to Baller Hub from ${companyName}! </h2>
     <p> Hello! ${name} </p>
@@ -1852,12 +1852,12 @@ exports.sendCoachRequestEmail = (req, res) => {
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-          user: 'indulgefootballemail@gmail.com',
-          pass: '1ndulgeManchester1',
+          user: functions.config().email.address,
+          pass: functions.config().email.password,
         },
       })
       const mailOptions = {
-        from: 'indulgefootballemail@gmail.com',
+        from: functions.config().email.address,
         to: `${name} <${email}>`,
         subject: `Welcome to Baller Hub from ${companyName}!`,
         html: output,
