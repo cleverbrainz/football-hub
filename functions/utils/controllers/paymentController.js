@@ -1,8 +1,8 @@
-const stripe = require('stripe')('sk_test_9uKugMoJMmbu03ssvVn9KXUE')
-const YOUR_DOMAIN = 'https://football-hub-4018a.firebaseapp.com/checkout'
+// const YOUR_DOMAIN = 'https://football-hub-4018a.firebaseapp.com/checkout'
 // const YOUR_DOMAIN = 'http://localhost:3000/checkout'
 // const YOUR_DOMAIN = 'http://localhost:3000/checkout'
-const { db, admin } = require('../admin')
+const { db, admin, functions } = require('../admin')
+const stripe = require('stripe')(functions.config().stripe.api_key)
 const moment = require('moment')
 const { sendEmailNotificationCompany, sendEmailNotificationPlayer } = require('./notificationController')
 
@@ -75,8 +75,8 @@ exports.createConnectedAccountProductSubscription = async (req, res) => {
     mode: 'setup',
     metadata,
     customer: customerId,
-    success_url: `${YOUR_DOMAIN}?success=true`,
-    cancel_url: `${YOUR_DOMAIN}?canceled=true`
+    success_url: `${functions.config().site.main_url}/checkout?success=true`,
+    cancel_url: `${functions.config().site.main_url}/companies?canceled=true`
   })
 
   // const successDomain = 'http://localhost:3000/checkout'
@@ -184,8 +184,8 @@ exports.createStripePayment = async (req, res) => {
       receipt_email: email
     },
     mode: 'payment',
-    success_url: `${YOUR_DOMAIN}?success=true`,
-    cancel_url: `${YOUR_DOMAIN}?canceled=true`
+    success_url: `${functions.config().site.main_url}/checkout?success=true`,
+    cancel_url: `${functions.config().site.main_url}/companies?canceled=true`
   })
   res.json({ id: session.id })
 }
@@ -193,7 +193,7 @@ exports.createStripePayment = async (req, res) => {
 
 exports.koreanCampApplicationFee = async (req, res) => {
 
-  const { stripeId, email, player_name, locale } = req.body
+  const { stripeId, email, player_name, locale, userId } = req.body
 
   console.log('CUSTOMER IDDDD')
   console.log(stripeId)
@@ -201,7 +201,7 @@ exports.koreanCampApplicationFee = async (req, res) => {
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: [{
-      price: 'price_1INPKBIg5fTuA6FVMK3BB5hp',
+      price: 'price_1If6kTIg5fTuA6FVUB126GMx',
       quantity: 1
     }],
     customer: stripeId,
@@ -214,9 +214,9 @@ exports.koreanCampApplicationFee = async (req, res) => {
       receipt_email: email
     },
     mode: 'payment',
-    success_url: `https://football-hub-4018a.firebaseapp.com/application/${locale}`,
+    success_url: `${functions.config().site.main_url}/application/${locale}`,
     // success_url: `localhost:3000/application/${locale}`,
-    cancel_url: `${YOUR_DOMAIN}?canceled=true`
+    cancel_url: `${functions.config().site.main_url}/user/${userId}?canceled=true`
   })
   res.json({ id: session.id })
 }

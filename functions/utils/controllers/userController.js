@@ -1,7 +1,8 @@
-const { db, admin } = require('../admin')
+const { db, admin, functions } = require('../admin')
 const { validateSignupFields, validateLoginFields } = require('../validators')
 const config = require('../configuration')
 const nodemailer = require('nodemailer')
+// const functions = require('firebase-functions')
 
 const firebase = require('firebase')
 const {
@@ -694,4 +695,35 @@ exports.koreanResidencyDocumentUpload = (req, res) => {
       })
   })
   busboy.end(req.rawBody)
+}
+
+exports.logVariable = (req, res) => {
+  const variable = functions.config().test.name
+  console.log(variable)
+  res.json(variable)
+}
+
+
+exports.fixBenficaApplications = (req, res) => {
+  db.collection('users')
+    .where('category', 'in', ['player', 'parent'])
+    .get()
+    .then((data) => {
+      // console.log(data)
+      const promises = []
+      for (const user of data.docs) {
+        const userData = user.data()
+        console.log('hello')
+        if (userData.applications) {
+          console.log(userData.userId)
+          promises.push(user.id)
+          const ajax_application = { ...userData.applications.benfica }
+          return db.doc(`/users/${userData.userId}`).update({ applications: { ajax_application: ajax_application }})
+        }
+      }
+      Promise.all(promises).then((data) => {
+        console.log(data)
+        res.json(data)
+      })
+    })
 }

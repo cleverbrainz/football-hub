@@ -1,6 +1,7 @@
 /* eslint-disable comma-dangle */
 // const { report } = require('process')
 const { db, admin } = require('../admin')
+const functions = require('firebase-functions')
 const config = require('../configuration')
 const moment = require('moment')
 // const {
@@ -10,8 +11,8 @@ const moment = require('moment')
 // const firebase = require('firebase/app')
 const nodemailer = require('nodemailer')
 // require('firebase/firestore')
-const adminURL = 'https://football-hub-4018a.firebaseapp.com/adminbeta'
-const loginURL = 'https://football-hub-4018a.firebaseapp.com/login'
+const adminURL =  `${functions.config().site.main_url}/adminbeta`
+const loginURL = `${functions.config().site.main_url}//login`
 const linkMaker = (url, innertext) => {
   return `<a href='${url}' target='_blank' rel='noreferrer noreopener'>${innertext}</a>`
 }
@@ -27,8 +28,8 @@ exports.sendEmailNotificationIndulge = function (
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'indulgefootballemail@gmail.com',
-      pass: '1ndulgeManchester1',
+      user: functions.config().email.address,
+      pass: functions.config().email.password,
     },
   })
 
@@ -69,7 +70,7 @@ exports.sendEmailNotificationIndulge = function (
   }
 
   const mailOptions = {
-    from: 'indulgefootballemail@gmail.com',
+    from: functions.config().email.address,
     to: `${indulgeName} <${indulgeEmail}>`,
     subject: `Notification: ${typeHeader} ${contentName}`,
     html: `
@@ -112,8 +113,8 @@ exports.sendEmailNotificationCompany = async function (
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'indulgefootballemail@gmail.com',
-      pass: '1ndulgeManchester1',
+      user: functions.config().email.address,
+      pass: functions.config().email.password,
     },
   })
 
@@ -162,7 +163,7 @@ exports.sendEmailNotificationCompany = async function (
   }
 
   const mailOptions = {
-    from: 'indulgefootballemail@gmail.com',
+    from: functions.config().email.address,
     to: `${companyName} <${companyEmail}>`,
     subject: `Notification: ${typeHeader} ${contentName}`,
     html: `
@@ -202,8 +203,8 @@ exports.sendEmailNotificationCoach = async function (
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'indulgefootballemail@gmail.com',
-      pass: '1ndulgeManchester1',
+      user: functions.config().email.address,
+      pass: functions.config().email.password,
     },
   })
 
@@ -232,7 +233,7 @@ exports.sendEmailNotificationCoach = async function (
   }
 
   const mailOptions = {
-    from: 'indulgefootballemail@gmail.com',
+    from: functions.config().email.address,
     to: `${coachName} <${coachEmail}>`,
     subject: `Notification: ${typeHeader}`,
     html: `
@@ -283,8 +284,8 @@ exports.sendEmailNotificationPlayer = async function (
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'indulgefootballemail@gmail.com',
-      pass: '1ndulgeManchester1',
+      user: functions.config().email.address,
+      pass: functions.config().email.password,
     },
   })
 
@@ -323,7 +324,7 @@ exports.sendEmailNotificationPlayer = async function (
   }
 
   const mailOptions = {
-    from: 'indulgefootballemail@gmail.com',
+    from: functions.config().email.address,
     to: `${parentName ? parentName : playerName} <${contactEmail}>`,
     subject: `FTBaller Notification: ${typeHeader}`,
     html: `
@@ -373,8 +374,8 @@ exports.applicationResponse = async (req, res) => {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'indulgefootballemail@gmail.com',
-      pass: '1ndulgeManchester1',
+      user: functions.config().email.address,
+      pass: functions.config().email.password,
     },
   })
 
@@ -397,7 +398,7 @@ exports.applicationResponse = async (req, res) => {
   }
 
   const mailOptions = {
-    from: 'indulgefootballemail@gmail.com',
+    from: functions.config().email.address,
     to: `${parentName ? parentName : playerName} <${contactEmail}>`,
     subject: `FTBaller Notification: ${typeHeader}`,
     html: `
@@ -438,8 +439,8 @@ exports.verificationEmailer = function (
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'indulgefootballemail@gmail.com',
-      pass: '1ndulgeManchester1',
+      user: functions.config().email.address,
+      pass: functions.config().email.password,
     },
   })
 
@@ -471,7 +472,7 @@ exports.verificationEmailer = function (
     ]
 
     const coachMailOptions = {
-      from: 'indulgefootballemail@gmail.com',
+      from: functions.config().email.address,
       to: `${userName} <${userEmail}>`,
       subject: 'FTBaller Notification: Document verification update',
       html: coachEmailContent.join('')
@@ -513,7 +514,7 @@ exports.verificationEmailer = function (
           '<p>Indulge Football</p>',
         ]
         const companyMailOptions = {
-          from: 'indulgefootballemail@gmail.com',
+          from: functions.config().email.address,
           to: `${company.name} <${company.email}>`,
           subject: `FTBaller Notification: Document verification update for your coach ${userName}`,
           html: emailContent.join(''),
@@ -562,7 +563,7 @@ exports.verificationEmailer = function (
     ]
 
     const companyMailOptions = {
-      from: 'indulgefootballemail@gmail.com',
+      from: functions.config().email.address,
       to: `${userName} <${userEmail}>`,
       subject: 'FTBaller Notification: Document verification update',
       html: companyEmailContent.join('')
