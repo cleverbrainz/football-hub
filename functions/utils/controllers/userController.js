@@ -629,75 +629,75 @@ exports.searchForPlayers = (req, res) => {
     .catch((err) => console.log(err))
 }
 
-exports.koreanResidencyDocumentUpload = (req, res) => {
-  // HTML form data parser for Nodejs
-  const BusBoy = require('busboy')
-  const path = require('path')
-  const os = require('os')
-  const fs = require('fs')
-  const busboy = new BusBoy({ headers: req.headers })
+// exports.koreanResidencyDocumentUpload = (req, res) => {
+//   // HTML form data parser for Nodejs
+//   const BusBoy = require('busboy')
+//   const path = require('path')
+//   const os = require('os')
+//   const fs = require('fs')
+//   const busboy = new BusBoy({ headers: req.headers })
 
-  let imageFileName
-  let imageToBeUploaded = {}
+//   let imageFileName
+//   let imageToBeUploaded = {}
 
-  busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
-    // Grabbing the file extension
-    const fileSplit = filename.split('.')
-    const imageExtension = fileSplit[fileSplit.length - 1]
+//   busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
+//     // Grabbing the file extension
+//     const fileSplit = filename.split('.')
+//     const imageExtension = fileSplit[fileSplit.length - 1]
 
-    // Generating new file name with random numbers
-    imageFileName = `${Math.round(
-      Math.random() * 10000000000
-    )}.${imageExtension}`
-    // Creating a filepath for the image and storing it in a temporary directory
-    const filePath = path.join(os.tmpdir(), imageFileName)
-    imageToBeUploaded = { filePath, mimetype }
+//     // Generating new file name with random numbers
+//     imageFileName = `${Math.round(
+//       Math.random() * 10000000000
+//     )}.${imageExtension}`
+//     // Creating a filepath for the image and storing it in a temporary directory
+//     const filePath = path.join(os.tmpdir(), imageFileName)
+//     imageToBeUploaded = { filePath, mimetype }
 
-    // Using file system library to create the file
-    file.pipe(fs.createWriteStream(filePath))
-  })
-  // Function to upload image file on finish
-  busboy.on('finish', () => {
-    admin
-      .storage()
-      .bucket()
-      .upload(imageToBeUploaded.filePath, {
-        resumable: false,
-        metadata: {
-          metadata: {
-            contentType: imageToBeUploaded.mimetype,
-          },
-        },
-      })
-      .then(() => {
-        db.doc(`/users/${req.user}`)
-          .get()
-          .then((data) => {
-            const { ajax_application } = data.data().applications
-            const { personal_details } = ajax_application
-            const doc = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imageFileName}?alt=media`
+//     // Using file system library to create the file
+//     file.pipe(fs.createWriteStream(filePath))
+//   })
+//   // Function to upload image file on finish
+//   busboy.on('finish', () => {
+//     admin
+//       .storage()
+//       .bucket()
+//       .upload(imageToBeUploaded.filePath, {
+//         resumable: false,
+//         metadata: {
+//           metadata: {
+//             contentType: imageToBeUploaded.mimetype,
+//           },
+//         },
+//       })
+//       .then(() => {
+//         db.doc(`/users/${req.user}`)
+//           .get()
+//           .then((data) => {
+//             const { ajax_application } = data.data().applications
+//             const { personal_details } = ajax_application
+//             const doc = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imageFileName}?alt=media`
 
-            const applications = {
-              ajax_application: {
-                ...ajax_application,
-                personal_details: {
-                  ...personal_details,
-                  residency_certificate: doc,
-                },
-              },
-            }
+//             const applications = {
+//               ajax_application: {
+//                 ...ajax_application,
+//                 personal_details: {
+//                   ...personal_details,
+//                   residency_certificate: doc,
+//                 },
+//               },
+//             }
 
-            db.doc(`/users/${req.user}`)
-              .update({ applications })
-              .then(() =>
-                res.status(200).json({ message: 'successful upload' })
-              )
-              .catch((err) => res.status(400).json(err))
-          })
-      })
-  })
-  busboy.end(req.rawBody)
-}
+//             db.doc(`/users/${req.user}`)
+//               .update({ applications })
+//               .then(() =>
+//                 res.status(200).json({ message: 'successful upload' })
+//               )
+//               .catch((err) => res.status(400).json(err))
+//           })
+//       })
+//   })
+//   busboy.end(req.rawBody)
+// }
 
 exports.logVariable = (req, res) => {
   const variable = functions.config().test.name

@@ -178,8 +178,8 @@ app.get('/plans', getAllPlans)
 app.post('/subscriptions/new', createNewSubscription)
 app.post('/connectAccount/new', createConnectedAccount)
 app.post('/connectAccount/edit', createEditAccountLink)
-app.post('/korean-application-fee', koreanCampApplicationFee)
-app.post('/korean-residency', authMiddleware, koreanResidencyDocumentUpload)
+app.post('/korean-application-fee/:type*?', koreanCampApplicationFee)
+// app.post('/korean-residency', authMiddleware, koreanResidencyDocumentUpload)
 
 app.post('/stripewebhook', handleWebhook)
 
