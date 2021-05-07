@@ -64,3 +64,8 @@ node_modules/
 
 # dotenv environment variables file
 .env
+
+functions/configs/config.development.json
+functions/configs/config.production.json
+ 
+functions/.runtimeconfig.json
