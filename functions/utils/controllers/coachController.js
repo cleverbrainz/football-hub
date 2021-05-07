@@ -1,5 +1,5 @@
 const { report } = require('process')
-const { db, admin } = require('../admin')
+const { db, admin, functions } = require('../admin')
 const config = require('../configuration')
 const firebase = require('firebase/app')
 const { user } = require('firebase-functions/lib/providers/auth')
@@ -174,7 +174,7 @@ exports.handleCompanyRequest = (req, res) => {
         //   res.status(403).json({ message: 'Company already exists' })
         // } else {
 
-        const target = 'https://football-hub-4018a.firebaseapp.com'
+        const target = `${functions.config().site_main_url}`
         // type === 'localhost'
         // ? 'http://localhost:3000'
         // : 'https://football-hub-4018a.firebaseapp.com'
@@ -190,14 +190,14 @@ exports.handleCompanyRequest = (req, res) => {
         const transporter = nodemailer.createTransport({
           service: 'gmail',
           auth: {
-            user: 'indulgefootballemail@gmail.com',
-            pass: '1ndulgeManchester1'
+            user: functions.config().email.address,
+            pass: functions.config().email.password
           }
         })
 
 
         const mailOptions = {
-          from: 'indulgefootballemail@gmail.com',
+          from: functions.config().email.address,
           to: companyEmail,
           subject: `Coach invitation acceptance from ${coachName}!`,
           html: output

@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "football-hub-4018a"
+    "default": "football-hub-4018a",
+    "production": "football-hub-4018a",
+    "development": "football-hub-dev-de9cc"
   }
 }

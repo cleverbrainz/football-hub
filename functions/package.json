@@ -6,7 +6,15 @@
     "shell": "firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "config:set:development": "node set-config development",
+    "config:set:production": "node set-config production",
+    "config:get": "firebase functions:config:get > .runtimeconfig.json",
+    "deploy:development:functions": "npm run config:set:development && firebase -P development deploy --only functions",
+    "deploy:development": "npm run config:set:development && firebase -P development deploy",
+    "deploy:production:functions": "npm run config:set:production && firebase -P production deploy --only functions",
+    "deploy:production:functions:api": "npm run config:set:production && firebase -P production deploy --only functions:api",
+    "deploy:production": "npm run config:set:production && firebase -P production deploy"
   },
   "engines": {
     "node": "10"
@@ -19,7 +27,7 @@
     "express": "^4.17.1",
     "firebase": "^7.17.1",
     "firebase-admin": "^8.10.0",
-    "firebase-functions": "^3.13.1",
+    "firebase-functions": "^3.13.2",
     "moment": "^2.29.1",
     "nodejs-nodemailer-outlook": "^1.2.3",
     "nodemailer": "^6.4.11",

@@ -1,11 +1,10 @@
 // The Cloud Functions for Firebase SDK to create Cloud Functions and setup triggers.
-const functions = require('firebase-functions')
+// const functions = require('firebase-functions')
 const express = require('express')
 const app = express()
-const { db, admin } = require('./utils/admin')
+const { db, admin, functions } = require('./utils/admin')
 const moment = require('moment')
 const cors = require('cors')
-// const stripe = require('stripe')('sk_test_4eC39HqLyjWDarjtT1zdp7dc')
 // const bodyParser = require('body-parser');
 app.use(cors())
 app.use(express.static('.'))
@@ -79,7 +78,9 @@ const {
   registerUserViaApplication,
   koreanResidencyDocumentUpload,
   getApplicationIds,
-  fixUserImages
+  // fixUserImages,
+  logVariable,
+  fixBenficaApplications
 } = require('./utils/controllers/userController')
 const {
   // acceptCompanyRequest,
@@ -171,16 +172,18 @@ app.get('/connected-account/:id', retrieveConnectedAccount)
 app.post('/connected-account/subscriptions', createConnectedAccountProductSubscription)
 app.get('/connected-account/:id/product', retrieveProductPrices)
 app.post('/contactPlayer', applicationResponse)
-app.get('/getApplicationIds', getApplicationIds)
+app.get('/getApplicationIds/:courseName', getApplicationIds)
 
 app.get('/plans', getAllPlans)
 app.post('/subscriptions/new', createNewSubscription)
 app.post('/connectAccount/new', createConnectedAccount)
 app.post('/connectAccount/edit', createEditAccountLink)
-app.post('/korean-application-fee', koreanCampApplicationFee)
-app.post('/korean-residency', authMiddleware, koreanResidencyDocumentUpload)
+app.post('/korean-application-fee/:type*?', koreanCampApplicationFee)
+// app.post('/korean-residency', authMiddleware, koreanResidencyDocumentUpload)
 
 app.post('/stripewebhook', handleWebhook)
+
+app.get('/fixbenfica', fixBenficaApplications)
 
 
 // app.get('/subscriptions/portal', getPortal)
@@ -343,3 +346,6 @@ exports.scheduledUpdateStatuses = functions.pubsub
       .catch((err) => console.log(err))
     return null
   })
+
+
+console.log(functions.config().config_params.auth_domain)

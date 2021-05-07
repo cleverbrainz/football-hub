@@ -1,8 +1,10 @@
 /* eslint-disable comma-dangle */
 // const { report } = require('process')
 const { db, admin } = require('../admin')
+const functions = require('firebase-functions')
 const config = require('../configuration')
 const moment = require('moment')
+const { application, greetings } = require('../../LanguageSkeleton')
 // const {
 //   createAwaitingVerification,
 //   updateAwaitingVerification,
@@ -10,8 +12,8 @@ const moment = require('moment')
 // const firebase = require('firebase/app')
 const nodemailer = require('nodemailer')
 // require('firebase/firestore')
-const adminURL = 'https://football-hub-4018a.firebaseapp.com/adminbeta'
-const loginURL = 'https://football-hub-4018a.firebaseapp.com/login'
+const adminURL =  `${functions.config().site.main_url}/adminbeta`
+const loginURL = `${functions.config().site.main_url}`
 const linkMaker = (url, innertext) => {
   return `<a href='${url}' target='_blank' rel='noreferrer noreopener'>${innertext}</a>`
 }
@@ -27,8 +29,8 @@ exports.sendEmailNotificationIndulge = function (
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'indulgefootballemail@gmail.com',
-      pass: '1ndulgeManchester1',
+      user: functions.config().email.address,
+      pass: functions.config().email.password,
     },
   })
 
@@ -69,7 +71,7 @@ exports.sendEmailNotificationIndulge = function (
   }
 
   const mailOptions = {
-    from: 'indulgefootballemail@gmail.com',
+    from: functions.config().email.address,
     to: `${indulgeName} <${indulgeEmail}>`,
     subject: `Notification: ${typeHeader} ${contentName}`,
     html: `
@@ -112,8 +114,8 @@ exports.sendEmailNotificationCompany = async function (
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'indulgefootballemail@gmail.com',
-      pass: '1ndulgeManchester1',
+      user: functions.config().email.address,
+      pass: functions.config().email.password,
     },
   })
 
@@ -162,7 +164,7 @@ exports.sendEmailNotificationCompany = async function (
   }
 
   const mailOptions = {
-    from: 'indulgefootballemail@gmail.com',
+    from: functions.config().email.address,
     to: `${companyName} <${companyEmail}>`,
     subject: `Notification: ${typeHeader} ${contentName}`,
     html: `
@@ -202,8 +204,8 @@ exports.sendEmailNotificationCoach = async function (
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'indulgefootballemail@gmail.com',
-      pass: '1ndulgeManchester1',
+      user: functions.config().email.address,
+      pass: functions.config().email.password,
     },
   })
 
@@ -232,7 +234,7 @@ exports.sendEmailNotificationCoach = async function (
   }
 
   const mailOptions = {
-    from: 'indulgefootballemail@gmail.com',
+    from: functions.config().email.address,
     to: `${coachName} <${coachEmail}>`,
     subject: `Notification: ${typeHeader}`,
     html: `
@@ -283,8 +285,8 @@ exports.sendEmailNotificationPlayer = async function (
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'indulgefootballemail@gmail.com',
-      pass: '1ndulgeManchester1',
+      user: functions.config().email.address,
+      pass: functions.config().email.password,
     },
   })
 
@@ -323,9 +325,9 @@ exports.sendEmailNotificationPlayer = async function (
   }
 
   const mailOptions = {
-    from: 'indulgefootballemail@gmail.com',
+    from: functions.config().email.address,
     to: `${parentName ? parentName : playerName} <${contactEmail}>`,
-    subject: `FTBaller Notification: ${typeHeader}`,
+    subject: `ftballer Notification: ${typeHeader}`,
     html: `
   <h2 style='text-align:center'></h2>
   <p> Hello ${parentName ? parentName : playerName}, </p>
@@ -370,44 +372,54 @@ exports.applicationResponse = async (req, res) => {
   const { playerName, parentName, contactEmail } = recipient
   const { contentName, contentEmail, contentCourse } = emailContent
 
+  // const transporter = nodemailer.createTransport({
+  //   service: 'gmail',
+  //   auth: {
+  //     user: functions.config().email.address,
+  //     pass: functions.config().email.password,
+  //   },
+  // })
+
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'secure.emailsrvr.com',
+    port: '465',
+    secure: true,
     auth: {
-      user: 'indulgefootballemail@gmail.com',
-      pass: '1ndulgeManchester1',
+      user: functions.config().email.address,
+      pass: functions.config().email.password,
     },
   })
 
   let typeHeader
   let typeContent
+  const greeting = `${greetings['hello'][locale]}`.replace('${name}', parentName ? parentName : playerName)
 
   switch (type) {
     case 'applicationReceived':
-      typeHeader = 'Your recent application was submitted!'
-      typeContent = `We have recieved your application for the upcoming ${contentCourse}. It will now be judged by our panel and you will recieve a further update once our decision has been made.`
+      typeHeader = application['header:submitted'][locale]
+      typeContent = `${application['content:submitted'][locale]}`.replace('${contentCourse}', contentCourse)
       break
     case 'applicationSuccessful':
-      typeHeader = 'Your recent application was successful!'
-      typeContent = `Congratulations, your application for the upcoming ${contentCourse} was successful. You will recieve more information soon.`
+      typeHeader = application['header:successful'][locale]
+      typeContent = `${application['content:successful'][locale]}`.replace('${contentCourse}', contentCourse)
       break
     case 'applicationUnsuccesful':
-      typeHeader = 'Your recent application was unsuccessful'
-      typeContent = `Unfortunately your application for the upcoming ${contentCourse} was unsuccessful. We wish you luck in the future.`
+      typeHeader = application['header:successful'][locale]
+      typeContent = `${application['content:unsuccessful'][locale]}`.replace('${contentCourse}', contentCourse)
       break
   }
 
   const mailOptions = {
-    from: 'indulgefootballemail@gmail.com',
+    from: functions.config().email.address,
     to: `${parentName ? parentName : playerName} <${contactEmail}>`,
-    subject: `FTBaller Notification: ${typeHeader}`,
+    subject: `ftballer Notification: ${typeHeader}`,
     html: `
   <h2 style='text-align:center'></h2>
-  ${locale === 'ko' ? '<p>EMAIL IN KOREAN</p>' : ''}
-  <p> Hello ${parentName ? parentName : playerName}, </p>
+  <p> ${greeting}, </p>
   <p>${typeContent}</p>
-  <a href=${loginURL} target='_blank' rel='noreferrer noreopener'>Please login to see more details</a>
+  <a href=${loginURL} target='_blank' rel='noreferrer noreopener'>${greetings['pleaseLogin'][locale]}</a>
   <br>
-  <p>Indulge Football</p>
+  <p>ftballer</p>
 `,
   }
 
@@ -438,8 +450,8 @@ exports.verificationEmailer = function (
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'indulgefootballemail@gmail.com',
-      pass: '1ndulgeManchester1',
+      user: functions.config().email.address,
+      pass: functions.config().email.password,
     },
   })
 
@@ -471,7 +483,7 @@ exports.verificationEmailer = function (
     ]
 
     const coachMailOptions = {
-      from: 'indulgefootballemail@gmail.com',
+      from: functions.config().email.address,
       to: `${userName} <${userEmail}>`,
       subject: 'FTBaller Notification: Document verification update',
       html: coachEmailContent.join('')
@@ -513,7 +525,7 @@ exports.verificationEmailer = function (
           '<p>Indulge Football</p>',
         ]
         const companyMailOptions = {
-          from: 'indulgefootballemail@gmail.com',
+          from: functions.config().email.address,
           to: `${company.name} <${company.email}>`,
           subject: `FTBaller Notification: Document verification update for your coach ${userName}`,
           html: emailContent.join(''),
@@ -562,7 +574,7 @@ exports.verificationEmailer = function (
     ]
 
     const companyMailOptions = {
-      from: 'indulgefootballemail@gmail.com',
+      from: functions.config().email.address,
       to: `${userName} <${userEmail}>`,
       subject: 'FTBaller Notification: Document verification update',
       html: companyEmailContent.join('')

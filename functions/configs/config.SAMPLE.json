@@ -1,0 +1,22 @@
+{
+  "stripe": {
+    "api_key": "blah"
+  },
+  "config_params": {
+    "api_key": "xyz",
+    "auth_domain": "xyz",
+    "database_url": "xyz",
+    "project_id": "xyz",
+    "storage_bucket": "xyz",
+    "messaging_sender_id": "xyz",
+    "app_id": "xyz",
+    "measurement_id": "xyz"
+  },
+  "site": {
+    "main_url": "xyz"
+  },
+  "email": {
+    "address": "xyz",
+    "password": "xyz"
+  }
+}
