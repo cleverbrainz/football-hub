@@ -172,14 +172,14 @@ app.get('/connected-account/:id', retrieveConnectedAccount)
 app.post('/connected-account/subscriptions', createConnectedAccountProductSubscription)
 app.get('/connected-account/:id/product', retrieveProductPrices)
 app.post('/contactPlayer', applicationResponse)
-app.get('/getApplicationIds', getApplicationIds)
+app.get('/getApplicationIds/:courseName', getApplicationIds)
 
 app.get('/plans', getAllPlans)
 app.post('/subscriptions/new', createNewSubscription)
 app.post('/connectAccount/new', createConnectedAccount)
 app.post('/connectAccount/edit', createEditAccountLink)
-app.post('/korean-application-fee', koreanCampApplicationFee)
-app.post('/korean-residency', authMiddleware, koreanResidencyDocumentUpload)
+app.post('/korean-application-fee/:type*?', koreanCampApplicationFee)
+// app.post('/korean-residency', authMiddleware, koreanResidencyDocumentUpload)
 
 app.post('/stripewebhook', handleWebhook)
 

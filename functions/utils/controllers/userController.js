@@ -1,22 +1,20 @@
 const { db, admin, functions } = require('../admin')
 const { validateSignupFields, validateLoginFields } = require('../validators')
 const config = require('../configuration')
-const nodemailer = require('nodemailer')
 // const functions = require('firebase-functions')
 
 const firebase = require('firebase')
 const {
   createAwaitingVerification,
-  updateAwaitingVerification,
+  updateAwaitingVerification
 } = require('./adminController')
 const {
-  sendEmailNotificationIndulge,
-  sendEmailNotificationCompany,
+  sendEmailNotificationCompany
 } = require('./notificationController')
 firebase.initializeApp(config)
 
 exports.registerUser = (req, res) => {
-  const { name, email, password, category, language } = req.body
+  const { name, email, password, language } = req.body
   const newUser = { name, email }
   const { valid, error } = validateSignupFields(req.body)
 
@@ -45,7 +43,7 @@ exports.registerUser = (req, res) => {
       res.status(201).json({
         message:
           "We've sent you an email with instructions to verfiy your email address. Please make sure it didn't wind up in your Junk Mail.",
-        userId: newUser.userId,
+        userId: newUser.userId
       })
     })
     .catch((err) => {
@@ -65,7 +63,7 @@ exports.registerUserViaApplication = (req, res) => {
     password,
     category,
     confirm_password,
-    language,
+    language
   } = req.body
   const newUser = {
     name: `${player_first_name} ${player_last_name}`,
@@ -73,16 +71,16 @@ exports.registerUserViaApplication = (req, res) => {
     player_last_name,
     ...(guardian_first_name && {
       guardian_first_name,
-      guardian_last_name,
+      guardian_last_name
     }),
     email,
-    category,
+    category
   }
   const { valid, error } = validateSignupFields({
     name: player_first_name,
     email,
     password,
-    confirmPassword: confirm_password,
+    confirmPassword: confirm_password
   })
 
   if (!valid) return res.status(400).json(error)
@@ -109,20 +107,22 @@ exports.registerUserViaApplication = (req, res) => {
       return data.user
     })
     .then((user) => {
-      user.sendEmailVerification()
-      //TODO Different language email...
-    })
-    .then(() => {
       db.collection('users')
         .doc(`${newUser.userId}`)
         .set({ ...newUser }, { merge: true })
+
+      return user
     })
-    .then(() => {
-      res.status(201).json({
-        message:
-          "We've sent you an email with instructions to verfiy your email address. Please make sure it didn't wind up in your Junk Mail.",
-        userId: newUser.userId,
-      })
+    .then((user) => {
+      user.sendEmailVerification()
+        .then(() => {
+          res.status(201).json({
+            message:
+              "We've sent you an email with instructions to verfiy your email address. Please make sure it didn't wind up in your Junk Mail.",
+            userId: newUser.userId
+          })
+        })
+      //TODO Different language email...
     })
     .catch((err) => {
       if (err.code === 'auth/email-already-in-use') {
@@ -150,17 +150,17 @@ exports.initialRegistrationUserInformation = (req, res) => {
     if (newUser.category === 'coach') {
       newUser.verification = {
         coachDocumentationCheck: false,
-        paymentCheck: false,
+        paymentCheck: false
       }
       newUser.companies = newUser.companyLink ? [newUser.companyLink] : []
       newUser.coachInfo = {
-        name: newUser.name,
+        name: newUser.name
       }
     } else {
       newUser.verification = {
         coachDocumentationCheck: false,
         companyDetailsCheck: false,
-        paymentCheck: false,
+        paymentCheck: false
       }
       newUser.coaches = []
       newUser.bio = ''
@@ -188,15 +188,15 @@ exports.initialRegistrationUserInformation = (req, res) => {
             age: newUser.dob,
             id: req.body.userId,
             name: userData.name,
-            status: 'Prospect',
+            status: 'Prospect'
           }
 
           db.doc(`/users/${newUser.companyLink}`).update({
-            [`players.${req.body.userId}`]: playerInfo,
+            [`players.${req.body.userId}`]: playerInfo
           })
         } else if (newUser.category === 'coach') {
           db.doc(`/users/${newUser.companyLink}`).update({
-            coaches: admin.firestore.FieldValue.arrayUnion(req.body.userId),
+            coaches: admin.firestore.FieldValue.arrayUnion(req.body.userId)
           })
           sendEmailNotificationCompany(
             'coachAcceptInvite',
@@ -225,24 +225,26 @@ exports.initialRegistrationUserInformation = (req, res) => {
 // };
 
 exports.getApplicationIds = (req, res) => {
+  
+  const { courseName } = req.params
+  let length
+  console.log(courseName)
   db.collection('users')
     .where('category', 'in', ['player', 'parent'])
     .get()
     .then((data) => {
       // console.log(data)
       const promises = []
+      length = data.docs.length
       for (const user of data.docs) {
         const userData = user.data()
-        console.log('hello')
-        console.log(userData.userId)
-        if (userData.applications) {
-          console.log(userData.userId)
-          promises.push(user.id)
+        if (userData.applications && userData.applications[courseName]) {
+          promises.push(userData)
         }
       }
       Promise.all(promises).then((data) => {
-        console.log(data)
-        res.json(data)
+        // console.log('promise', data)
+        res.json({ length: length, applications: data })
       })
     })
 }
@@ -290,7 +292,7 @@ exports.loginUser = (req, res) => {
             application_fee_paid,
             stripeId,
             applications,
-            userId,
+            userId
           } = data.data()
 
           let response
@@ -302,10 +304,10 @@ exports.loginUser = (req, res) => {
                 applications,
                 application_fee_paid,
                 stripeId,
-                userId,
+                userId
               }),
               token,
-              accountCategory: data.data().category,
+              accountCategory: data.data().category
             }
             status = 201
           } else {
@@ -382,9 +384,9 @@ exports.customerImageUpload = (req, res) => {
         resumable: false,
         metadata: {
           metadata: {
-            contentType: imageToBeUploaded.mimetype,
-          },
-        },
+            contentType: imageToBeUploaded.mimetype
+          }
+        }
       })
       .then(() => {
         db.collection('users')
@@ -467,7 +469,7 @@ exports.forgottenPassword = (req, res) => {
     .then(() => {
       return res.status(200).json({
         message:
-          "We've sent you an email with instructions to reset your password. Please make sure it didn't wind up in your Junk Mail.",
+          "We've sent you an email with instructions to reset your password. Please make sure it didn't wind up in your Junk Mail."
       })
     })
     .catch((err) => {
@@ -509,9 +511,9 @@ exports.userDocumentUpload = (req, res) => {
         resumable: false,
         metadata: {
           metadata: {
-            contentType: documentToBeUploaded.mimetype,
-          },
-        },
+            contentType: documentToBeUploaded.mimetype
+          }
+        }
       })
       .then(() => {
         const documentURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${documentFileName}?alt=media`
@@ -530,7 +532,7 @@ exports.userDocumentUpload = (req, res) => {
             name: coachInfo.name,
             documentation: coachInfo.documentation,
             verification,
-            type: 'coachDocument',
+            type: 'coachDocument'
           }
           createAwaitingVerification(verificationData).then((data) => {
             return db
@@ -663,9 +665,9 @@ exports.koreanResidencyDocumentUpload = (req, res) => {
         resumable: false,
         metadata: {
           metadata: {
-            contentType: imageToBeUploaded.mimetype,
-          },
-        },
+            contentType: imageToBeUploaded.mimetype
+          }
+        }
       })
       .then(() => {
         db.doc(`/users/${req.user}`)
@@ -680,9 +682,9 @@ exports.koreanResidencyDocumentUpload = (req, res) => {
                 ...ajax_application,
                 personal_details: {
                   ...personal_details,
-                  residency_certificate: doc,
-                },
-              },
+                  residency_certificate: doc
+                }
+              }
             }
 
             db.doc(`/users/${req.user}`)
@@ -718,7 +720,7 @@ exports.fixBenficaApplications = (req, res) => {
           console.log(userData.userId)
           promises.push(user.id)
           const ajax_application = { ...userData.applications.benfica }
-          return db.doc(`/users/${userData.userId}`).update({ applications: { ajax_application: ajax_application }})
+          return db.doc(`/users/${userData.userId}`).update({ applications: { ajax_application: ajax_application } })
         }
       }
       Promise.all(promises).then((data) => {

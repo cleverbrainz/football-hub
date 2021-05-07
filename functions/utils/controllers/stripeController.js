@@ -282,14 +282,12 @@ exports.handleWebhook = async (req, res) => {
         addPlayerToCourse(updatedMetadata)
       }
 
-      if (metadata.description === 'Korean application fee') {
+      if (metadata.description === 'PDP assessment fee') {
 
         const payee = await stripe.customers.retrieve(customer)
-        console.log('THISSS ISSS', payee)
         const userref = db.doc(`users/${payee.metadata.firebaseUID}`)
 
-        return userref
-          .update({ application_fee_paid: 'paid' })
+        userref.update({ application_fee_paid: 'paid' })
       }
 
       break
