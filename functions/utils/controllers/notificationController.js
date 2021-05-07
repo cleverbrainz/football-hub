@@ -4,6 +4,7 @@ const { db, admin } = require('../admin')
 const functions = require('firebase-functions')
 const config = require('../configuration')
 const moment = require('moment')
+const { application, greetings } = require('../../LanguageSkeleton')
 // const {
 //   createAwaitingVerification,
 //   updateAwaitingVerification,
@@ -12,7 +13,7 @@ const moment = require('moment')
 const nodemailer = require('nodemailer')
 // require('firebase/firestore')
 const adminURL =  `${functions.config().site.main_url}/adminbeta`
-const loginURL = `${functions.config().site.main_url}//login`
+const loginURL = `${functions.config().site.main_url}`
 const linkMaker = (url, innertext) => {
   return `<a href='${url}' target='_blank' rel='noreferrer noreopener'>${innertext}</a>`
 }
@@ -326,7 +327,7 @@ exports.sendEmailNotificationPlayer = async function (
   const mailOptions = {
     from: functions.config().email.address,
     to: `${parentName ? parentName : playerName} <${contactEmail}>`,
-    subject: `FTBaller Notification: ${typeHeader}`,
+    subject: `ftballer Notification: ${typeHeader}`,
     html: `
   <h2 style='text-align:center'></h2>
   <p> Hello ${parentName ? parentName : playerName}, </p>
@@ -371,8 +372,18 @@ exports.applicationResponse = async (req, res) => {
   const { playerName, parentName, contactEmail } = recipient
   const { contentName, contentEmail, contentCourse } = emailContent
 
+  // const transporter = nodemailer.createTransport({
+  //   service: 'gmail',
+  //   auth: {
+  //     user: functions.config().email.address,
+  //     pass: functions.config().email.password,
+  //   },
+  // })
+
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'secure.emailsrvr.com',
+    port: '465',
+    secure: true,
     auth: {
       user: functions.config().email.address,
       pass: functions.config().email.password,
@@ -381,34 +392,34 @@ exports.applicationResponse = async (req, res) => {
 
   let typeHeader
   let typeContent
+  const greeting = `${greetings['hello'][locale]}`.replace('${name}', parentName ? parentName : playerName)
 
   switch (type) {
     case 'applicationReceived':
-      typeHeader = 'Your recent application was submitted!'
-      typeContent = `We have recieved your application for the upcoming ${contentCourse}. It will now be judged by our panel and you will recieve a further update once our decision has been made.`
+      typeHeader = application['header:submitted'][locale]
+      typeContent = `${application['content:submitted'][locale]}`.replace('${contentCourse}', contentCourse)
       break
     case 'applicationSuccessful':
-      typeHeader = 'Your recent application was successful!'
-      typeContent = `Congratulations, your application for the upcoming ${contentCourse} was successful. You will recieve more information soon.`
+      typeHeader = application['header:successful'][locale]
+      typeContent = `${application['content:successful'][locale]}`.replace('${contentCourse}', contentCourse)
       break
     case 'applicationUnsuccesful':
-      typeHeader = 'Your recent application was unsuccessful'
-      typeContent = `Unfortunately your application for the upcoming ${contentCourse} was unsuccessful. We wish you luck in the future.`
+      typeHeader = application['header:successful'][locale]
+      typeContent = `${application['content:unsuccessful'][locale]}`.replace('${contentCourse}', contentCourse)
       break
   }
 
   const mailOptions = {
     from: functions.config().email.address,
     to: `${parentName ? parentName : playerName} <${contactEmail}>`,
-    subject: `FTBaller Notification: ${typeHeader}`,
+    subject: `ftballer Notification: ${typeHeader}`,
     html: `
   <h2 style='text-align:center'></h2>
-  ${locale === 'ko' ? '<p>EMAIL IN KOREAN</p>' : ''}
-  <p> Hello ${parentName ? parentName : playerName}, </p>
+  <p> ${greeting}, </p>
   <p>${typeContent}</p>
-  <a href=${loginURL} target='_blank' rel='noreferrer noreopener'>Please login to see more details</a>
+  <a href=${loginURL} target='_blank' rel='noreferrer noreopener'>${greetings['pleaseLogin'][locale]}</a>
   <br>
-  <p>Indulge Football</p>
+  <p>ftballer</p>
 `,
   }
 

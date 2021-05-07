@@ -1,22 +1,20 @@
 const { db, admin, functions } = require('../admin')
 const { validateSignupFields, validateLoginFields } = require('../validators')
 const config = require('../configuration')
-const nodemailer = require('nodemailer')
 // const functions = require('firebase-functions')
 
 const firebase = require('firebase')
 const {
   createAwaitingVerification,
-  updateAwaitingVerification,
+  updateAwaitingVerification
 } = require('./adminController')
 const {
-  sendEmailNotificationIndulge,
-  sendEmailNotificationCompany,
+  sendEmailNotificationCompany
 } = require('./notificationController')
 firebase.initializeApp(config)
 
 exports.registerUser = (req, res) => {
-  const { name, email, password, category, language } = req.body
+  const { name, email, password, language } = req.body
   const newUser = { name, email }
   const { valid, error } = validateSignupFields(req.body)
 
@@ -45,7 +43,7 @@ exports.registerUser = (req, res) => {
       res.status(201).json({
         message:
           "We've sent you an email with instructions to verfiy your email address. Please make sure it didn't wind up in your Junk Mail.",
-        userId: newUser.userId,
+        userId: newUser.userId
       })
     })
     .catch((err) => {
@@ -65,7 +63,7 @@ exports.registerUserViaApplication = (req, res) => {
     password,
     category,
     confirm_password,
-    language,
+    language
   } = req.body
   const newUser = {
     name: `${player_first_name} ${player_last_name}`,
@@ -73,16 +71,16 @@ exports.registerUserViaApplication = (req, res) => {
     player_last_name,
     ...(guardian_first_name && {
       guardian_first_name,
-      guardian_last_name,
+      guardian_last_name
     }),
     email,
-    category,
+    category
   }
   const { valid, error } = validateSignupFields({
     name: player_first_name,
     email,
     password,
-    confirmPassword: confirm_password,
+    confirmPassword: confirm_password
   })
 
   if (!valid) return res.status(400).json(error)
@@ -152,17 +150,17 @@ exports.initialRegistrationUserInformation = (req, res) => {
     if (newUser.category === 'coach') {
       newUser.verification = {
         coachDocumentationCheck: false,
-        paymentCheck: false,
+        paymentCheck: false
       }
       newUser.companies = newUser.companyLink ? [newUser.companyLink] : []
       newUser.coachInfo = {
-        name: newUser.name,
+        name: newUser.name
       }
     } else {
       newUser.verification = {
         coachDocumentationCheck: false,
         companyDetailsCheck: false,
-        paymentCheck: false,
+        paymentCheck: false
       }
       newUser.coaches = []
       newUser.bio = ''
@@ -190,15 +188,15 @@ exports.initialRegistrationUserInformation = (req, res) => {
             age: newUser.dob,
             id: req.body.userId,
             name: userData.name,
-            status: 'Prospect',
+            status: 'Prospect'
           }
 
           db.doc(`/users/${newUser.companyLink}`).update({
-            [`players.${req.body.userId}`]: playerInfo,
+            [`players.${req.body.userId}`]: playerInfo
           })
         } else if (newUser.category === 'coach') {
           db.doc(`/users/${newUser.companyLink}`).update({
-            coaches: admin.firestore.FieldValue.arrayUnion(req.body.userId),
+            coaches: admin.firestore.FieldValue.arrayUnion(req.body.userId)
           })
           sendEmailNotificationCompany(
             'coachAcceptInvite',
@@ -227,24 +225,26 @@ exports.initialRegistrationUserInformation = (req, res) => {
 // };
 
 exports.getApplicationIds = (req, res) => {
+  
+  const { courseName } = req.params
+  let length
+  console.log(courseName)
   db.collection('users')
     .where('category', 'in', ['player', 'parent'])
     .get()
     .then((data) => {
       // console.log(data)
       const promises = []
+      length = data.docs.length
       for (const user of data.docs) {
         const userData = user.data()
-        console.log('hello')
-        console.log(userData.userId)
-        if (userData.applications) {
-          console.log(userData.userId)
-          promises.push(user.id)
+        if (userData.applications && userData.applications[courseName]) {
+          promises.push(userData)
         }
       }
       Promise.all(promises).then((data) => {
-        console.log(data)
-        res.json(data)
+        // console.log('promise', data)
+        res.json({ length: length, applications: data })
       })
     })
 }
@@ -292,7 +292,7 @@ exports.loginUser = (req, res) => {
             application_fee_paid,
             stripeId,
             applications,
-            userId,
+            userId
           } = data.data()
 
           let response
@@ -304,10 +304,10 @@ exports.loginUser = (req, res) => {
                 applications,
                 application_fee_paid,
                 stripeId,
-                userId,
+                userId
               }),
               token,
-              accountCategory: data.data().category,
+              accountCategory: data.data().category
             }
             status = 201
           } else {
@@ -384,9 +384,9 @@ exports.customerImageUpload = (req, res) => {
         resumable: false,
         metadata: {
           metadata: {
-            contentType: imageToBeUploaded.mimetype,
-          },
-        },
+            contentType: imageToBeUploaded.mimetype
+          }
+        }
       })
       .then(() => {
         db.collection('users')
@@ -469,7 +469,7 @@ exports.forgottenPassword = (req, res) => {
     .then(() => {
       return res.status(200).json({
         message:
-          "We've sent you an email with instructions to reset your password. Please make sure it didn't wind up in your Junk Mail.",
+          "We've sent you an email with instructions to reset your password. Please make sure it didn't wind up in your Junk Mail."
       })
     })
     .catch((err) => {
@@ -511,9 +511,9 @@ exports.userDocumentUpload = (req, res) => {
         resumable: false,
         metadata: {
           metadata: {
-            contentType: documentToBeUploaded.mimetype,
-          },
-        },
+            contentType: documentToBeUploaded.mimetype
+          }
+        }
       })
       .then(() => {
         const documentURL = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${documentFileName}?alt=media`
@@ -532,7 +532,7 @@ exports.userDocumentUpload = (req, res) => {
             name: coachInfo.name,
             documentation: coachInfo.documentation,
             verification,
-            type: 'coachDocument',
+            type: 'coachDocument'
           }
           createAwaitingVerification(verificationData).then((data) => {
             return db
@@ -629,75 +629,75 @@ exports.searchForPlayers = (req, res) => {
     .catch((err) => console.log(err))
 }
 
-// exports.koreanResidencyDocumentUpload = (req, res) => {
-//   // HTML form data parser for Nodejs
-//   const BusBoy = require('busboy')
-//   const path = require('path')
-//   const os = require('os')
-//   const fs = require('fs')
-//   const busboy = new BusBoy({ headers: req.headers })
+exports.koreanResidencyDocumentUpload = (req, res) => {
+  // HTML form data parser for Nodejs
+  const BusBoy = require('busboy')
+  const path = require('path')
+  const os = require('os')
+  const fs = require('fs')
+  const busboy = new BusBoy({ headers: req.headers })
 
-//   let imageFileName
-//   let imageToBeUploaded = {}
+  let imageFileName
+  let imageToBeUploaded = {}
 
-//   busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
-//     // Grabbing the file extension
-//     const fileSplit = filename.split('.')
-//     const imageExtension = fileSplit[fileSplit.length - 1]
+  busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
+    // Grabbing the file extension
+    const fileSplit = filename.split('.')
+    const imageExtension = fileSplit[fileSplit.length - 1]
 
-//     // Generating new file name with random numbers
-//     imageFileName = `${Math.round(
-//       Math.random() * 10000000000
-//     )}.${imageExtension}`
-//     // Creating a filepath for the image and storing it in a temporary directory
-//     const filePath = path.join(os.tmpdir(), imageFileName)
-//     imageToBeUploaded = { filePath, mimetype }
+    // Generating new file name with random numbers
+    imageFileName = `${Math.round(
+      Math.random() * 10000000000
+    )}.${imageExtension}`
+    // Creating a filepath for the image and storing it in a temporary directory
+    const filePath = path.join(os.tmpdir(), imageFileName)
+    imageToBeUploaded = { filePath, mimetype }
 
-//     // Using file system library to create the file
-//     file.pipe(fs.createWriteStream(filePath))
-//   })
-//   // Function to upload image file on finish
-//   busboy.on('finish', () => {
-//     admin
-//       .storage()
-//       .bucket()
-//       .upload(imageToBeUploaded.filePath, {
-//         resumable: false,
-//         metadata: {
-//           metadata: {
-//             contentType: imageToBeUploaded.mimetype,
-//           },
-//         },
-//       })
-//       .then(() => {
-//         db.doc(`/users/${req.user}`)
-//           .get()
-//           .then((data) => {
-//             const { ajax_application } = data.data().applications
-//             const { personal_details } = ajax_application
-//             const doc = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imageFileName}?alt=media`
+    // Using file system library to create the file
+    file.pipe(fs.createWriteStream(filePath))
+  })
+  // Function to upload image file on finish
+  busboy.on('finish', () => {
+    admin
+      .storage()
+      .bucket()
+      .upload(imageToBeUploaded.filePath, {
+        resumable: false,
+        metadata: {
+          metadata: {
+            contentType: imageToBeUploaded.mimetype
+          }
+        }
+      })
+      .then(() => {
+        db.doc(`/users/${req.user}`)
+          .get()
+          .then((data) => {
+            const { ajax_application } = data.data().applications
+            const { personal_details } = ajax_application
+            const doc = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imageFileName}?alt=media`
 
-//             const applications = {
-//               ajax_application: {
-//                 ...ajax_application,
-//                 personal_details: {
-//                   ...personal_details,
-//                   residency_certificate: doc,
-//                 },
-//               },
-//             }
+            const applications = {
+              ajax_application: {
+                ...ajax_application,
+                personal_details: {
+                  ...personal_details,
+                  residency_certificate: doc
+                }
+              }
+            }
 
-//             db.doc(`/users/${req.user}`)
-//               .update({ applications })
-//               .then(() =>
-//                 res.status(200).json({ message: 'successful upload' })
-//               )
-//               .catch((err) => res.status(400).json(err))
-//           })
-//       })
-//   })
-//   busboy.end(req.rawBody)
-// }
+            db.doc(`/users/${req.user}`)
+              .update({ applications })
+              .then(() =>
+                res.status(200).json({ message: 'successful upload' })
+              )
+              .catch((err) => res.status(400).json(err))
+          })
+      })
+  })
+  busboy.end(req.rawBody)
+}
 
 exports.logVariable = (req, res) => {
   const variable = functions.config().test.name
@@ -720,7 +720,7 @@ exports.fixBenficaApplications = (req, res) => {
           console.log(userData.userId)
           promises.push(user.id)
           const ajax_application = { ...userData.applications.benfica }
-          return db.doc(`/users/${userData.userId}`).update({ applications: { ajax_application: ajax_application }})
+          return db.doc(`/users/${userData.userId}`).update({ applications: { ajax_application: ajax_application } })
         }
       }
       Promise.all(promises).then((data) => {
