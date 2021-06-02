@@ -60,7 +60,9 @@ const {
   adminPageEdits,
   getAdminPageDetails,
   getVerifications,
-  acceptAwaitingVerification
+  acceptAwaitingVerification,
+  saveAssessmentCompletion,
+  getAssessment
 } = require('./utils/controllers/adminController')
 const {
   loginUser,
@@ -180,10 +182,12 @@ app.post('/connectAccount/new', createConnectedAccount)
 app.post('/connectAccount/edit', createEditAccountLink)
 app.post('/korean-application-fee/:type*?', koreanCampApplicationFee)
 // app.post('/korean-residency', authMiddleware, koreanResidencyDocumentUpload)
-
+app.get('/player-assessment/:id', getAssessment)
+app.post('/player-assessment', saveAssessmentCompletion)
 app.post('/stripewebhook', handleWebhook)
 
-app.get('/fixbenfica', fixBenficaApplications)
+
+// app.get('/fixbenfica', fixBenficaApplications)
 
 
 // app.get('/subscriptions/portal', getPortal)

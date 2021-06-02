@@ -706,26 +706,26 @@ exports.logVariable = (req, res) => {
 }
 
 
-exports.fixBenficaApplications = (req, res) => {
-  db.collection('users')
-    .where('category', 'in', ['player', 'parent'])
-    .get()
-    .then((data) => {
-      // console.log(data)
-      const promises = []
-      for (const user of data.docs) {
-        const userData = user.data()
-        console.log('hello')
-        if (userData.applications) {
-          console.log(userData.userId)
-          promises.push(user.id)
-          const ajax_application = { ...userData.applications.benfica }
-          return db.doc(`/users/${userData.userId}`).update({ applications: { ajax_application: ajax_application } })
-        }
-      }
-      Promise.all(promises).then((data) => {
-        console.log(data)
-        res.json(data)
-      })
-    })
-}
+// exports.fixBenficaApplications = (req, res) => {
+//   db.collection('users')
+//     .where('category', 'in', ['player', 'parent'])
+//     .get()
+//     .then((data) => {
+//       // console.log(data)
+//       const promises = []
+//       for (const user of data.docs) {
+//         const userData = user.data()
+//         console.log('hello')
+//         if (userData.applications) {
+//           console.log(userData.userId)
+//           promises.push(user.id)
+//           const ajax_application = { ...userData.applications.benfica }
+//           return db.doc(`/users/${userData.userId}`).update({ applications: { ajax_application: ajax_application } })
+//         }
+//       }
+//       Promise.all(promises).then((data) => {
+//         console.log(data)
+//         res.json(data)
+//       })
+//     })
+// }

@@ -12,7 +12,7 @@ const { application, greetings } = require('../../LanguageSkeleton')
 // const firebase = require('firebase/app')
 const nodemailer = require('nodemailer')
 // require('firebase/firestore')
-const adminURL =  `${functions.config().site.main_url}/adminbeta`
+const adminURL = `${functions.config().site.main_url}/adminbeta`
 const loginURL = `${functions.config().site.main_url}`
 const linkMaker = (url, innertext) => {
   return `<a href='${url}' target='_blank' rel='noreferrer noreopener'>${innertext}</a>`
@@ -397,17 +397,18 @@ exports.applicationResponse = async (req, res) => {
   switch (type) {
     case 'applicationReceived':
       typeHeader = application['header:submitted'][locale]
-      typeContent = `${application['content:submitted'][locale]}`.replace('${contentCourse}', contentCourse)
+      typeContent = `${application['content:submitted'][locale]}`
       break
     case 'applicationSuccessful':
       typeHeader = application['header:successful'][locale]
-      typeContent = `${application['content:successful'][locale]}`.replace('${contentCourse}', contentCourse)
+      typeContent = `${application['content:successful'][locale]}`.replace('${name}', playerName)
       break
     case 'applicationUnsuccesful':
       typeHeader = application['header:successful'][locale]
-      typeContent = `${application['content:unsuccessful'][locale]}`.replace('${contentCourse}', contentCourse)
-      break
+      typeContent = `${application['content:unsuccessful'][locale]}`
   }
+
+  console.log({ typeHeader, typeContent })
 
   const mailOptions = {
     from: functions.config().email.address,
@@ -416,14 +417,18 @@ exports.applicationResponse = async (req, res) => {
     html: `
   <h2 style='text-align:center'></h2>
   <p> ${greeting}, </p>
-  <p>${typeContent}</p>
+  ${typeContent.split('|').map(x => '<p>' + x + '</p>' ).join('')}
   <a href=${loginURL} target='_blank' rel='noreferrer noreopener'>${greetings['pleaseLogin'][locale]}</a>
   <br>
-  <p>ftballer</p>
+  <p>${application['email:signature'][locale].split('|')[0]}</p>
+  <p>${application['email:signature'][locale].split('|')[1]}</p>
+  <p>${application['email:signature'][locale].split('|')[2]} enquiries@indulgefootball.com</p>
+  <p>${application['email:signature'][locale].split('|')[3]} https://open.kakao.com/o/g1iTJrad</p>
 `,
   }
 
   transporter.sendMail(mailOptions, (err, info) => {
+    console.log(mailOptions.html)
     if (err) {
       console.log(err)
       return res.status(401).json({ error: err })
@@ -474,8 +479,8 @@ exports.verificationEmailer = function (
     const coachEmailContent = [
       '<h2 style=\'text-align:center\'></h2>',
       `<p> Hello ${userName}, </p>`,
-      ... stillNeed.length === 0 ? '<p>Good news! We have verified all your submitted documents and you don\'t need to provide anything further at this point.</p>' : '<p>Unfortunately we couldn\'t verify all of your documentation. Please see below the rejected documents.</p>',
-      ... stillNeed.length > 0 ? `<p>Documents that require attention</p><li>${stillNeed.map((item) => '<ul>' + item + '</ul>').join('')}</li>` : [],
+      ...stillNeed.length === 0 ? '<p>Good news! We have verified all your submitted documents and you don\'t need to provide anything further at this point.</p>' : '<p>Unfortunately we couldn\'t verify all of your documentation. Please see below the rejected documents.</p>',
+      ...stillNeed.length > 0 ? `<p>Documents that require attention</p><li>${stillNeed.map((item) => '<ul>' + item + '</ul>').join('')}</li>` : [],
       '<br>',
       `<a href=${loginURL} target='_blank' rel='noreferrer noreopener'>Please login to see more details</a>`,
       '<br>',
@@ -508,16 +513,16 @@ exports.verificationEmailer = function (
         const emailContent = [
           '<h2 style=\'text-align:center\'></h2>',
           `<p> Hello ${company.name} </p>`,
-          ... stillNeed.length === 0
+          ...stillNeed.length === 0
             ? `<p>Good news! We have verified all your coach ${userName}'s submitted documents.</p><br><p>You can now include then on your live listings.</p>`
             : `<p>Unfortunately we couldn't verify all of your coach ${userName}'s documentation. Please see below the rejected documents.</p>`,
-          ... stillNeed.length > 0
+          ...stillNeed.length > 0
             ? `<p>Documents that require attention</p><li>${stillNeed.map((item) => '<ul>' + item + '</ul>').join('')}</li>`
             : [],
           `<p>We have informed the coach that there are ${
-            stillNeed.length === 0
-              ? 'no actions to take.'
-              : 'actions to take and need to resolve them.'
+          stillNeed.length === 0
+            ? 'no actions to take.'
+            : 'actions to take and need to resolve them.'
           }</p>`,
           '<p>You do not need to do anything further at this point</p>',
           `<a href=${loginURL} target='_blank' rel='noreferrer noreopener' >Please login to see more details</a>`,
@@ -532,7 +537,7 @@ exports.verificationEmailer = function (
         }
 
         emailPromises.push(transporter.sendMail(companyMailOptions))
-        
+
         if (companyInfoArray.indexOf(company === 0)) emailPromises.push(transporter.sendMail(coachMailOptions))
       })
 
@@ -565,8 +570,8 @@ exports.verificationEmailer = function (
     const companyEmailContent = [
       '<h2 style=\'text-align:center\'></h2>',
       `<p> Hello ${userName}, </p>`,
-      ... stillNeed.length === 0 ? '<p>Good news! We have verified all your submitted documents and you don\'t need to provide anything further at this point.</p>' : '<p>Unfortunately we couldn\'t verify all of your documentation. Please see below the rejected documents.</p>',
-      ... stillNeed.length > 0 ? `<p>Documents that require attention</p><li>${stillNeed.map((item) => '<ul>' + item + '</ul>').join('')}</li>` : [],
+      ...stillNeed.length === 0 ? '<p>Good news! We have verified all your submitted documents and you don\'t need to provide anything further at this point.</p>' : '<p>Unfortunately we couldn\'t verify all of your documentation. Please see below the rejected documents.</p>',
+      ...stillNeed.length > 0 ? `<p>Documents that require attention</p><li>${stillNeed.map((item) => '<ul>' + item + '</ul>').join('')}</li>` : [],
       '<br>',
       `<a href=${loginURL} target='_blank' rel='noreferrer noreopener'>Please login to see more details</a>`,
       '<br>',
